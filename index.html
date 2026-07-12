@@ -1,0 +1,1985 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Контент-завод за выходные - мини-курс</title>
+<meta name="description" content="Мини-курс: за одни выходные - первая пачка рилсов и каруселей у тебя в аккаунте. С телефона, без съёмок, монтажа и дизайнера.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="preload" as="font" type="font/woff2" crossorigin href="https://fonts.gstatic.com/s/manrope/v20/xn7gYHE41ni1AdIRggOxSvfedN62Zw.woff2">
+<link rel="preload" as="font" type="font/woff2" crossorigin href="https://fonts.gstatic.com/s/playfairdisplay/v40/nuFvD-vYSZviVYUb_rj3ij__anPXJzDwcbmjWBN2PKfFunDTbtPK-F2qC0usEw.woff2">
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;800;900&family=Manrope:wght@400;500;600;700&family=Cormorant+Garamond:ital,wght@1,500;1,600&display=swap" rel="stylesheet">
+<style>
+@font-face{font-family:'PD-fb-n';src:local('Georgia');font-display:swap;size-adjust:112%;ascent-override:100%;descent-override:26%}
+@font-face{font-family:'PD-fb-w';src:local('Georgia');font-display:swap;size-adjust:103%;ascent-override:100%;descent-override:26%}
+@font-face{font-family:'MR-fb';src:local('Helvetica Neue'),local('Arial');font-display:swap;size-adjust:100.5%}
+@font-face{font-family:'CG-fb';src:local('Georgia Italic'),local('Georgia');font-display:swap;size-adjust:88%;ascent-override:102%;descent-override:28%}
+:root{
+  --bg:#0A0908;
+  --surface:#14110D;
+  --surface-2:#1C1812;
+  --border:rgba(223,182,92,.22);
+  --text:#FDFAF3;
+  --text-muted:#C6C1B6;
+  --text-dim:#8B8578;
+  --gold:#DFB65C;
+  --gold-hi:#FBE7A4;
+  --gold-1:#F3CB63;
+  --gold-2:#CB9B32;
+  --gold-3:#8C6A22;
+  --gold-deep:#8A5C1A;
+  --accent-hover:#E9C876;
+  --cta-text:#14110D;
+  --ease-out:cubic-bezier(.23,1,.32,1);
+  --dur-press:160ms;
+  --dur-reveal:420ms;
+  --stagger:60ms;
+  --dur-shine:1000ms;
+  --hairline:rgba(253,250,243,.08);
+}
+*{margin:0;padding:0;box-sizing:border-box}
+html{-webkit-text-size-adjust:100%; overflow-x:clip}
+body{
+  background:var(--bg); color:var(--text);
+  font-family:'Manrope','MR-fb',-apple-system,sans-serif;
+  font-size:16px; line-height:1.6; overflow-x:hidden;
+}
+
+/* ═══ экран hero ═══ */
+/* атмосфера: зерно + одно тёплое свечение */
+.hero-stage{position:relative; min-height:100svh; isolation:isolate; overflow:clip}
+.hero-stage::before{ /* зерно */
+  content:""; position:absolute; inset:0; z-index:-2; pointer-events:none;
+  background-image:radial-gradient(rgba(255,255,255,.045) .5px,transparent .5px);
+  background-size:3px 3px;
+}
+.hero-stage::after{ /* одно свечение, принцип одного источника света */
+  content:""; position:absolute; z-index:-1; pointer-events:none;
+  top:-22%; right:-14%; width:70vw; height:70vw; max-width:860px; max-height:860px;
+  background:radial-gradient(circle, rgba(201,162,75,.20), rgba(201,162,75,.05) 45%, transparent 68%);
+  filter:blur(10px);
+}
+/* бренд-хедер: одна золотая линия + ник, как на слайдах каруселей */
+.hero-mast{
+  max-width:1200px; margin:0 auto; padding:22px 20px 0;
+}
+.hero-goldtext{
+  background:linear-gradient(180deg,var(--gold-hi),var(--gold-1) 30%,var(--gold) 55%,var(--gold-2));
+  -webkit-background-clip:text; background-clip:text; color:transparent;
+}
+.hero-mast .hero-nick{
+  display:block; font-size:12px; font-weight:700; letter-spacing:.34em;
+  text-transform:uppercase;
+}
+.hero-mast .hero-goldline{
+  display:block; height:1px; margin-top:10px; border:0;
+  background:linear-gradient(90deg, var(--gold-2), rgba(203,155,50,0) 72%);
+}
+/* сетка героя */
+.hero-copy{position:relative; z-index:3}
+.hero-grid{
+  max-width:1200px; margin:0 auto; padding:34px 20px 96px;
+  display:grid; grid-template-columns:1fr; gap:44px; align-items:center;
+}
+@media (min-width:1100px){
+  .hero-grid{grid-template-columns:1.08fr .92fr; padding-top:48px; min-height:calc(100svh - 64px)}
+  .hero-copy{padding-right:28px}
+}
+/* текстовая колонна */
+.hero-badge{
+  display:inline-block; font-size:13px; font-weight:600; letter-spacing:.02em;
+  color:var(--text-muted); border:1px solid var(--border); border-radius:999px;
+  padding:7px 14px; background:rgba(20,17,13,.6);
+}
+@media (max-width:480px){
+  .hero-badge{border-radius:14px; line-height:1.5; padding:8px 14px}
+}
+.hero-h1{
+  font-family:'Playfair Display','PD-fb-n',serif;
+  font-weight:800; font-size:clamp(38px,6vw,54px); line-height:1.1;
+  margin-top:22px; text-wrap:pretty; letter-spacing:.005em;
+}
+@media (min-width:600px){ .hero-h1{font-family:'Playfair Display','PD-fb-w',serif} }
+@media (max-width:480px){ .hero-h1{font-size:34px; font-family:'Playfair Display','PD-fb-w',serif} }
+
+.hero-sub{
+  margin-top:20px; max-width:56ch; color:var(--text-muted);
+  font-size:clamp(16px,2vw,18px); text-wrap:pretty;
+}
+.hero-sub strong{color:var(--text); font-weight:600}
+/* CTA */
+.hero-ctaRow{margin-top:30px; display:flex; align-items:center; gap:18px; flex-wrap:wrap}
+.hero-btn{
+  display:inline-block; border:0; cursor:pointer; text-decoration:none;
+  font-family:'Manrope','MR-fb',sans-serif; font-weight:700; font-size:17px; color:var(--cta-text);
+  background:linear-gradient(180deg, var(--gold-1), var(--gold) 55%, var(--gold-2));
+  padding:17px 34px; border-radius:12px;
+  box-shadow:0 12px 34px rgba(0,0,0,.5), 0 0 26px rgba(201,162,75,.22);
+  transition:transform var(--dur-press) var(--ease-out);
+  will-change:transform;
+}
+.hero-btn:active{transform:scale(.97)}
+@media (max-width:600px){ .hero-btn{display:block; text-align:center; width:100%} }
+@media (hover:hover) and (pointer:fine){
+  .hero-btn:hover{background:linear-gradient(180deg, var(--gold-hi), var(--accent-hover) 50%, var(--gold-2))}
+}
+/* пруф-бар: три чипа */
+.hero-proof{
+  margin-top:34px; display:flex; flex-wrap:wrap; gap:10px;
+}
+.hero-chip{
+  border:1px solid var(--border); border-radius:12px; background:rgba(20,17,13,.55);
+  padding:11px 16px; font-size:13.5px; color:var(--text-muted); line-height:1.45;
+}
+.hero-chip b{
+  display:block; color:var(--text); font-weight:700; font-size:15px;
+  font-variant-numeric:tabular-nums;
+}
+.hero-verify{margin-top:14px; font-size:13.5px; color:var(--text-dim)}
+.hero-verify a{text-decoration:none; font-weight:700}
+.hero-verify a:hover{filter:brightness(1.12)}
+/* пачка: реальные обложки каруселей собираются в стопку */
+.hero-pack{
+  position:relative; height:430px; margin:0 auto; width:min(100%,420px);
+}
+@media (min-width:1100px){ .hero-pack{height:560px; width:100%} }
+.hero-card{
+  position:absolute; left:50%; top:50%;
+  width:min(38vw,170px); aspect-ratio:4/5; border-radius:16px;
+  border:1px solid rgba(223,182,92,.28);
+  box-shadow:0 18px 50px rgba(0,0,0,.62);
+  overflow:hidden; background:var(--surface);
+  transform:translate(-50%,-50%) var(--fan) scale(.96);
+  opacity:0;
+  animation:hero-assemble var(--dur-reveal) var(--ease-out) forwards;
+}
+@media (min-width:1100px){ .hero-card{width:216px; max-width:none} }
+.hero-card img{display:block; width:100%; height:100%; object-fit:cover}
+.hero-card:nth-child(1){--fan:translate(-26%,-36%) rotate(-9deg);  animation-delay:calc(var(--stagger)*1)}
+.hero-card:nth-child(2){--fan:translate(26%,-42%) rotate(8deg);   animation-delay:calc(var(--stagger)*2)}
+.hero-card:nth-child(3){--fan:translate(-22%,14%) rotate(-5deg);   animation-delay:calc(var(--stagger)*3)}
+.hero-card:nth-child(4){--fan:translate(24%,10%) rotate(6deg);    animation-delay:calc(var(--stagger)*4)}
+.hero-card:nth-child(5){--fan:translate(0%,-14%) rotate(-1deg);  animation-delay:calc(var(--stagger)*5); z-index:2; box-shadow:0 26px 64px rgba(0,0,0,.72), 0 0 30px rgba(201,162,75,.14)}
+.hero-card:not(:nth-child(5)){--cs:.9}
+.hero-card:not(:nth-child(5)) img{filter:brightness(.55) blur(1px)}
+.hero-card:nth-child(5){--cs:1.08}
+@media (min-width:1100px){
+  .hero-card:nth-child(1){--fan:translate(-76%,-44%) rotate(-11deg)}
+  .hero-card:nth-child(2){--fan:translate(50%,-48%) rotate(9deg)}
+  .hero-card:nth-child(3){--fan:translate(-62%,26%) rotate(-5deg)}
+  .hero-card:nth-child(4){--fan:translate(42%,22%) rotate(6deg)}
+  .hero-card:nth-child(5){--fan:translate(-2%,-14%) rotate(-1deg)}
+}
+@keyframes hero-assemble{
+  from{opacity:0; transform:translate(-50%,-46%) var(--fan) scale(.86)}
+  to{opacity:1; transform:translate(-50%,-50%) var(--fan) scale(var(--cs,1))}
+}
+.hero-packnote{
+  position:absolute; left:50%; bottom:14px; transform:translateX(-50%);
+  white-space:nowrap; font-family:'Cormorant Garamond',Didot,serif; font-style:italic;
+  font-size:15px; letter-spacing:.04em; color:var(--text-dim);
+}
+@media (min-width:1100px){ .hero-packnote{left:calc(50% - 30px)} }
+@media (prefers-reduced-motion:reduce){
+  .hero-card{animation:none; opacity:1; transform:translate(-50%,-50%) var(--fan) scale(var(--cs,1))}
+  .hero-btn{transition:none}
+}
+
+/* ═══ экран pain ═══ */
+.pain-stage{position:relative; isolation:isolate; overflow:clip; padding:0 0 88px}
+.pain-stage::before{ /* фирменное зерно */
+  content:""; position:absolute; inset:0; z-index:-2; pointer-events:none;
+  background-image:radial-gradient(rgba(255,255,255,.045) .5px,transparent .5px);
+  background-size:3px 3px;
+}
+/* одна золотая линия — разделитель от hero */
+.pain-goldline{
+  display:block; height:1px; border:0; max-width:1200px; margin:0 auto;
+  background:linear-gradient(90deg, var(--gold-2), rgba(203,155,50,0) 72%);
+}
+.pain-goldtext{
+  background:linear-gradient(180deg,var(--gold-hi),var(--gold-1) 30%,var(--gold) 55%,var(--gold-2));
+  -webkit-background-clip:text; background-clip:text; color:transparent;
+}
+.pain-wrap{max-width:1200px; margin:0 auto; padding:96px 20px 0}
+@media (max-width:600px){ .pain-wrap{padding-top:56px} }
+
+/* заголовок */
+.pain-h2{
+  font-family:'Playfair Display','PD-fb-w',serif; font-weight:800;
+  font-size:clamp(30px,4.5vw,44px); line-height:1.12; letter-spacing:.005em;
+  max-width:40ch; text-wrap:balance;
+}
+.pain-br{display:inline}
+@media (max-width:700px){ .pain-br{display:none} }
+.pain-lead{
+  margin-top:16px; font-size:15px; color:var(--text-dim);
+}
+
+/* карточки-цитаты */
+.pain-quotes{
+  margin-top:36px; display:grid; gap:16px; grid-template-columns:1fr;
+}
+@media (min-width:900px){ .pain-quotes{grid-template-columns:repeat(3,1fr); gap:20px; align-items:stretch} }
+.pain-quote{
+  position:relative; background:var(--surface); border:1px solid var(--border);
+  border-radius:16px; padding:24px 24px 26px 28px;
+  box-shadow:0 12px 40px rgba(0,0,0,.5);
+  display:flex; flex-direction:column; justify-content:flex-start; gap:14px;
+}
+.pain-quote::before{ /* золотая черта слева */
+  content:""; position:absolute; left:0; top:24px; bottom:24px; width:2px;
+  border-radius:2px;
+  background:linear-gradient(180deg, var(--gold-1), var(--gold-3));
+}
+.pain-quote blockquote{
+  font-family:'Cormorant Garamond','CG-fb',Didot,serif; font-style:italic; font-weight:500;
+  font-size:21px; line-height:1.42; color:var(--text); text-wrap:balance;
+}
+.pain-quote figcaption{
+  display:inline-block; align-self:flex-start; padding:7px 14px;
+  border:1px solid rgba(223,182,92,.45); border-radius:999px;
+  font-size:12.5px; font-weight:600; letter-spacing:.06em;
+  text-transform:uppercase; color:var(--gold);
+}
+
+/* разворот — пик экрана */
+.pain-turn{
+  position:relative; margin:96px auto 0; max-width:640px; text-align:center;
+}
+@media (max-width:600px){ .pain-turn{margin-top:64px} }
+.pain-turn::before{ /* одно тёплое свечение за разворотом */
+  content:""; position:absolute; z-index:-1; left:50%; top:46%;
+  width:78vw; max-width:700px; aspect-ratio:1; transform:translate(-50%,-50%);
+  background:radial-gradient(circle, rgba(201,162,75,.16), rgba(201,162,75,.04) 45%, transparent 68%);
+  filter:blur(10px); pointer-events:none;
+}
+.pain-turn h3{
+  font-family:'Playfair Display','PD-fb-w',serif; font-weight:800;
+  font-size:clamp(30px,4.6vw,42px); line-height:1.1;
+}
+.pain-shine{
+  background:linear-gradient(180deg,var(--gold-hi),var(--gold-1) 30%,var(--gold) 55%,var(--gold-2));
+  -webkit-background-clip:text; background-clip:text; color:transparent;
+  position:relative; display:inline-block;
+}
+.pain-turn.in .pain-shine::after{ /* металл-блик, один раз при появлении */
+  content:""; position:absolute; inset:0; pointer-events:none;
+  background:linear-gradient(115deg, transparent 38%, rgba(253,250,243,.7) 50%, transparent 62%);
+  background-size:250% 100%; background-position:120% 0;
+  -webkit-background-clip:text; background-clip:text; color:transparent;
+  animation:pain-shine var(--dur-shine) linear 300ms 1 forwards;
+}
+@keyframes pain-shine{ from{background-position:120% 0} to{background-position:-30% 0} }
+.pain-turn p{
+  margin:20px auto 0; padding-left:38px; text-align:left;
+  font-size:clamp(16px,2vw,18px);
+  color:var(--text); text-wrap:pretty;
+}
+.pain-turn p .pain-inner.pain-innerline{
+  display:block; position:relative; margin-top:20px;
+  font-size:23px; line-height:1.3;
+  background:linear-gradient(180deg,var(--gold-hi),var(--gold-1) 30%,var(--gold) 55%,var(--gold-2));
+  -webkit-background-clip:text; background-clip:text; color:transparent;
+}
+@media (max-width:480px){ .pain-turn p .pain-inner.pain-innerline{font-size:19px} }
+.pain-turn p .pain-inner{
+  font-family:'Cormorant Garamond','CG-fb',Didot,serif; font-style:italic; font-size:1.12em;
+  color:var(--text-muted);
+}
+
+/* враг */
+.pain-villain{
+  margin:48px auto 0; max-width:640px;
+  display:flex; flex-direction:column; gap:28px;
+}
+.pain-villain li{
+  list-style:none; position:relative; padding-left:38px;
+  font-size:clamp(16px,2vw,18px); color:var(--text); text-wrap:pretty;
+}
+.pain-villain li::before{ /* тонкий золотой маркер-тире */
+  content:""; position:absolute; left:0; top:.72em; width:22px; height:1.5px;
+  background:linear-gradient(90deg, var(--gold-1), var(--gold-3));
+}
+.pain-villain li span{color:var(--text-muted)}
+@media (max-width:480px){ .pain-villain li{padding-right:10px} }
+
+/* мост */
+.pain-bridge{
+  margin:96px auto 0; text-align:center;
+  font-family:'Playfair Display','PD-fb-w',serif; font-weight:700;
+  font-size:clamp(22px,3vw,28px); line-height:1.35; max-width:44ch;
+  text-wrap:balance;
+}
+@media (max-width:600px){ .pain-bridge{margin-top:64px} }
+.pain-bridge .pain-goldflat{background:linear-gradient(180deg,var(--gold-hi),var(--gold-1) 30%,var(--gold) 55%,var(--gold-2));-webkit-background-clip:text;background-clip:text;color:transparent}
+
+/* появление секций: fade+rise */
+.pain-reveal{opacity:0; transform:translateY(14px);
+  transition:opacity var(--dur-reveal) var(--ease-out), transform var(--dur-reveal) var(--ease-out);
+  transition-delay:var(--d,0ms);
+}
+.pain-reveal.in{opacity:1; transform:none}
+@media (prefers-reduced-motion:reduce){
+  .pain-reveal{opacity:1; transform:none; transition:none}
+  .pain-turn.in .pain-shine::after{animation:none; content:none}
+}
+
+/* ═══ экран method ═══ */
+.method-stage{position:relative; isolation:isolate; overflow:clip; padding:0 0 96px}
+.method-stage::before{ /* фирменное зерно */
+  content:""; position:absolute; inset:0; z-index:-2; pointer-events:none;
+  background-image:radial-gradient(rgba(255,255,255,.045) .5px,transparent .5px);
+  background-size:3px 3px;
+}
+.method-goldline{
+  display:block; height:1px; border:0; max-width:1200px; margin:0 auto;
+  background:linear-gradient(90deg, var(--gold-2), rgba(203,155,50,0) 72%);
+}
+.method-goldtext{
+  background:linear-gradient(180deg,var(--gold-hi),var(--gold-1) 30%,var(--gold) 55%,var(--gold-2));
+  -webkit-background-clip:text; background-clip:text; color:transparent;
+}
+.method-wrap{max-width:1200px; margin:0 auto; padding:96px 20px 0}
+@media (max-width:600px){ .method-wrap{padding-top:64px} }
+
+/* заголовок: кикер + display-строка (приём двухуровневого заголовка, эталон Светозарова) */
+.method-h2{
+  font-family:'Playfair Display','PD-fb-w',serif; font-weight:700;
+  font-size:clamp(20px,2.6vw,26px); line-height:1.2; letter-spacing:.01em;
+  text-align:center; color:var(--text-muted);
+}
+.method-display{
+  margin-top:6px; text-align:center;
+  font-family:'Playfair Display','PD-fb-w',serif; font-weight:800;
+  font-size:clamp(36px,5.6vw,54px); line-height:1.08; letter-spacing:.005em;
+}
+.method-display .method-shine{position:relative; display:inline-block}
+.method-lead{
+  margin:16px auto 0; max-width:52ch; text-align:center;
+  font-size:clamp(15px,1.8vw,17px); color:var(--text-dim); text-wrap:pretty;
+}
+
+/* цепочка звеньев */
+.method-chain{
+  margin:64px auto 0; max-width:820px;
+  display:flex; flex-direction:column;
+}
+.method-link{
+  display:grid; grid-template-columns:132px 1fr; gap:28px; align-items:start;
+  padding:40px 8px;
+  border-top:1px solid var(--hairline);
+}
+.method-link:first-child{border-top:0; padding-top:8px}
+.method-num{
+  font-family:'Playfair Display','PD-fb-w',serif; font-weight:800;
+  font-size:clamp(44px,6vw,64px); line-height:1;
+  padding-bottom:.14em; /* фон при clip:text не накрывает свес глифа ниже line-box - без паддинга низ цифры прозрачный */
+  background:linear-gradient(180deg,var(--gold-hi),var(--gold-1) 30%,var(--gold) 55%,var(--gold-2));
+  -webkit-background-clip:text; background-clip:text; color:transparent;
+}
+.method-link h3{
+  font-family:'Manrope','MR-fb',sans-serif; font-weight:700;
+  font-size:clamp(19px,2.4vw,23px); line-height:1.3; color:var(--text);
+  text-wrap:balance;
+}
+.method-link p{
+  margin-top:10px; font-size:clamp(15px,1.9vw,17px); color:var(--text-muted);
+  max-width:520px; text-wrap:pretty;
+}
+.method-hook{
+  display:block; margin-top:14px; position:relative; padding-left:18px;
+  font-weight:600; font-size:15px; letter-spacing:.01em;
+  background:linear-gradient(180deg,var(--gold) 20%,var(--gold-2) 70%,var(--gold-3));
+  -webkit-background-clip:text; background-clip:text; color:transparent;
+}
+.method-hook::before{ /* шеврон вниз: эстафета к следующему звену */
+  content:""; position:absolute; left:2px; top:5px; width:7px; height:7px;
+  border-right:1.5px solid rgba(203,155,50,.75); border-bottom:1.5px solid rgba(203,155,50,.75);
+  transform:rotate(45deg);
+}
+@media (max-width:700px){
+  .method-link{grid-template-columns:1fr; gap:8px; padding:32px 0}
+  .method-num{font-size:40px}
+}
+
+/* схема пути зрителя (звено 04) */
+.method-flow{
+  margin-top:18px; display:flex; align-items:stretch; gap:0; max-width:560px;
+}
+.method-flowStep{
+  flex:1 1 0; border:1px solid var(--border); border-radius:12px;
+  background:rgba(28,24,18,.7); padding:12px 14px;
+}
+.method-flowStep b{
+  display:block; font-family:'Manrope','MR-fb',sans-serif; font-weight:700;
+  font-size:13.5px; color:var(--text); line-height:1.35;
+}
+.method-flowStep small{
+  display:block; margin-top:4px; font-size:12px; line-height:1.45; color:var(--text-dim);
+}
+.method-flowLine{
+  flex:0 0 22px; height:1.5px; align-self:center;
+  background:linear-gradient(90deg, rgba(223,182,92,.55), rgba(223,182,92,.35));
+}
+@media (max-width:700px){
+  .method-flow{flex-direction:column; max-width:none}
+  .method-flowLine{flex-basis:auto; width:1px; height:16px; margin-left:24px;
+    background:linear-gradient(180deg, rgba(223,182,92,.5), rgba(223,182,92,.25))}
+}
+
+/* плашка честной лесенки */
+.method-ladder{
+  margin:64px auto 0; max-width:820px;
+  background:var(--surface); border:1px solid var(--border); border-radius:16px;
+  padding:34px 36px 38px;
+  box-shadow:0 12px 40px rgba(0,0,0,.5);
+}
+@media (max-width:600px){ .method-ladder{padding:26px 22px 30px} }
+.method-ladder h3{
+  font-family:'Manrope','MR-fb',sans-serif; font-weight:700;
+  font-size:clamp(18px,2.2vw,21px); color:var(--text);
+}
+.method-ladder .method-ladderText{
+  margin-top:12px; font-size:clamp(15px,1.9vw,16.5px); color:var(--text-muted); text-wrap:pretty;
+}
+/* мини-степпер темпа */
+.method-steps{
+  margin-top:26px; display:flex; align-items:center; gap:0; flex-wrap:nowrap;
+}
+.method-step{
+  flex:0 0 auto; text-align:center;
+}
+.method-step b{
+  display:inline-block; min-width:58px; padding:11px 16px;
+  border:1px solid rgba(223,182,92,.25); border-radius:12px; background:rgba(28,24,18,.7);
+  font-family:'Manrope','MR-fb',sans-serif; font-weight:700; font-size:18px; color:var(--text);
+  font-variant-numeric:tabular-nums;
+}
+.method-step:nth-child(3) b{border-color:rgba(223,182,92,.4)}
+.method-step:nth-child(5) b{border-color:rgba(223,182,92,.55)}
+.method-step:last-child b{
+  border-color:transparent; color:var(--cta-text);
+  background:linear-gradient(180deg, var(--gold-1), var(--gold) 55%, var(--gold-2));
+  box-shadow:0 0 22px rgba(201,162,75,.25);
+}
+.method-step small{
+  display:block; margin-top:8px; font-size:12.5px; letter-spacing:.05em;
+  color:var(--text-muted);
+}
+.method-stepline{
+  flex:1 1 24px; height:1px; margin:0 10px; align-self:flex-start; margin-top:22px;
+  min-width:14px;
+  background:linear-gradient(90deg, rgba(223,182,92,.28), rgba(223,182,92,.28));
+}
+.method-stepline:nth-child(4){background:linear-gradient(90deg, rgba(223,182,92,.34), rgba(223,182,92,.5)); height:1.5px}
+.method-stepline:nth-child(6){background:linear-gradient(90deg, rgba(223,182,92,.55), rgba(223,182,92,.8)); height:2px}
+@media (max-width:600px){
+  .method-step b{min-width:46px; padding:9px 11px; font-size:16px}
+  .method-step small{font-size:11.5px}
+  .method-stepline{margin:22px 6px 0}
+}
+@media (max-width:480px){ /* вертикальная лесенка: буквально читается как рост */
+  .method-steps{flex-direction:column; align-items:flex-start; gap:0}
+  .method-step{display:flex; align-items:center; gap:12px; text-align:left}
+  .method-step small{margin-top:0; font-size:12.5px}
+  .method-stepline, .method-stepline:nth-child(4), .method-stepline:nth-child(6){
+    flex:0 0 auto; width:2px; height:24px; margin:4px 0 4px 23px; align-self:flex-start;
+    background:linear-gradient(180deg, rgba(223,182,92,.55), rgba(223,182,92,0));
+  }
+}
+.method-ladderFoot{
+  margin-top:22px; font-size:14px; color:var(--text-dim); text-wrap:pretty;
+}
+
+/* финал: строка темпа + CTA */
+.method-tempo{
+  margin:84px auto 0; text-align:center;
+  font-family:'Playfair Display','PD-fb-w',serif; font-weight:700;
+  font-size:clamp(22px,3vw,28px); line-height:1.35; max-width:40ch;
+  text-wrap:balance;
+}
+@media (max-width:600px){ .method-tempo{margin-top:64px} }
+.method-ctaRow{margin-top:30px; text-align:center}
+.method-bridge{
+  margin:22px auto 0; text-align:center;
+  font-size:clamp(14px,1.8vw,15.5px); color:var(--text-dim); text-wrap:balance;
+}
+.method-btn{
+  display:inline-block; border:0; cursor:pointer; text-decoration:none;
+  font-family:'Manrope','MR-fb',sans-serif; font-weight:700; font-size:17px; color:var(--cta-text);
+  background:linear-gradient(180deg, var(--gold-1), var(--gold) 55%, var(--gold-2));
+  padding:17px 34px; border-radius:12px;
+  box-shadow:0 12px 34px rgba(0,0,0,.5), 0 0 26px rgba(201,162,75,.22);
+  transition:transform var(--dur-press) var(--ease-out);
+  will-change:transform;
+}
+.method-btn:active{transform:scale(.97)}
+@media (max-width:600px){ .method-btn{display:block; text-align:center; margin:0 20px} }
+@media (hover:hover) and (pointer:fine){
+  .method-btn:hover{background:linear-gradient(180deg, var(--gold-hi), var(--accent-hover) 50%, var(--gold-2))}
+}
+
+/* появление: fade+rise */
+.method-reveal{opacity:0; transform:translateY(14px);
+  transition:opacity var(--dur-reveal) var(--ease-out), transform var(--dur-reveal) var(--ease-out);
+  transition-delay:var(--d,0ms);
+}
+.method-reveal.in{opacity:1; transform:none}
+.method-display.in .method-shine::after{
+  content:""; position:absolute; inset:0; pointer-events:none;
+  background:linear-gradient(115deg, transparent 38%, rgba(253,250,243,.7) 50%, transparent 62%);
+  background-size:250% 100%; background-position:120% 0;
+  -webkit-background-clip:text; background-clip:text; color:transparent;
+  animation:method-shine var(--dur-shine) linear 300ms 1 forwards;
+}
+@keyframes method-shine{ from{background-position:120% 0} to{background-position:-30% 0} }
+@media (prefers-reduced-motion:reduce){
+  .method-reveal{opacity:1; transform:none; transition:none}
+  .method-display.in .method-shine::after{animation:none; content:none}
+  .method-btn{transition:none}
+}
+
+/* ═══ экран proof ═══ */
+.proof-stage{position:relative; isolation:isolate; overflow:clip; padding:0 0 96px}
+.proof-stage::before{ /* фирменное зерно */
+  content:""; position:absolute; inset:0; z-index:-2; pointer-events:none;
+  background-image:radial-gradient(rgba(255,255,255,.045) .5px,transparent .5px);
+  background-size:3px 3px;
+}
+.proof-goldline{
+  display:block; height:1px; border:0; max-width:1200px; margin:0 auto;
+  background:linear-gradient(90deg, var(--gold-2), rgba(203,155,50,0) 72%);
+}
+.proof-goldtext{
+  background:linear-gradient(180deg,var(--gold-hi),var(--gold-1) 30%,var(--gold) 55%,var(--gold-2));
+  -webkit-background-clip:text; background-clip:text; color:transparent;
+}
+.proof-wrap{max-width:1200px; margin:0 auto; padding:96px 20px 0}
+@media (max-width:600px){ .proof-wrap{padding-top:64px} }
+
+/* сетка: история слева, фото справа */
+.proof-grid{
+  display:grid; grid-template-columns:1fr; gap:44px; align-items:start;
+}
+@media (min-width:1100px){
+  .proof-grid{grid-template-columns:1.05fr .95fr; gap:56px}
+}
+
+/* заголовок */
+.proof-h2{
+  font-family:'Playfair Display','PD-fb-w',serif; font-weight:800;
+  font-size:clamp(34px,5.2vw,52px); line-height:1.1; letter-spacing:.005em;
+  max-width:16ch; text-wrap:balance;
+}
+.proof-h2 .proof-shine{position:relative; display:inline-block}
+
+/* история: три сцены с метками */
+.proof-story{margin-top:40px; display:flex; flex-direction:column; gap:34px; max-width:560px}
+.proof-scene .proof-tag{
+  display:block; font-size:12px; font-weight:600; letter-spacing:.22em;
+  text-transform:uppercase;
+  background:linear-gradient(180deg,var(--gold-hi),var(--gold-1) 30%,var(--gold) 55%,var(--gold-2));
+  -webkit-background-clip:text; background-clip:text; color:transparent;
+}
+.proof-scene p{
+  margin-top:10px; font-size:clamp(16px,2vw,17.5px); color:var(--text-muted); text-wrap:pretty;
+}
+.proof-scene p strong{color:var(--text); font-weight:600}
+.proof-scene .proof-inner{
+  font-family:'Cormorant Garamond','CG-fb',Didot,serif; font-style:italic;
+  font-size:1.14em; color:var(--text);
+}
+.proof-scene .proof-bignum{
+  font-weight:700;
+  background:linear-gradient(180deg,var(--gold-hi),var(--gold-1) 30%,var(--gold) 55%,var(--gold-2));
+  -webkit-background-clip:text; background-clip:text; color:transparent;
+}
+
+/* числовая арка истории */
+.proof-arc{
+  display:flex; gap:0; padding-top:64px; max-width:560px;
+}
+.proof-arcStep{flex:0 0 auto; text-align:left}
+.proof-arcStep b{
+  display:block; font-family:'Playfair Display','PD-fb-w',serif; font-weight:700;
+  line-height:1.1; color:var(--text);
+  font-variant-numeric:tabular-nums;
+}
+.proof-arcStep:nth-child(1) b{font-size:clamp(18px,2.2vw,22px); color:#9B937F}
+.proof-arcStep:nth-child(3) b{font-size:clamp(24px,3vw,32px)}
+.proof-arcStep:nth-child(5) b{font-size:clamp(32px,4.2vw,44px)}
+.proof-arcStep:last-child b{
+  background:linear-gradient(180deg,var(--gold-hi),var(--gold-1) 30%,var(--gold) 55%,var(--gold-2));
+  -webkit-background-clip:text; background-clip:text; color:transparent;
+}
+.proof-arcStep small{
+  display:block; margin-top:5px; font-size:11.5px; font-weight:600;
+  letter-spacing:.14em; text-transform:uppercase; color:var(--text-dim);
+}
+.proof-arcLine{
+  flex:1 1 20px; height:1px; margin:0 14px 26px; min-width:16px; align-self:flex-end;
+  background:linear-gradient(90deg, rgba(223,182,92,.3), rgba(223,182,92,.4));
+}
+.proof-arc .proof-arcLine:nth-child(4){height:1.5px;
+  background:linear-gradient(90deg, rgba(223,182,92,.45), rgba(223,182,92,.6))}
+.proof-arc{align-items:flex-end}
+.proof-arcStep small{white-space:nowrap}
+@media (max-width:480px){
+  .proof-arcStep:nth-child(1) b{font-size:16px}
+  .proof-arcStep:nth-child(3) b{font-size:21px}
+  .proof-arcStep:nth-child(5) b{font-size:27px}
+  .proof-arcStep small{font-size:10.5px; letter-spacing:.05em}
+  .proof-arcLine{margin-left:7px; margin-right:7px; margin-bottom:24px}
+}
+
+/* фото */
+.proof-figure{position:relative; margin:0 auto; width:min(100%,440px)}
+.proof-figure img{
+  display:block; width:100%; height:auto; border-radius:16px;
+  filter:brightness(.92) saturate(.96);
+}
+.proof-figure::after{ /* растворение кадра в фон */
+  content:""; position:absolute; inset:0; border-radius:16px; pointer-events:none;
+  box-shadow:inset 0 0 90px 36px var(--bg);
+}
+.proof-figcap{
+  margin-top:12px; text-align:center;
+  font-family:'Cormorant Garamond','CG-fb',Didot,serif; font-style:italic;
+  font-size:15px; letter-spacing:.04em; color:#8A7A58;
+  text-shadow:0 1px 8px rgba(0,0,0,.8);
+}
+
+/* пруф-полоса: реальные топ-посты */
+.proof-strip{margin-top:76px}
+.proof-stripHead{
+  text-align:center; font-size:12px; font-weight:600; letter-spacing:.22em;
+  text-transform:uppercase; color:var(--text-dim);
+}
+.proof-stripNote{
+  margin:18px auto 0; text-align:center; font-size:14px; color:var(--text-dim);
+}
+.proof-cards{
+  margin:22px auto 0; max-width:620px;
+  display:grid; grid-template-columns:repeat(2,1fr); gap:20px;
+}
+@media (max-width:760px){ .proof-cards{grid-template-columns:1fr; max-width:340px} }
+
+.proof-card{
+  display:block; text-decoration:none; color:inherit;
+  background:var(--surface); border:1px solid var(--border); border-radius:16px;
+  overflow:hidden; box-shadow:0 12px 40px rgba(0,0,0,.5);
+  transition:transform 160ms var(--ease-out), border-color 160ms var(--ease-out);
+}
+@media (hover:hover) and (pointer:fine){
+  .proof-card:hover{transform:translateY(-4px); border-color:rgba(223,182,92,.45)}
+  .proof-card:hover .proof-cardTop{color:var(--text-muted)}
+}
+.proof-card:active{transform:scale(.985)}
+.proof-cardTop{
+  display:flex; align-items:center; justify-content:space-between; gap:8px;
+  padding:9px 14px; border-bottom:1px solid var(--hairline);
+  font-size:11.5px; font-weight:600; letter-spacing:.05em; color:var(--text-dim);
+}
+.proof-card img{display:block; width:100%; height:auto; aspect-ratio:4/5; object-fit:cover; filter:brightness(.96)}
+.proof-cardReel img{object-position:50% 32%}
+.proof-cardMeta{
+  display:flex; align-items:baseline; justify-content:center; gap:10px;
+  padding:12px 16px 14px;
+}
+.proof-cardMeta b{
+  font-size:16px; font-weight:700; font-variant-numeric:tabular-nums;
+  background:linear-gradient(180deg,var(--gold-hi),var(--gold-1) 30%,var(--gold) 55%,var(--gold-2));
+  -webkit-background-clip:text; background-clip:text; color:transparent;
+}
+.proof-cardMeta small{font-size:12.5px; color:var(--text-dim)}
+
+/* пруф-строка */
+.proof-verify{
+  margin:76px auto 0; text-align:center;
+  font-family:'Playfair Display','PD-fb-w',serif; font-weight:700;
+  font-size:clamp(21px,2.8vw,27px); line-height:1.35; max-width:44ch;
+  text-wrap:balance;
+}
+.proof-verify a{text-decoration:none; font-family:'Manrope','MR-fb',sans-serif; font-weight:600; font-size:.92em}
+.proof-verify a:hover{filter:brightness(1.12)}
+.proof-verifySub{
+  margin-top:10px; text-align:center; font-size:15px; line-height:1.5; color:var(--text-muted);
+}
+@media (max-width:480px){ .proof-verifySub{font-size:14.5px}
+  .proof-verify a{display:block; margin-top:6px} }
+
+/* анти-регалия */
+.proof-plain{
+  margin:64px auto 0; max-width:640px;
+  background:var(--surface); border:1px solid var(--border); border-radius:16px;
+  padding:30px 34px 32px; text-align:center;
+  box-shadow:0 12px 40px rgba(0,0,0,.5);
+}
+@media (max-width:600px){ .proof-plain{padding:24px 20px 26px} }
+.proof-plain b{
+  display:block; font-family:'Playfair Display','PD-fb-w',serif; font-weight:700;
+  font-size:clamp(21px,2.8vw,26px); color:var(--text); text-wrap:balance;
+}
+.proof-plain span{
+  display:block; margin-top:10px; font-size:clamp(16px,2vw,17.5px); color:var(--text-muted);
+}
+
+/* появление */
+.proof-reveal{opacity:0; transform:translateY(14px);
+  transition:opacity var(--dur-reveal) var(--ease-out), transform var(--dur-reveal) var(--ease-out);
+  transition-delay:var(--d,0ms);
+}
+.proof-reveal.in{opacity:1; transform:none}
+.proof-h2.in .proof-shine::after{
+  content:""; position:absolute; inset:0; pointer-events:none;
+  background:linear-gradient(115deg, transparent 38%, rgba(253,250,243,.7) 50%, transparent 62%);
+  background-size:250% 100%; background-position:120% 0;
+  -webkit-background-clip:text; background-clip:text; color:transparent;
+  animation:proof-shine var(--dur-shine) linear 300ms 1 forwards;
+}
+@keyframes proof-shine{ from{background-position:120% 0} to{background-position:-30% 0} }
+@media (prefers-reduced-motion:reduce){
+  .proof-reveal{opacity:1; transform:none; transition:none}
+  .proof-h2.in .proof-shine::after{animation:none; content:none}
+}
+
+/* ═══ экран cases ═══ */
+.cases-stage{position:relative; isolation:isolate; overflow:clip; padding:0 0 96px}
+.cases-stage::before{ /* фирменное зерно */
+  content:""; position:absolute; inset:0; z-index:-2; pointer-events:none;
+  background-image:radial-gradient(rgba(255,255,255,.045) .5px,transparent .5px);
+  background-size:3px 3px;
+}
+.cases-goldline{
+  display:block; height:1px; border:0; max-width:1200px; margin:0 auto;
+  background:linear-gradient(90deg, var(--gold-2), rgba(203,155,50,0) 72%);
+}
+.cases-goldtext{
+  background:linear-gradient(180deg,var(--gold-hi),var(--gold-1) 30%,var(--gold) 55%,var(--gold-2));
+  -webkit-background-clip:text; background-clip:text; color:transparent;
+}
+.cases-wrap{max-width:1200px; margin:0 auto; padding:96px 20px 0}
+@media (max-width:600px){ .cases-wrap{padding-top:64px} }
+
+/* заголовок: кикер + display-цитата + хвост */
+.cases-h2{
+  font-family:'Playfair Display','PD-fb-w',serif; font-weight:700;
+  font-size:clamp(20px,2.6vw,26px); line-height:1.2; letter-spacing:.01em;
+  text-align:center; color:var(--text-muted);
+}
+.cases-display{
+  margin-top:6px; text-align:center;
+  font-family:'Playfair Display','PD-fb-w',serif; font-weight:800;
+  font-size:clamp(34px,5.4vw,52px); line-height:1.1; letter-spacing:.005em;
+  padding-bottom:.08em; /* свес глифов при clip:text */
+}
+.cases-display .cases-shine{position:relative; display:inline-block}
+.cases-displayTail{
+  margin-top:10px; text-align:center;
+  font-family:'Manrope','MR-fb',sans-serif; font-weight:600;
+  font-size:clamp(15px,1.9vw,17px); color:var(--text-muted); line-height:1.4;
+}
+.cases-lead{
+  margin:16px auto 0; max-width:56ch; text-align:center;
+  font-size:clamp(15px,1.8vw,17px); color:var(--text-dim); text-wrap:pretty;
+}
+.cases-honesty{
+  margin:40px auto 0; max-width:60ch; text-align:center;
+  font-size:clamp(14.5px,1.8vw,16px); color:var(--text-dim); text-wrap:balance;
+}
+
+/* сетка: три равные карточки со скринами-пруфами */
+.cases-grid{
+  margin:56px auto 0; max-width:1120px;
+  display:grid; grid-template-columns:repeat(3,1fr); gap:22px; align-items:stretch;
+}
+@media (max-width:960px){ .cases-grid{grid-template-columns:1fr; max-width:560px} }
+.cases-shotFig{margin-top:20px; width:100%}
+.cases-shotFig img{
+  display:block; width:100%; height:auto; aspect-ratio:4/5; object-fit:cover; object-position:top;
+  border:1px solid var(--hairline); border-radius:12px;
+  filter:brightness(.96);
+}
+
+.cases-card{
+  display:flex; flex-direction:column; align-items:flex-start;
+  background:var(--surface); border:1px solid var(--border); border-radius:16px;
+  padding:26px 26px 28px;
+  box-shadow:0 12px 40px rgba(0,0,0,.5);
+}
+@media (max-width:600px){ .cases-card{padding:26px 22px 26px} }
+@media (min-width:961px){ /* одна линия: имя на всю строку, ник переносится под него - шапки равной высоты, скрины и низы на одном уровне */
+  .cases-card .cases-name b{flex-basis:100%}
+  .cases-card .cases-name{min-height:72px; align-content:flex-start}
+  .cases-card .cases-check{min-height:40px}
+}
+.cases-pill{
+  display:inline-block; padding:7px 14px;
+  border:1px solid rgba(223,182,92,.45); border-radius:999px;
+  font-weight:600; font-size:13px; letter-spacing:.06em; text-transform:uppercase;
+  color:var(--gold);
+}
+.cases-name{
+  margin-top:16px; display:flex; align-items:baseline; gap:12px; flex-wrap:wrap;
+}
+.cases-name b{
+  font-family:'Manrope','MR-fb',sans-serif; font-weight:700;
+  font-size:clamp(18px,2.3vw,21px); color:var(--text);
+}
+.cases-handle{
+  font-weight:600; font-size:15px; color:var(--gold); text-decoration:none;
+  border-bottom:1px solid rgba(223,182,92,.45); padding-bottom:1px;
+  transition:border-color var(--dur-press) var(--ease-out);
+}
+@media (hover:hover) and (pointer:fine){ .cases-handle:hover{border-color:var(--gold-hi); color:var(--accent-hover)} }
+.cases-check{
+  margin-top:2px; font-size:13px; color:var(--text-dim);
+}
+.cases-stats{
+  margin-top:20px; display:grid; grid-template-columns:1fr 1fr; gap:16px;
+}
+.cases-stat b{
+  display:block;
+  font-family:'Manrope','MR-fb',sans-serif; font-weight:700; font-variant-numeric:tabular-nums;
+  font-size:clamp(24px,2.6vw,30px); line-height:1.1; padding-bottom:.08em;
+  background:linear-gradient(180deg,var(--gold-hi),var(--gold-1) 30%,var(--gold) 55%,var(--gold-2));
+  -webkit-background-clip:text; background-clip:text; color:transparent;
+}
+.cases-stat small{
+  display:block; margin-top:6px; font-size:13.5px; line-height:1.5; color:var(--text-muted); text-wrap:pretty;
+}
+.cases-quote{
+  margin-top:auto; padding-top:20px; padding-left:16px; border-left:2px solid rgba(223,182,92,.55);
+  font-family:'Cormorant Garamond','PD-fb-w',serif; font-style:italic; font-weight:500;
+  font-size:clamp(17px,2.1vw,19px); line-height:1.5; color:var(--text-muted); text-wrap:pretty;
+}
+/* мост к гарантии */
+.cases-bridge{
+  margin:36px auto 0; max-width:58ch; text-align:center;
+  font-size:clamp(14.5px,1.8vw,16px); color:var(--text-dim); text-wrap:balance;
+}
+.cases-bridge b{color:var(--gold); font-weight:600}
+
+/* появление: fade+rise */
+.cases-reveal{opacity:0; transform:translateY(14px);
+  transition:opacity var(--dur-reveal) var(--ease-out), transform var(--dur-reveal) var(--ease-out);
+  transition-delay:var(--d,0ms);
+}
+.cases-reveal.in{opacity:1; transform:none}
+.cases-display.in .cases-shine::after{
+  content:""; position:absolute; inset:0; pointer-events:none;
+  background:linear-gradient(115deg, transparent 38%, rgba(253,250,243,.7) 50%, transparent 62%);
+  background-size:250% 100%; background-position:120% 0;
+  -webkit-background-clip:text; background-clip:text; color:transparent;
+  animation:cases-shine var(--dur-shine) linear 300ms 1 forwards;
+}
+@keyframes cases-shine{ from{background-position:120% 0} to{background-position:-30% 0} }
+@media (prefers-reduced-motion:reduce){
+  .cases-reveal{opacity:1; transform:none; transition:none}
+  .cases-display.in .cases-shine::after{animation:none; content:none}
+}
+
+/* ═══ экран inside ═══ */
+.inside-stage{position:relative; isolation:isolate; overflow:clip; padding:0 0 96px}
+.inside-stage::before{ /* фирменное зерно */
+  content:""; position:absolute; inset:0; z-index:-2; pointer-events:none;
+  background-image:radial-gradient(rgba(255,255,255,.045) .5px,transparent .5px);
+  background-size:3px 3px;
+}
+.inside-goldline{
+  display:block; height:1px; border:0; max-width:1200px; margin:0 auto;
+  background:linear-gradient(90deg, var(--gold-2), rgba(203,155,50,0) 72%);
+}
+.inside-goldtext{
+  background:linear-gradient(180deg,var(--gold-hi),var(--gold-1) 30%,var(--gold) 55%,var(--gold-2));
+  -webkit-background-clip:text; background-clip:text; color:transparent;
+}
+.inside-wrap{max-width:1200px; margin:0 auto; padding:96px 20px 0}
+@media (max-width:600px){ .inside-wrap{padding-top:64px} }
+
+/* заголовок: кикер + display-строка */
+.inside-h2{
+  font-family:'Playfair Display','PD-fb-w',serif; font-weight:700;
+  font-size:clamp(20px,2.6vw,26px); line-height:1.2; letter-spacing:.01em;
+  text-align:center; color:var(--text-muted);
+}
+.inside-display{
+  margin:6px auto 0; text-align:center;
+  font-family:'Playfair Display','PD-fb-w',serif; font-weight:800;
+  font-size:clamp(28px,5.2vw,50px); line-height:1.12; letter-spacing:.005em;
+  text-wrap:balance;
+}
+.inside-display .inside-shine{position:relative; display:inline-block}
+
+/* модуль 0: вводная строка без бокса (quote-мотив) */
+.inside-map{
+  margin:64px auto 0; max-width:980px;
+  display:grid; grid-template-columns:96px 1fr; gap:26px; align-items:center;
+  border-left:2px solid rgba(223,182,92,.55);
+  padding:10px 8px 10px 32px;
+}
+.inside-mapNum{
+  font-family:'Playfair Display','PD-fb-w',serif; font-weight:800;
+  font-size:clamp(44px,6vw,64px); line-height:1; text-align:center;
+  padding-bottom:.14em; /* фон при clip:text не накрывает свес глифа ниже line-box - без паддинга низ цифры прозрачный */
+  background:linear-gradient(180deg,var(--gold-hi),var(--gold-1) 30%,var(--gold) 55%,var(--gold-2));
+  -webkit-background-clip:text; background-clip:text; color:transparent;
+}
+.inside-map h3{
+  font-family:'Manrope','MR-fb',sans-serif; font-weight:700;
+  font-size:clamp(18px,2.3vw,22px); line-height:1.3; color:var(--text); text-wrap:balance;
+}
+.inside-map p{margin-top:6px; font-size:clamp(14.5px,1.8vw,16.5px); color:var(--text-muted); text-wrap:pretty}
+.inside-mapMeta{
+  display:block; margin-top:10px; font-size:14px; color:var(--text-dim); letter-spacing:.02em;
+}
+@media (max-width:600px){
+  .inside-map{grid-template-columns:1fr; gap:10px; padding:6px 0 6px 22px}
+  .inside-mapNum{text-align:left; font-size:40px}
+}
+
+/* сетка модулей 1-6 */
+.inside-grid{
+  margin:22px auto 0; max-width:980px;
+  display:grid; grid-template-columns:repeat(2,1fr); gap:22px;
+}
+.inside-mod{
+  position:relative; display:flex; flex-direction:column; align-items:flex-start;
+  background:var(--surface); border:1px solid var(--border); border-radius:16px;
+  padding:26px 28px 24px;
+  transition:background var(--dur-press) var(--ease-out);
+}
+@media (hover:hover) and (pointer:fine){ .inside-mod:hover{background:var(--surface-2)} }
+.inside-modNum{
+  font-family:'Playfair Display','PD-fb-w',serif; font-weight:800;
+  font-size:clamp(44px,6vw,64px); line-height:1;
+  padding-bottom:.14em;
+  background:linear-gradient(180deg,var(--gold-hi),var(--gold-1) 30%,var(--gold) 55%,var(--gold-2));
+  -webkit-background-clip:text; background-clip:text; color:transparent;
+}
+.inside-mod h3{
+  margin-top:12px;
+  font-family:'Manrope','MR-fb',sans-serif; font-weight:700;
+  font-size:clamp(17px,2.1vw,19.5px); line-height:1.32; color:var(--text); text-wrap:balance;
+}
+.inside-mod p{
+  margin-top:8px; font-size:clamp(14.5px,1.8vw,16px); color:var(--text-muted); text-wrap:pretty;
+}
+.inside-modMeta{
+  margin-top:auto; padding-top:18px;
+  font-size:14px; color:var(--text-dim); letter-spacing:.02em;
+}
+.inside-badge{
+  display:inline-block; margin-top:14px; padding:7px 14px;
+  border:1px solid rgba(223,182,92,.45); border-radius:999px;
+  font-family:'Manrope','MR-fb',sans-serif; font-weight:600; font-size:13.5px; letter-spacing:.02em;
+  color:var(--gold);
+}
+/* мини-цепочка связки (модуль 5): слова копи, стрелки - графикой */
+.inside-flow{
+  margin-top:10px; display:flex; align-items:center; flex-wrap:wrap; gap:8px 0;
+}
+.inside-flowChip{
+  border:1px solid var(--border); border-radius:999px; background:rgba(28,24,18,.7);
+  padding:6px 13px; font-family:'Manrope','MR-fb',sans-serif; font-weight:600;
+  font-size:13.5px; color:var(--text); white-space:nowrap;
+}
+.inside-flowLine{
+  flex:0 0 16px; height:1.5px;
+  background:linear-gradient(90deg, rgba(223,182,92,.55), rgba(223,182,92,.35));
+}
+@media (max-width:600px){
+  .inside-flow{gap:8px}
+  .inside-flowLine{display:none}
+}
+@media (max-width:700px){
+  .inside-grid{grid-template-columns:1fr; gap:16px}
+  .inside-mod{padding:24px 22px 26px}
+  .inside-modNum{font-size:40px}
+}
+
+/* полка инструментов */
+.inside-toolsHead{
+  margin:84px auto 0; text-align:center;
+  font-family:'Playfair Display','PD-fb-w',serif; font-weight:700;
+  font-size:clamp(22px,3vw,30px); line-height:1.25; text-wrap:balance;
+}
+@media (max-width:600px){ .inside-toolsHead{margin-top:64px} }
+.inside-toolsLead{
+  margin:10px auto 0; max-width:52ch; text-align:center;
+  font-size:clamp(14.5px,1.8vw,16.5px); color:var(--text-dim); text-wrap:pretty;
+}
+.inside-tools{
+  margin:36px auto 0; max-width:980px;
+  display:grid; grid-template-columns:repeat(3,1fr); gap:22px;
+}
+.inside-tool{
+  position:relative; background:var(--surface); border:1px solid var(--hairline);
+  border-radius:16px;
+  padding:22px 24px;
+}
+.inside-tool b{
+  display:block; font-family:'Manrope','MR-fb',sans-serif; font-weight:700;
+  font-size:clamp(15px,1.9vw,16.5px); line-height:1.4; color:var(--text); text-wrap:balance;
+}
+.inside-tool small{
+  display:block; margin-top:6px; font-size:13.5px; line-height:1.5; color:var(--text-dim); text-wrap:pretty;
+}
+.inside-toolBank{
+  grid-column:span 2;
+  border-left:2px solid rgba(223,182,92,.85); border-radius:0 16px 16px 0;
+  background:linear-gradient(135deg, var(--surface-2), var(--surface) 60%);
+}
+.inside-toolBank b{font-size:clamp(16.5px,2.1vw,19px)}
+.inside-proof{
+  display:block; margin-top:10px;
+  font-family:'Cormorant Garamond','PD-fb-w',serif; font-style:italic; font-weight:500;
+  font-size:clamp(16px,2vw,18.5px); line-height:1.45; color:var(--gold);
+}
+@media (max-width:700px){
+  .inside-tools{grid-template-columns:1fr; gap:14px}
+  .inside-toolBank{grid-column:auto}
+}
+
+/* условия */
+.inside-terms{
+  margin:64px auto 0; max-width:640px; list-style:none; text-align:center;
+}
+.inside-terms li{
+  padding:14px 0;
+  border-top:1px solid var(--hairline);
+  font-size:clamp(15px,1.9vw,16.5px); color:var(--text-muted); text-wrap:balance;
+}
+.inside-terms li:first-child{border-top:0}
+@media (max-width:600px){ .inside-terms{margin-top:48px} }
+
+/* финальная строка + CTA */
+.inside-tempo{
+  margin:72px auto 0; text-align:center;
+  font-family:'Playfair Display','PD-fb-w',serif; font-weight:700;
+  font-size:clamp(22px,3vw,28px); line-height:1.35; max-width:40ch;
+  text-wrap:balance;
+}
+@media (max-width:600px){ .inside-tempo{margin-top:56px} }
+.inside-ctaRow{margin-top:30px; text-align:center}
+.inside-btn{
+  display:inline-block; border:0; cursor:pointer; text-decoration:none;
+  font-family:'Manrope','MR-fb',sans-serif; font-weight:700; font-size:17px; color:var(--cta-text);
+  background:linear-gradient(180deg, var(--gold-1), var(--gold) 55%, var(--gold-2));
+  padding:17px 34px; border-radius:12px;
+  box-shadow:0 12px 34px rgba(0,0,0,.5), 0 0 26px rgba(201,162,75,.22);
+  transition:transform var(--dur-press) var(--ease-out);
+  will-change:transform;
+}
+.inside-btn:active{transform:scale(.97)}
+@media (max-width:600px){ .inside-btn{display:block; text-align:center; margin:0 20px} }
+@media (hover:hover) and (pointer:fine){
+  .inside-btn:hover{background:linear-gradient(180deg, var(--gold-hi), var(--accent-hover) 50%, var(--gold-2))}
+}
+
+/* появление: fade+rise */
+.inside-reveal{opacity:0; transform:translateY(14px);
+  transition:opacity var(--dur-reveal) var(--ease-out), transform var(--dur-reveal) var(--ease-out);
+  transition-delay:var(--d,0ms);
+}
+.inside-reveal.in{opacity:1; transform:none}
+.inside-display.in .inside-shine::after{
+  content:""; position:absolute; inset:0; pointer-events:none;
+  background:linear-gradient(115deg, transparent 38%, rgba(253,250,243,.7) 50%, transparent 62%);
+  background-size:250% 100%; background-position:120% 0;
+  -webkit-background-clip:text; background-clip:text; color:transparent;
+  animation:inside-shine var(--dur-shine) linear 300ms 1 forwards;
+}
+@keyframes inside-shine{ from{background-position:120% 0} to{background-position:-30% 0} }
+@media (prefers-reduced-motion:reduce){
+  .inside-reveal{opacity:1; transform:none; transition:none}
+  .inside-display.in .inside-shine::after{animation:none; content:none}
+  .inside-btn{transition:none}
+}
+
+/* ═══ экран pricing ═══ */
+.pricing-stage{position:relative; isolation:isolate; overflow:clip; padding:0 0 96px}
+.pricing-stage::before{ /* фирменное зерно */
+  content:""; position:absolute; inset:0; z-index:-2; pointer-events:none;
+  background-image:radial-gradient(rgba(255,255,255,.045) .5px,transparent .5px);
+  background-size:3px 3px;
+}
+.pricing-goldline{
+  display:block; height:1px; border:0; max-width:1200px; margin:0 auto;
+  background:linear-gradient(90deg, var(--gold-2), rgba(203,155,50,0) 72%);
+}
+.pricing-goldtext{
+  background:linear-gradient(180deg,var(--gold-hi),var(--gold-1) 30%,var(--gold) 55%,var(--gold-2));
+  -webkit-background-clip:text; background-clip:text; color:transparent;
+}
+.pricing-wrap{max-width:1200px; margin:0 auto; padding:96px 20px 0}
+@media (max-width:600px){ .pricing-wrap{padding-top:64px} }
+
+/* заголовок */
+.pricing-h2{
+  font-family:'Playfair Display','PD-fb-w',serif; font-weight:700;
+  font-size:clamp(20px,2.6vw,26px); line-height:1.2; letter-spacing:.01em;
+  text-align:center; color:var(--text-muted);
+}
+.pricing-display{
+  margin:6px auto 0; text-align:center; max-width:22ch;
+  font-family:'Playfair Display','PD-fb-w',serif; font-weight:800;
+  font-size:clamp(26px,5.2vw,50px); line-height:1.12; letter-spacing:.005em;
+  text-wrap:balance; padding-bottom:.08em;
+}
+.pricing-display .pricing-shine{position:relative; display:inline-block}
+
+/* якорь подписками */
+.pricing-anchor{
+  margin:26px auto 0; max-width:62ch; text-align:center;
+  font-size:clamp(15px,1.9vw,17px); color:var(--text-muted); text-wrap:pretty;
+}
+.pricing-anchor b{
+  font-weight:600;
+  background:linear-gradient(180deg,var(--gold) 20%,var(--gold-2) 70%,var(--gold-3));
+  -webkit-background-clip:text; background-clip:text; color:transparent;
+}
+.pricing-anchorNote{
+  margin:10px auto 0; text-align:center;
+  font-size:12.5px; color:var(--text-muted); opacity:.75;
+}
+
+/* карточка тарифа */
+.pricing-card{
+  margin:56px auto 0; max-width:560px;
+  background:var(--surface); border:1px solid rgba(223,182,92,.45); border-radius:16px;
+  padding:38px 40px 36px; text-align:center;
+  box-shadow:0 12px 40px rgba(0,0,0,.5), 0 0 34px rgba(201,162,75,.16);
+}
+@media (max-width:600px){ .pricing-card{padding:30px 22px 28px; margin-top:44px} }
+.pricing-name{
+  font-family:'Manrope','MR-fb',sans-serif; font-weight:700;
+  font-size:clamp(17px,2.2vw,20px); letter-spacing:.04em; color:var(--text);
+}
+.pricing-price{
+  margin-top:14px;
+  font-family:'Playfair Display','PD-fb-w',serif; font-weight:800;
+  font-size:clamp(46px,7vw,72px); line-height:1;
+}
+.pricing-price .pricing-priceShine{position:relative; display:inline-block; padding-bottom:.12em}
+.pricing-compo{
+  margin:14px auto 0; max-width:34ch;
+  font-size:clamp(15px,1.9vw,16.5px); color:var(--text-muted); text-wrap:balance;
+}
+.pricing-btn{
+  display:block; margin:26px auto 0; border:0; cursor:pointer; text-decoration:none;
+  font-family:'Manrope','MR-fb',sans-serif; font-weight:700; font-size:17px; color:var(--cta-text);
+  background:linear-gradient(180deg, var(--gold-1), var(--gold) 55%, var(--gold-2));
+  padding:17px 34px; border-radius:12px;
+  box-shadow:0 12px 34px rgba(0,0,0,.5), 0 0 26px rgba(201,162,75,.22);
+  transition:transform var(--dur-press) var(--ease-out);
+  will-change:transform;
+}
+.pricing-btn:active{transform:scale(.97)}
+@media (hover:hover) and (pointer:fine){
+  .pricing-btn:hover{background:linear-gradient(180deg, var(--gold-hi), var(--accent-hover) 50%, var(--gold-2))}
+}
+/* гарантия в момент решения */
+.pricing-guarantee{
+  margin-top:22px; text-align:center;
+  background:var(--surface-2); border:1px solid var(--hairline); border-radius:12px;
+  padding:20px 22px;
+}
+.pricing-guarantee p{text-wrap:balance}
+.pricing-guarantee b{
+  display:block; font-family:'Manrope','MR-fb',sans-serif; font-weight:700;
+  font-size:15.5px; color:var(--text);
+}
+.pricing-guarantee b{color:var(--gold)}
+.pricing-guarantee p{
+  margin-top:8px; font-size:14px; line-height:1.6; color:var(--text-muted); text-wrap:pretty;
+}
+.pricing-guaranteeTerm{
+  display:block; margin-top:12px; font-size:12.5px; color:var(--text-muted); opacity:.75;
+}
+
+/* появление: fade+rise */
+.pricing-reveal{opacity:0; transform:translateY(14px);
+  transition:opacity var(--dur-reveal) var(--ease-out), transform var(--dur-reveal) var(--ease-out);
+  transition-delay:var(--d,0ms);
+}
+.pricing-reveal.in{opacity:1; transform:none}
+.pricing-display.in .pricing-shine::after,
+.pricing-card.in .pricing-priceShine::after{
+  content:""; position:absolute; inset:0; pointer-events:none;
+  background:linear-gradient(115deg, transparent 38%, rgba(253,250,243,.7) 50%, transparent 62%);
+  background-size:250% 100%; background-position:120% 0;
+  -webkit-background-clip:text; background-clip:text; color:transparent;
+  animation:pricing-shine var(--dur-shine) linear 300ms 1 forwards;
+}
+.pricing-card.in .pricing-priceShine::after{animation-delay:500ms}
+@keyframes pricing-shine{ from{background-position:120% 0} to{background-position:-30% 0} }
+@media (prefers-reduced-motion:reduce){
+  .pricing-reveal{opacity:1; transform:none; transition:none}
+  .pricing-display.in .pricing-shine::after,
+  .pricing-card.in .pricing-priceShine::after{animation:none; content:none}
+  .pricing-btn{transition:none}
+}
+
+/* ═══ экран faq-final ═══ */
+.faq-stage{position:relative; isolation:isolate; overflow:clip; padding:0}
+.faq-stage::before{ /* фирменное зерно */
+  content:""; position:absolute; inset:0; z-index:-2; pointer-events:none;
+  background-image:radial-gradient(rgba(255,255,255,.045) .5px,transparent .5px);
+  background-size:3px 3px;
+}
+.faq-goldline{
+  display:block; height:1px; border:0; max-width:1200px; margin:0 auto;
+  background:linear-gradient(90deg, var(--gold-2), rgba(203,155,50,0) 72%);
+}
+.faq-goldtext{
+  background:linear-gradient(180deg,var(--gold-hi),var(--gold-1) 30%,var(--gold) 55%,var(--gold-2));
+  -webkit-background-clip:text; background-clip:text; color:transparent;
+}
+.faq-wrap{max-width:1200px; margin:0 auto; padding:96px 20px 0}
+@media (max-width:600px){ .faq-wrap{padding-top:64px} }
+
+/* заголовок */
+.faq-display{
+  margin:0 auto; text-align:center; max-width:24ch;
+  font-family:'Playfair Display','PD-fb-w',serif; font-weight:800;
+  font-size:clamp(26px,5.2vw,50px); line-height:1.12; letter-spacing:.005em;
+  text-wrap:balance; padding-bottom:.08em;
+}
+.faq-display .faq-shine{position:relative; display:inline-block}
+
+/* аккордеон */
+.faq-list{margin:48px auto 0; max-width:800px}
+@media (max-width:600px){ .faq-list{margin-top:36px} }
+.faq-item{
+  background:var(--surface); border:1px solid var(--border); border-radius:16px;
+  margin-top:14px;
+}
+.faq-item:first-of-type{margin-top:0}
+.faq-item[open]{background:var(--surface-2)}
+.faq-q{
+  list-style:none; cursor:pointer; display:flex; align-items:center; gap:18px;
+  padding:20px 24px; -webkit-tap-highlight-color:transparent;
+}
+.faq-q::-webkit-details-marker{display:none}
+.faq-q:focus-visible{outline:2px solid var(--gold); outline-offset:2px; border-radius:16px}
+.faq-qtext{
+  flex:1; font-family:'Cormorant Garamond','CG-fb',serif; font-style:italic; font-weight:600;
+  font-size:clamp(19px,2.4vw,23px); line-height:1.3; color:var(--text); text-wrap:balance;
+}
+.faq-plus{
+  flex:0 0 auto; width:26px; height:26px; position:relative;
+  transition:transform var(--dur-press) var(--ease-out);
+}
+.faq-plus::before,.faq-plus::after{
+  content:""; position:absolute; background:var(--gold); border-radius:1px;
+}
+.faq-plus::before{left:50%; top:4px; bottom:4px; width:1.5px; transform:translateX(-50%)}
+.faq-plus::after{top:50%; left:4px; right:4px; height:1.5px; transform:translateY(-50%)}
+.faq-item[open] .faq-plus{transform:rotate(45deg)}
+.faq-a{
+  padding:0 24px 22px; max-width:66ch;
+  font-size:clamp(16px,1.9vw,16.5px); line-height:1.65; color:var(--text-muted); text-wrap:pretty;
+}
+@media (max-width:600px){
+  .faq-q{padding:16px 18px; gap:14px}
+  .faq-a{padding:0 18px 18px}
+}
+
+/* финал-блок */
+.faq-final{margin:88px auto 0; max-width:680px; text-align:center; position:relative}
+.faq-final::before{ /* тёплое свечение за финалом, мотив ДНК */
+  content:""; position:absolute; inset:-120px -160px; z-index:-1; pointer-events:none;
+  background:radial-gradient(50% 50% at 50% 45%, rgba(201,162,75,.10), transparent 70%);
+}
+@media (max-width:600px){ .faq-final{margin-top:64px} }
+.faq-finalLine{
+  font-family:'Playfair Display','PD-fb-w',serif; font-weight:700;
+  font-size:clamp(20px,3vw,28px); line-height:1.35; text-wrap:balance;
+}
+.faq-finalLine .faq-shine{position:relative; display:inline-block; padding-bottom:.08em}
+.faq-stakes{
+  margin:16px auto 0; max-width:52ch;
+  font-family:'Manrope','MR-fb',sans-serif; font-size:clamp(14.5px,1.8vw,16px);
+  color:var(--text-dim); text-wrap:balance;
+}
+.faq-btn{
+  display:inline-block; margin:30px auto 0; border:0; cursor:pointer; text-decoration:none;
+  font-family:'Manrope','MR-fb',sans-serif; font-weight:700; font-size:17px; color:var(--cta-text);
+  background:linear-gradient(180deg, var(--gold-1), var(--gold) 55%, var(--gold-2));
+  padding:18px 56px; border-radius:12px;
+  box-shadow:0 12px 34px rgba(0,0,0,.5), 0 0 26px rgba(201,162,75,.22);
+  transition:transform var(--dur-press) var(--ease-out);
+  will-change:transform;
+  transform:translate(var(--mx,0),var(--my,0));
+}
+.faq-btn:active{transform:translate(var(--mx,0),var(--my,0)) scale(.97)}
+@media (hover:hover) and (pointer:fine){
+  .faq-btn:hover{background:linear-gradient(180deg, var(--gold-hi), var(--accent-hover) 50%, var(--gold-2))}
+}
+@media (max-width:600px){ .faq-btn{display:block; margin-top:26px} }
+
+/* юр-футер */
+.faq-footer{margin-top:96px; padding:0 0 64px}
+@media (max-width:600px){ .faq-footer{margin-top:72px} }
+.faq-footerLine{ /* нейтральный волосок по ширине контента футера - НЕ дубль золотой masthead */
+  display:block; height:1px; border:0; max-width:800px; margin:0 auto 32px;
+  background:linear-gradient(90deg, transparent, rgba(253,250,243,.12) 30%, rgba(253,250,243,.12) 70%, transparent);
+}
+.faq-footerWrap{max-width:800px; margin:0 auto; padding:0 20px; text-align:center}
+.faq-footerWrap p{
+  font-size:14px; line-height:1.7; color:var(--text-dim); text-wrap:pretty;
+  margin:10px auto 0; max-width:62ch;
+}
+.faq-footerWrap p:first-child{margin-top:0}
+.faq-requisites{letter-spacing:.02em}
+.faq-requisites .faq-dot{padding:0 6px; opacity:.6}
+.faq-legal{
+  color:var(--text-dim); text-decoration:underline; text-underline-offset:3px;
+  text-decoration-color:rgba(139,133,120,.45); display:inline-block; padding:10px 4px;
+}
+@media (hover:hover) and (pointer:fine){ .faq-legal:hover{color:var(--text-muted)} }
+
+/* появление: fade+rise */
+.faq-reveal{opacity:0; transform:translateY(14px);
+  transition:opacity var(--dur-reveal) var(--ease-out), transform var(--dur-reveal) var(--ease-out);
+  transition-delay:var(--d,0ms);
+}
+.faq-reveal.in{opacity:1; transform:none}
+.faq-final.in .faq-shine::after{
+  content:""; position:absolute; inset:0; pointer-events:none;
+  background:linear-gradient(115deg, transparent 38%, rgba(253,250,243,.7) 50%, transparent 62%);
+  background-size:250% 100%; background-position:120% 0;
+  -webkit-background-clip:text; background-clip:text; color:transparent;
+  animation:faq-shine var(--dur-shine) linear 300ms 1 forwards;
+}
+@keyframes faq-shine{ from{background-position:120% 0} to{background-position:-30% 0} }
+@media (prefers-reduced-motion:reduce){
+  .faq-reveal{opacity:1; transform:none; transition:none}
+  .faq-final.in .faq-shine::after{animation:none; content:none}
+  .faq-btn,.faq-plus{transition:none}
+}
+</style>
+</head>
+<body>
+<section id="hero" class="hero-stage">
+  <header class="hero-mast">
+    <span class="hero-nick hero-goldtext">Иван Логинов</span>
+    <span class="hero-goldline" aria-hidden="true"></span>
+  </header>
+  <div class="hero-grid">
+    <div class="hero-copy">
+      <span class="hero-badge">Мини-курс «Контент-завод за&nbsp;выходные» · для экспертов-практиков и&nbsp;новичков</span>
+      <h1 class="hero-h1"><span class="hero-goldword hero-goldtext">За одни выходные</span> - первая пачка рилсов и&nbsp;каруселей у&nbsp;тебя в&nbsp;аккаунте</h1>
+      <p class="hero-sub">С телефона, без съёмок, монтажа и дизайнера. Это <strong>не курс на три месяца</strong>: к понедельнику контент уже стоит в ленте, а под каждым постом - автоворонка: кодовое слово ведёт зрителя в твой Telegram до&nbsp;заявки</p>
+      <div class="hero-ctaRow">
+        <a class="hero-btn" id="heroCta" href="https://payform.ru/5fc07A8/">Забрать за 4 990 ₽</a>
+      </div>
+      <div class="hero-proof">
+        <div class="hero-chip"><b>Более 750К подписчиков</b>чистая органика, без рекламы</div>
+        <div class="hero-chip"><b>10 единиц контента в день</b>без пропусков с октября 2024</div>
+      </div>
+      <p class="hero-verify">Открой и проверь: <a class="hero-goldtext" href="https://www.instagram.com/ivan.loginov_ai" target="_blank" rel="noopener">@ivan.loginov_ai</a></p>
+    </div>
+    <div class="hero-pack" role="group" aria-label="Пачка контента: реальные карусели автора">
+      <figure class="hero-card"><img src="assets/pack-f1.webp" width="720" height="900" alt="Обложка карусели автора"></figure>
+      <figure class="hero-card"><img src="assets/pack-f2.webp" width="720" height="900" alt="Обложка карусели автора"></figure>
+      <figure class="hero-card"><img src="assets/pack-f3.webp" width="720" height="900" alt="Обложка карусели автора"></figure>
+      <figure class="hero-card"><img src="assets/pack-f4.webp" width="720" height="900" alt="Обложка карусели автора"></figure>
+      <figure class="hero-card"><img src="assets/pack-f5.webp" width="1080" height="1350" fetchpriority="high" alt="Обложка карусели автора - верх пачки"></figure>
+      <div class="hero-packnote">настоящие карусели с моего аккаунта</div>
+    </div>
+  </div>
+</section>
+
+<section id="pain" class="pain-stage">
+  <span class="pain-goldline" aria-hidden="true"></span>
+  <div class="pain-wrap">
+    <h2 class="pain-h2 pain-reveal">Несколько часов на один <span style="white-space:nowrap">пост-карусель</span> - <br class="pain-br">а&nbsp;новых подписчиков <span class="pain-goldtext">«прям несколько&nbsp;человек»</span>?</h2>
+    <p class="pain-lead pain-reveal" style="--d:60ms">Дословно из опроса экспертов - психолога, астролога, предпринимателя:</p>
+
+    <div class="pain-quotes">
+      <figure class="pain-quote pain-reveal" style="--d:120ms">
+        <figcaption>астролог</figcaption>
+        <blockquote>«Несколько часов на карусель, за рилсы даже не берусь… Новеньких&nbsp;- прям несколько&nbsp;человек. Не&nbsp;понимаю, почему&nbsp;так»</blockquote>
+      </figure>
+      <figure class="pain-quote pain-reveal" style="--d:180ms">
+        <figcaption>психолог</figcaption>
+        <blockquote>«Подписываются, ставят лайки, но&nbsp;продаж&nbsp;нету»</blockquote>
+      </figure>
+      <figure class="pain-quote pain-reveal" style="--d:240ms">
+        <figcaption>предприниматель</figcaption>
+        <blockquote>«Покупала много. Не&nbsp;хватало времени освоить. Просто отдавала&nbsp;деньги»</blockquote>
+      </figure>
+    </div>
+
+    <div class="pain-turn pain-reveal">
+      <h3><span class="pain-shine">Дело не в тебе</span></h3>
+      <p>Алгоритм раскручивает объём контента, а&nbsp;не красивую картинку. Пока ты вылизываешь один пост, лента хоронит его среди тысяч других - и&nbsp;ты копаешь в&nbsp;себе: <span class="pain-inner pain-innerline">«наверно я&nbsp;скучный»</span></p>
+    </div>
+
+    <ul class="pain-villain">
+      <li class="pain-reveal">Тебя учили полюбить сниматься на&nbsp;камеру - <span>хотя твоя работа лечить, учить и&nbsp;консультировать, а&nbsp;не&nbsp;выступать</span></li>
+      <li class="pain-reveal" style="--d:60ms">Тебе продавали курсы-склады теории на три месяца - <span>и&nbsp;чувство <span style="white-space:nowrap">«просто отдавала деньги»</span> осталось&nbsp;с&nbsp;тобой</span></li>
+      <li class="pain-reveal" style="--d:120ms">Тебе обещали волшебную кнопку «нейросеть всё сделает сама» - <span>а&nbsp;она выдала безликий шаблон, который просто&nbsp;пролистывают</span></li>
+    </ul>
+
+    <p class="pain-bridge pain-reveal">Ты проигрываешь не&nbsp;в&nbsp;таланте, а&nbsp;в&nbsp;системе. <br class="pain-br">Дальше - система:&nbsp;<span class="pain-goldflat">контент-завод</span></p>
+  </div>
+</section>
+
+<section id="method" class="method-stage">
+  <span class="method-goldline" aria-hidden="true"></span>
+  <div class="method-wrap">
+    <h2 class="method-h2 method-reveal" aria-label="Как работает контент-завод">Как работает</h2>
+    <div class="method-display method-reveal" aria-hidden="true"><span class="method-shine method-goldtext">контент-завод</span></div>
+    <p class="method-lead method-reveal" style="--d:60ms">Четыре звена. Ни одно не требует камеры-«со&nbsp;светом», монтажёра или&nbsp;дизайнера</p>
+
+    <div class="method-chain">
+      <div class="method-link method-reveal">
+        <span class="method-num" aria-hidden="true">01</span>
+        <div>
+          <h3>Берём то, что уже виралится</h3>
+          <p>Не выдумываем контент из головы: находим темы, которые уже залетели в&nbsp;твоей нише, и&nbsp;адаптируем под твою тему и&nbsp;твой голос. Плюс промпты, которые собирают новые триггерные заголовки с&nbsp;нуля<span class="method-hook">Из этих тем - сразу в&nbsp;рилсы</span></p>
+        </div>
+      </div>
+      <div class="method-link method-reveal" style="--d:60ms">
+        <span class="method-num" aria-hidden="true">02</span>
+        <div>
+          <h3>Рилсы 5-7 секунд с руки</h3>
+          <p>Обычное видео на селфи-камеру, без монтажа и&nbsp;«качества». Не&nbsp;хочешь своё лицо в&nbsp;кадре?&nbsp;- фейслесс или цифровой двойник. Пачка рилсов за&nbsp;час: нагенерировал с&nbsp;утра - и&nbsp;вечером у&nbsp;тебя в&nbsp;ленте<span class="method-hook">И&nbsp;та же тема работает второй раз</span></p>
+        </div>
+      </div>
+      <div class="method-link method-reveal" style="--d:120ms">
+        <span class="method-num" aria-hidden="true">03</span>
+        <div>
+          <h3>Те же темы - в карусели</h3>
+          <p>Карусель за&nbsp;5&nbsp;минут из&nbsp;уже снятого рилса. Алгоритмы сейчас бустят посты-карусели лучше&nbsp;рилсов<span class="method-hook">Теперь пусть весь этот контент продаёт</span></p>
+        </div>
+      </div>
+      <div class="method-link method-reveal" style="--d:180ms">
+        <span class="method-num" aria-hidden="true">04</span>
+        <div>
+          <h3>Автоворонка на кодовом слове</h3>
+          <p>Под каждым рилсом и&nbsp;каруселью стоит кодовое слово: зритель пишет его в&nbsp;комментарий, получает ссылку в&nbsp;директ и&nbsp;попадает в&nbsp;твой Telegram - до&nbsp;заявки. Ни&nbsp;одна единица контента не&nbsp;выходит «просто для&nbsp;охвата»</p>
+          <div class="method-flow" role="img" aria-label="Путь зрителя: комментарий с кодовым словом, ссылка в директ, твой Telegram">
+            <span class="method-flowStep"><b>Комментарий</b><small>зритель пишет кодовое слово под&nbsp;постом</small></span>
+            <span class="method-flowLine" aria-hidden="true"></span>
+            <span class="method-flowStep"><b>Директ</b><small>ссылка уходит ему автоматически</small></span>
+            <span class="method-flowLine" aria-hidden="true"></span>
+            <span class="method-flowStep"><b>Твой Telegram</b><small>зритель внутри - до&nbsp;самой заявки</small></span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <aside class="method-ladder method-reveal" aria-label="Почему не сразу 10 в день">
+      <h3>Почему не сразу 10 в день</h3>
+      <p class="method-ladderText">Выкладывать всю пачку в&nbsp;первый же день нельзя - Instagram ограничит не&nbsp;прогретый аккаунт. Темп растёт по&nbsp;лесенке, по&nbsp;мере роста просмотров:</p>
+      <div class="method-steps" role="img" aria-label="Лесенка темпа: 1 рилс в день, затем 3, затем 5, до 10">
+        <span class="method-step"><b>1</b><small>рилс в день</small></span>
+        <span class="method-stepline" aria-hidden="true"></span>
+        <span class="method-step"><b>3</b><small>в день</small></span>
+        <span class="method-stepline" aria-hidden="true"></span>
+        <span class="method-step"><b>5</b><small>в день</small></span>
+        <span class="method-stepline" aria-hidden="true"></span>
+        <span class="method-step"><b>до 10</b><small>в день</small></span>
+      </div>
+      <p class="method-ladderFoot">Точные пороги - в&nbsp;уроке 3.5. Первые рилсы и&nbsp;посты-карусели выходят на&nbsp;следующий&nbsp;день</p>
+    </aside>
+
+    <p class="method-tempo method-reveal">Дальше контент занимает <span class="method-goldtext">час в&nbsp;день</span> - а&nbsp;не&nbsp;полдня</p>
+    <div class="method-ctaRow method-reveal" style="--d:60ms">
+      <a class="method-btn" id="methodCta" href="https://payform.ru/5fc07A8/">Забрать за 4 990 ₽</a>
+    </div>
+    <p class="method-bridge method-reveal" style="--d:120ms">Ниже - аккаунт, где этот конвейер работает прямо&nbsp;сейчас</p>
+  </div>
+</section>
+
+<section id="proof" class="proof-stage">
+  <span class="proof-goldline" aria-hidden="true"></span>
+  <div class="proof-wrap">
+    <div class="proof-grid">
+      <div class="proof-left">
+        <h2 class="proof-h2 proof-reveal">Я не блогер&nbsp;- <br>я&nbsp;<span class="proof-shine proof-goldtext">конвейер</span></h2>
+        <div class="proof-story">
+          <div class="proof-scene proof-reveal" style="--d:60ms">
+            <span class="proof-tag">Конец 2024</span>
+            <p>Я тратил три часа на один рилс: дубли, пересъёмка, монтаж. Итог&nbsp;- <strong>742&nbsp;просмотра за&nbsp;неделю</strong>. У&nbsp;других взлетает, у&nbsp;меня тишина&nbsp;- честно хотелось всё&nbsp;бросить</p>
+          </div>
+          <div class="proof-scene proof-reveal" style="--d:120ms">
+            <span class="proof-tag">Перелом</span>
+            <p>А потом мне попался чужой ролик на&nbsp;<strong>1&nbsp;300&nbsp;000 просмотров</strong>&nbsp;- снятый за&nbsp;две минуты, с&nbsp;руки, без света и&nbsp;монтажа. И&nbsp;дошло: <span class="proof-inner">я&nbsp;проигрываю не&nbsp;в&nbsp;таланте. Я&nbsp;проигрываю в&nbsp;системе</span></p>
+          </div>
+          <div class="proof-scene proof-reveal" style="--d:180ms">
+            <span class="proof-tag">Сегодня</span>
+            <p>Я перестал вылизывать один рилс и&nbsp;поставил конвейер: 10&nbsp;единиц контента в&nbsp;день, час работы, ни&nbsp;одного пропущенного дня с&nbsp;октября 2024-го. Сегодня&nbsp;- <span class="proof-bignum">более 750&nbsp;тысяч подписчиков</span>, и&nbsp;цифра растёт каждый день на&nbsp;1-3&nbsp;тысячи. Чистая органика, ни&nbsp;рубля рекламы</p>
+          </div>
+        </div>
+        <div class="proof-arc proof-reveal" style="--d:240ms" role="img" aria-label="Путь: 742 просмотра, чужой ролик на 1,3 миллиона, сегодня более 750 тысяч подписчиков">
+          <span class="proof-arcStep"><b>742</b><small>было</small></span>
+          <span class="proof-arcLine" aria-hidden="true"></span>
+          <span class="proof-arcStep"><b>1,3&nbsp;млн</b><small>чужой ролик</small></span>
+          <span class="proof-arcLine" aria-hidden="true"></span>
+          <span class="proof-arcStep"><b>750&nbsp;000+</b><small>сегодня у&nbsp;меня</small></span>
+        </div>
+      </div>
+      <figure class="proof-figure proof-reveal" style="--d:120ms">
+        <img src="assets/proof-ivan.jpg" width="1000" height="1333" alt="Иван Логинов" loading="lazy">
+        <figcaption class="proof-figcap">Иван Логинов - автор конвейера</figcaption>
+      </figure>
+    </div>
+
+    <div class="proof-strip proof-reveal">
+      <p class="proof-stripHead">Рилз и карусели моего конвейера</p>
+      <div class="proof-cards">
+        <a class="proof-card" href="https://www.instagram.com/p/DaI4rPECLJF/" target="_blank" rel="noopener">
+          <span class="proof-cardTop"><span>карусель из ленты</span><span>открыть в Instagram</span></span>
+          <img src="assets/proof-DaI4rPECLJF.jpg" width="640" height="800" alt="Карусель в Instagram: 34 339 лайков" loading="lazy">
+          <span class="proof-cardMeta"><b>34 339 лайков</b></span>
+        </a>
+        <a class="proof-card proof-cardReel" href="https://www.instagram.com/reel/DWyFRC4iLzB/" target="_blank" rel="noopener">
+          <span class="proof-cardTop"><span>рилз из ленты</span><span>открыть в Instagram</span></span>
+          <img src="assets/proof-reel-DWyFRC4iLzB.jpg" width="640" height="1138" alt="Рилз в Instagram: более миллиона просмотров" loading="lazy">
+          <span class="proof-cardMeta"><b>1 000 000+ просмотров</b></span>
+        </a>
+      </div>
+      <p class="proof-stripNote">Нажми на рилз или карусель - откроется этот пост в&nbsp;Instagram. Цифры на&nbsp;месте</p>
+    </div>
+
+    <p class="proof-verify proof-reveal">Не веришь&nbsp;- <span style="white-space:nowrap">открой и&nbsp;проверь:</span> <a class="proof-goldtext" href="https://www.instagram.com/ivan.loginov_ai" target="_blank" rel="noopener">@ivan.loginov_ai</a></p>
+    <p class="proof-verifySub proof-reveal" style="--d:60ms">Аккаунт растёт на этом конвейере прямо&nbsp;сейчас</p>
+
+    <aside class="proof-plain proof-reveal">
+      <b>До блога: завод, покер, шахты, Сибирь</b>
+      <span>Если смог обычный мужик&nbsp;-&nbsp;сможешь&nbsp;и&nbsp;ты</span>
+    </aside>
+  </div>
+</section>
+
+<section id="cases" class="cases-stage">
+  <span class="cases-goldline" aria-hidden="true"></span>
+  <div class="cases-wrap">
+    <h2 class="cases-h2 cases-reveal">Кейсы</h2>
+    <div class="cases-display cases-reveal" role="heading" aria-level="2" aria-label="Штамповать как ты - слово ученика, которое прижилось">
+      <span class="cases-shine cases-goldtext">«Штамповать как&nbsp;ты»</span>
+    </div>
+    <div class="cases-displayTail cases-reveal" aria-hidden="true">слово ученика, которое&nbsp;прижилось</div>
+    <p class="cases-lead cases-reveal" style="--d:60ms">Так сформулировал задачу один из учеников на&nbsp;созвоне - и&nbsp;точнее про конвейер не&nbsp;скажешь. Скорость - как у&nbsp;меня - появляется примерно за&nbsp;две недели практики: это моё наблюдение, не&nbsp;обещание</p>
+
+    <div class="cases-grid">
+      <article class="cases-card cases-reveal" aria-label="Кейс: Алексей Петручик, психолог">
+        <span class="cases-pill">ПСИХОЛОГ</span>
+        <div class="cases-name">
+          <b>Алексей Петручик</b>
+          <a class="cases-handle" href="https://www.instagram.com/alexei_forsoul" target="_blank" rel="noopener">@alexei_forsoul</a>
+        </div>
+        <p class="cases-check">Аккаунт открыт - нажми и&nbsp;проверь</p>
+        <figure class="cases-shotFig">
+          <img src="assets/cases/case-aleksei.jpg" width="591" height="738" alt="Скрин профиля @alexei_forsoul: 2 500 подписчиков, рилсы на 545 и 385 тысяч просмотров" loading="lazy">
+        </figure>
+        <div class="cases-stats">
+          <div class="cases-stat">
+            <b>2&nbsp;500+</b>
+            <small>подписчиков за&nbsp;21&nbsp;день - с&nbsp;нуля</small>
+          </div>
+          <div class="cases-stat">
+            <b>541&nbsp;034</b>
+            <small>просмотра на&nbsp;одном 8-секундном рилсе - и&nbsp;750&nbsp;подписок с&nbsp;ролика</small>
+          </div>
+        </div>
+        <blockquote class="cases-quote">«Самая бесперспективная видеоподложка, в&nbsp;которую не&nbsp;было веры&nbsp;-&nbsp;стала Чемпионом. Дело в&nbsp;подходе и&nbsp;Мастере, у&nbsp;которого учишься»</blockquote>
+      </article>
+
+      <article class="cases-card cases-reveal" style="--d:60ms" aria-label="Кейс: Саша, перманентный макияж, блог без лица">
+        <span class="cases-pill">БЕЗ ЛИЦА</span>
+        <div class="cases-name">
+          <b>Саша</b>
+          <a class="cases-handle" href="https://www.instagram.com/greshnica.ya" target="_blank" rel="noopener">@greshnica.ya</a>
+        </div>
+        <p class="cases-check">Мастер перманента - нажми и&nbsp;проверь</p>
+        <figure class="cases-shotFig">
+          <img src="assets/cases/case-sasha.jpg" width="590" height="737" alt="Скрин проф-панели @greshnica.ya: 5 154 подписчика, 9,4 млн просмотров за 30 дней" loading="lazy">
+        </figure>
+        <div class="cases-stats">
+          <div class="cases-stat">
+            <b>5&nbsp;154</b>
+            <small>подписчика за&nbsp;18&nbsp;дней - с&nbsp;нуля</small>
+          </div>
+          <div class="cases-stat">
+            <b>9,4&nbsp;млн</b>
+            <small>просмотров за&nbsp;последние 30&nbsp;дней</small>
+          </div>
+        </div>
+        <blockquote class="cases-quote">«Главный инсайт, что&nbsp;на&nbsp;блог без&nbsp;лица тоже могут подписываться&nbsp;люди»</blockquote>
+      </article>
+
+      <article class="cases-card cases-reveal" style="--d:120ms" aria-label="Кейс: Мирослава Дмитриева, ИИ и бизнес">
+        <span class="cases-pill">ИИ И БИЗНЕС</span>
+        <div class="cases-name">
+          <b>Мирослава Дмитриева</b>
+          <a class="cases-handle" href="https://www.instagram.com/miroslava_dmitrieva/" target="_blank" rel="noopener">@miroslava_dmitrieva</a>
+        </div>
+        <p class="cases-check">Аккаунт открыт - нажми и&nbsp;проверь</p>
+        <figure class="cases-shotFig">
+          <img src="assets/cases/case-miroslava.jpg" width="640" height="800" alt="Скрин профиля @miroslava_dmitrieva: 18 600 подписчиков" loading="lazy">
+        </figure>
+        <div class="cases-stats">
+          <div class="cases-stat">
+            <b>1&nbsp;000</b>
+            <small>подписчиков за&nbsp;первые 6&nbsp;дней</small>
+          </div>
+          <div class="cases-stat">
+            <b>18&nbsp;600</b>
+            <small>сегодня, через три месяца - проверь по&nbsp;нику</small>
+          </div>
+        </div>
+        <blockquote class="cases-quote">«Ну что&nbsp;ж… 1000&nbsp;подписчиков. За&nbsp;6&nbsp;дней. Кайф и&nbsp;спасибо»</blockquote>
+      </article>
+    </div>
+
+    <p class="cases-bridge cases-reveal" style="--d:120ms">Думаешь «а&nbsp;если у&nbsp;меня не&nbsp;получится»? На&nbsp;этот случай ниже стоит <b>100%&nbsp;Гарантия</b> - рядом с&nbsp;ценой. А&nbsp;сначала - из&nbsp;чего собран конвейер</p>
+  </div>
+</section>
+
+<section id="inside" class="inside-stage">
+  <span class="inside-goldline" aria-hidden="true"></span>
+  <div class="inside-wrap">
+    <h2 class="inside-h2 inside-reveal">Что внутри:</h2>
+    <div class="inside-display inside-reveal" role="heading" aria-level="2" aria-label="7 модулей, 22 урока плюс пять рабочих инструментов">
+      <span class="inside-shine inside-goldtext">7&nbsp;модулей, 22&nbsp;урока</span><br>+&nbsp;пять&nbsp;рабочих инструментов
+    </div>
+
+    <div class="inside-map inside-reveal" style="--d:60ms">
+      <span class="inside-mapNum" aria-hidden="true">00</span>
+      <div>
+        <h3>Карта конвейера</h3>
+        <p>Что будет в&nbsp;твоём аккаунте к&nbsp;концу прохождения</p>
+        <span class="inside-mapMeta">1&nbsp;урок</span>
+      </div>
+    </div>
+
+    <div class="inside-grid">
+      <div class="inside-mod inside-reveal">
+        <span class="inside-modNum" aria-hidden="true">01</span>
+        <h3>Распаковка: твоё облако смыслов</h3>
+        <p>О&nbsp;чём тебе снимать, чтобы это было&nbsp;твоё</p>
+        <span class="inside-modMeta">2&nbsp;урока</span>
+      </div>
+      <div class="inside-mod inside-reveal" style="--d:60ms">
+        <span class="inside-modNum" aria-hidden="true">02</span>
+        <h3>Темы, которые уже залетели</h3>
+        <p>Фильтруешь банк из&nbsp;700+ триггерных постов через своё облако + кастомный GPT для заголовков с&nbsp;нуля</p>
+        <span class="inside-modMeta">3&nbsp;урока</span>
+      </div>
+      <div class="inside-mod inside-reveal" style="--d:120ms">
+        <span class="inside-modNum" aria-hidden="true">03</span>
+        <h3>Рилсы: 10 штук за час</h3>
+        <p>Съёмка 5-7&nbsp;секунд с&nbsp;руки, фейслесс и&nbsp;цифровой двойник</p>
+        <span class="inside-badge">Первый рилс - уже&nbsp;сегодня</span>
+        <span class="inside-modMeta">6&nbsp;уроков</span>
+      </div>
+      <div class="inside-mod inside-reveal" style="--d:180ms">
+        <span class="inside-modNum" aria-hidden="true">04</span>
+        <h3>Карусели за 5 минут</h3>
+        <p>Из&nbsp;рилса в&nbsp;карусель, двойной выхлоп с&nbsp;одной идеи</p>
+        <span class="inside-modMeta">2&nbsp;урока</span>
+      </div>
+      <div class="inside-mod inside-reveal" style="--d:240ms">
+        <span class="inside-modNum" aria-hidden="true">05</span>
+        <h3>Связка до заявки</h3>
+        <div class="inside-flow" role="img" aria-label="Цепочка: кодовое слово, Telegram, заявка">
+          <span class="inside-flowChip">кодовое слово</span>
+          <span class="inside-flowLine" aria-hidden="true"></span>
+          <span class="inside-flowChip">Telegram</span>
+          <span class="inside-flowLine" aria-hidden="true"></span>
+          <span class="inside-flowChip">заявка</span>
+        </div>
+        <p>Автоворонка по&nbsp;шагам: автоответ в&nbsp;директе, посадочный пост, первые посты&nbsp;канала</p>
+        <span class="inside-modMeta">4&nbsp;урока</span>
+      </div>
+      <div class="inside-mod inside-reveal" style="--d:300ms">
+        <span class="inside-modNum" aria-hidden="true">06</span>
+        <h3>Режим конвейера</h3>
+        <p>Час утром, пакетный режим, чек&#8209;лист «заявок нет» и&nbsp;методичка по&nbsp;блокировкам и&nbsp;прогреву</p>
+        <span class="inside-modMeta">4&nbsp;урока</span>
+      </div>
+    </div>
+
+    <h3 class="inside-toolsHead inside-reveal">Пять рабочих <span class="inside-goldtext">инструментов</span></h3>
+    <p class="inside-toolsLead inside-reveal" style="--d:60ms">Остаются у&nbsp;тебя вместе с&nbsp;курсом - забираешь сразу</p>
+    <div class="inside-tools">
+      <div class="inside-tool inside-toolBank inside-reveal">
+        <b>Банк 700 залетевших тем с&nbsp;готовыми текстами</b>
+        <span class="inside-proof">каждая проверена реальными охватами моего&nbsp;аккаунта</span>
+      </div>
+      <div class="inside-tool inside-reveal" style="--d:60ms">
+        <b>Промпты и&nbsp;шаблоны триггерных заголовков</b>
+      </div>
+      <div class="inside-tool inside-reveal" style="--d:120ms">
+        <b>Кастомный GPT: триггерные тексты с&nbsp;нуля из&nbsp;твоей темы</b>
+      </div>
+      <div class="inside-tool inside-reveal" style="--d:180ms">
+        <b>Методичка по&nbsp;блокировкам и&nbsp;прогреву аккаунта</b>
+      </div>
+      <div class="inside-tool inside-reveal" style="--d:240ms">
+        <b>Методичка по&nbsp;оплате нейросетей из&nbsp;России</b>
+      </div>
+    </div>
+
+    <ul class="inside-terms inside-reveal">
+      <li>Уроки по&nbsp;5-15&nbsp;минут, каждый заканчивается действием в&nbsp;твоём&nbsp;аккаунте</li>
+      <li>Всё с&nbsp;телефона - ноутбук не&nbsp;нужен</li>
+      <li>Доступ без&nbsp;ограничения срока и&nbsp;без&nbsp;абонплаты</li>
+    </ul>
+
+    <p class="inside-tempo inside-reveal">Каждый урок - на&nbsp;живом примере <span class="inside-goldtext">моего аккаунта</span></p>
+    <div class="inside-ctaRow inside-reveal" style="--d:60ms">
+      <a class="inside-btn" id="insideCta" href="https://payform.ru/5fc07A8/">Забрать за 4 990 ₽</a>
+    </div>
+  </div>
+</section>
+
+<section id="pricing" class="pricing-stage">
+  <span class="pricing-goldline" aria-hidden="true"></span>
+  <div class="pricing-wrap">
+    <h2 class="pricing-h2 pricing-reveal">Цена</h2>
+    <div class="pricing-display pricing-reveal" role="heading" aria-level="2" aria-label="Один курс - вместо месяца подписок">
+      Один курс&nbsp;- <span class="pricing-shine pricing-goldtext">вместо месяца&nbsp;подписок</span>
+    </div>
+
+    <p class="pricing-anchor pricing-reveal" style="--d:60ms">Генератор каруселей стоит 1&nbsp;990-4&nbsp;990&nbsp;₽ в&nbsp;месяц. Сервис кодовых слов - от&nbsp;2&nbsp;000&nbsp;₽ в&nbsp;месяц. <b>Пара месяцев таких подписок - дороже всего курса</b>, а&nbsp;здесь конвейер остаётся с&nbsp;тобой без&nbsp;абонплаты</p>
+    <p class="pricing-anchorNote pricing-reveal" style="--d:120ms">Цены сервисов - на&nbsp;дату публикации</p>
+
+    <div id="pay" class="pricing-card pricing-reveal" style="--d:120ms">
+      <div class="pricing-name">КОНТЕНТ-ЗАВОД</div>
+      <div class="pricing-price"><span class="pricing-priceShine pricing-goldtext">4&nbsp;990&nbsp;₽</span></div>
+      <p class="pricing-compo">Все 7&nbsp;модулей, 22&nbsp;урока +&nbsp;пять рабочих&nbsp;инструментов</p>
+      <a class="pricing-btn" id="pricingCta" href="https://payform.ru/5fc07A8/">Забрать за 4 990 ₽</a>
+      <div class="pricing-guarantee">
+        <b>100% Гарантия</b>
+        <p>Выложи 30&nbsp;рилсов по&nbsp;темам из&nbsp;уроков. Ни&nbsp;один не&nbsp;набрал 1000&nbsp;просмотров? Верну деньги в&nbsp;течение 10&nbsp;дней. Достаточно одного скрина статистики</p>
+        <small class="pricing-guaranteeTerm">Гарантия действует 30&nbsp;дней с&nbsp;момента покупки</small>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section id="faq-final" class="faq-stage">
+  <span class="faq-goldline" aria-hidden="true"></span>
+  <div class="faq-wrap">
+    <h2 class="faq-display faq-reveal">Вопросы, которые у&nbsp;тебя <span class="faq-goldtext">сейчас в&nbsp;голове</span></h2>
+
+    <div class="faq-list">
+      <details class="faq-item faq-reveal" open>
+        <summary class="faq-q"><span class="faq-qtext">«Я уже покупал курсы - деньги отдал, курс не&nbsp;прошёл, ничего не&nbsp;изменилось»</span><span class="faq-plus" aria-hidden="true"></span></summary>
+        <p class="faq-a">Поэтому это не&nbsp;курс на&nbsp;три месяца, а&nbsp;за&nbsp;выходные. Результат - не&nbsp;«знания», а&nbsp;физическая пачка рилсов и&nbsp;каруселей у&nbsp;тебя в&nbsp;аккаунте к&nbsp;завтрашнему дню. Проходишь в&nbsp;своём темпе, с&nbsp;телефона, доступ без&nbsp;ограничения срока. Не&nbsp;пройти его сложнее, чем&nbsp;пройти</p>
+      </details>
+      <details class="faq-item faq-reveal" style="--d:40ms">
+        <summary class="faq-q"><span class="faq-qtext">«Я боюсь камеры, мне не&nbsp;нравится, как я&nbsp;выгляжу на&nbsp;видео»</span><span class="faq-plus" aria-hidden="true"></span></summary>
+        <p class="faq-a">Рилс по&nbsp;методу - это 5-7&nbsp;секунд с&nbsp;руки на&nbsp;селфи-камеру, без&nbsp;«держись увереннее». Совсем не&nbsp;хочешь показывать лицо - фейслесс-формат или цифровой двойник в&nbsp;нейросети. В&nbsp;курсе нет ни&nbsp;одного урока про&nbsp;уверенность в&nbsp;кадре - страх камеры решается форматом, а&nbsp;не&nbsp;работой над&nbsp;личностью</p>
+      </details>
+      <details class="faq-item faq-reveal" style="--d:80ms">
+        <summary class="faq-q"><span class="faq-qtext">«Сколько времени это займёт?»</span><span class="faq-plus" aria-hidden="true"></span></summary>
+        <p class="faq-a">Быстрый проход - за&nbsp;выходные, спокойный - за&nbsp;неделю: уроки по&nbsp;5-15&nbsp;минут, каждый заканчивается действием. Дальше контент занимает час в&nbsp;день. Жёсткого дедлайна нет - доступ не&nbsp;сгорает</p>
+      </details>
+      <details class="faq-item faq-reveal" style="--d:120ms">
+        <summary class="faq-q"><span class="faq-qtext">«Нейросети выдают шаблонные тексты без&nbsp;души»</span><span class="faq-plus" aria-hidden="true"></span></summary>
+        <p class="faq-a">Так и&nbsp;есть - если жать кнопку без&nbsp;системы. Мы не&nbsp;генерим из&nbsp;головы: берём темы, которые уже виралятся в&nbsp;твоей нише, и&nbsp;адаптируем под&nbsp;твою тему и&nbsp;твой голос. Нейросеть здесь - конвейер внутри системы, а&nbsp;не&nbsp;замена смысла</p>
+      </details>
+      <details class="faq-item faq-reveal" style="--d:160ms">
+        <summary class="faq-q"><span class="faq-qtext">«Когда ждать результат?»</span><span class="faq-plus" aria-hidden="true"></span></summary>
+        <p class="faq-a">Честно: к&nbsp;понедельнику - готовая пачка контента в&nbsp;аккаунте и&nbsp;включённая связка до&nbsp;заявки. Дальше объём набирается по&nbsp;лесенке, и&nbsp;темп у&nbsp;всех разный - зависит от&nbsp;ниши и&nbsp;исполнения. Цифру подписчиков не&nbsp;обещаю. Обещаю то, что&nbsp;контролируемо: контент, конвейер и&nbsp;путь до&nbsp;заявки</p>
+      </details>
+      <details class="faq-item faq-reveal" style="--d:200ms">
+        <summary class="faq-q"><span class="faq-qtext">«А если у&nbsp;меня не&nbsp;получится?»</span><span class="faq-plus" aria-hidden="true"></span></summary>
+        <p class="faq-a">На&nbsp;этот случай стоит 100%&nbsp;Гарантия - полные условия рядом с&nbsp;ценой выше. Сделал объём по&nbsp;методу, результата нет - верну деньги по&nbsp;одному скрину статистики</p>
+      </details>
+      <details class="faq-item faq-reveal" style="--d:240ms">
+        <summary class="faq-q"><span class="faq-qtext">«Что нужно из&nbsp;техники?»</span><span class="faq-plus" aria-hidden="true"></span></summary>
+        <p class="faq-a">Телефон. Всё - от&nbsp;съёмки до&nbsp;отложки - делается с&nbsp;телефона, ноутбук не&nbsp;нужен</p>
+      </details>
+    </div>
+
+    <div class="faq-final faq-reveal" style="--d:120ms">
+      <p class="faq-finalLine">За&nbsp;выходные - <span class="faq-shine faq-goldtext">пачка контента в&nbsp;аккаунте</span> и&nbsp;включённая автоворонка: кодовое слово ведёт зрителя в&nbsp;твой Telegram до&nbsp;заявки</p>
+      <p class="faq-stakes">Или оставь как есть - и&nbsp;дальше по&nbsp;несколько часов на&nbsp;один пост ради «прям нескольких человек»</p>
+      <a class="faq-btn" id="faqCta" href="https://payform.ru/5fc07A8/">Забрать за 4 990 ₽</a>
+    </div>
+  </div>
+
+  <footer class="faq-footer">
+    <span class="faq-footerLine" aria-hidden="true"></span>
+    <div class="faq-footerWrap">
+      <p>Обучение методу. Не&nbsp;гарантирую доход, число подписчиков или заявок - результат зависит от&nbsp;ниши и&nbsp;исполнения</p>
+      <p>Meta Platforms Inc. признана экстремистской организацией, её&nbsp;деятельность запрещена на&nbsp;территории&nbsp;РФ</p>
+      <p class="faq-requisites">ИП&nbsp;Логинов&nbsp;Иван&nbsp;Владимирович<span class="faq-dot">·</span>ИНН&nbsp;420529937430<span class="faq-dot">·</span>ОГРНИП&nbsp;326420500041676<span class="faq-dot">·</span><a class="faq-legal" href="oferta.html">оферта</a><span class="faq-dot">·</span><a class="faq-legal" href="vozvrat.html">политика возврата</a><span class="faq-dot">·</span><a class="faq-legal" href="privacy.html">конфиденциальность</a></p>
+    </div>
+  </footer>
+</section>
+<script defer>
+/* hero */
+// магнетик только на CTA, subtle, за hover-медиа
+(function(){
+  if(matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+  if(!matchMedia('(hover:hover) and (pointer:fine)').matches) return;
+  var b=document.getElementById('heroCta'); if(!b) return;
+  var r;
+  b.addEventListener('pointermove',function(e){
+    r=r||b.getBoundingClientRect();
+    var dx=(e.clientX-r.left-r.width/2)/r.width, dy=(e.clientY-r.top-r.height/2)/r.height;
+    b.style.transform='translate('+(dx*6).toFixed(1)+'px,'+(dy*5).toFixed(1)+'px)';
+  });
+  b.addEventListener('pointerleave',function(){ b.style.transform=''; r=null; });
+})();
+/* pain */
+(function(){
+  var els=document.querySelectorAll('.pain-reveal');
+  if(matchMedia('(prefers-reduced-motion: reduce)').matches || !('IntersectionObserver' in window)){
+    els.forEach(function(e){e.classList.add('in')}); return;
+  }
+  var io=new IntersectionObserver(function(entries){
+    entries.forEach(function(en){
+      if(en.isIntersecting){ en.target.classList.add('in'); io.unobserve(en.target); }
+    });
+  },{threshold:.18, rootMargin:'0px 0px -6% 0px'});
+  els.forEach(function(e){io.observe(e)});
+})();
+/* method */
+(function(){
+  var els=document.querySelectorAll('.method-reveal');
+  if(matchMedia('(prefers-reduced-motion: reduce)').matches || !('IntersectionObserver' in window)){
+    els.forEach(function(e){e.classList.add('in')}); return;
+  }
+  var io=new IntersectionObserver(function(entries){
+    entries.forEach(function(en){
+      if(en.isIntersecting){ en.target.classList.add('in'); io.unobserve(en.target); }
+    });
+  },{threshold:.18, rootMargin:'0px 0px -6% 0px'});
+  els.forEach(function(e){io.observe(e)});
+  if(matchMedia('(hover:hover) and (pointer:fine)').matches){
+    var b=document.getElementById('methodCta');
+    if(b){
+      var r;
+      b.addEventListener('pointermove',function(e){
+        r=r||b.getBoundingClientRect();
+        var dx=(e.clientX-r.left-r.width/2)/r.width, dy=(e.clientY-r.top-r.height/2)/r.height;
+        b.style.transform='translate('+(dx*6).toFixed(1)+'px,'+(dy*5).toFixed(1)+'px)';
+      });
+      b.addEventListener('pointerleave',function(){ b.style.transform=''; r=null; });
+    }
+  }
+})();
+/* proof */
+(function(){
+  var els=document.querySelectorAll('.proof-reveal');
+  if(matchMedia('(prefers-reduced-motion: reduce)').matches || !('IntersectionObserver' in window)){
+    els.forEach(function(e){e.classList.add('in')}); return;
+  }
+  var io=new IntersectionObserver(function(entries){
+    entries.forEach(function(en){
+      if(en.isIntersecting){ en.target.classList.add('in'); io.unobserve(en.target); }
+    });
+  },{threshold:.18, rootMargin:'0px 0px -6% 0px'});
+  els.forEach(function(e){io.observe(e)});
+})();
+/* cases */
+(function(){
+  var els=document.querySelectorAll('.cases-reveal');
+  if(matchMedia('(prefers-reduced-motion: reduce)').matches || !('IntersectionObserver' in window)){
+    els.forEach(function(e){e.classList.add('in')}); return;
+  }
+  var io=new IntersectionObserver(function(entries){
+    entries.forEach(function(en){
+      if(en.isIntersecting){ en.target.classList.add('in'); io.unobserve(en.target); }
+    });
+  },{threshold:.18, rootMargin:'0px 0px -6% 0px'});
+  els.forEach(function(e){io.observe(e)});
+})();
+/* inside */
+(function(){
+  var els=document.querySelectorAll('.inside-reveal');
+  if(matchMedia('(prefers-reduced-motion: reduce)').matches || !('IntersectionObserver' in window)){
+    els.forEach(function(e){e.classList.add('in')}); return;
+  }
+  var io=new IntersectionObserver(function(entries){
+    entries.forEach(function(en){
+      if(en.isIntersecting){ en.target.classList.add('in'); io.unobserve(en.target); }
+    });
+  },{threshold:.18, rootMargin:'0px 0px -6% 0px'});
+  els.forEach(function(e){io.observe(e)});
+  if(matchMedia('(hover:hover) and (pointer:fine)').matches){
+    var b=document.getElementById('insideCta');
+    if(b){
+      var r;
+      b.addEventListener('pointermove',function(e){
+        r=r||b.getBoundingClientRect();
+        var dx=(e.clientX-r.left-r.width/2)/r.width, dy=(e.clientY-r.top-r.height/2)/r.height;
+        b.style.transform='translate('+(dx*6).toFixed(1)+'px,'+(dy*5).toFixed(1)+'px)';
+      });
+      b.addEventListener('pointerleave',function(){ b.style.transform=''; r=null; });
+    }
+  }
+})();
+/* pricing */
+(function(){
+  var els=document.querySelectorAll('.pricing-reveal');
+  if(matchMedia('(prefers-reduced-motion: reduce)').matches || !('IntersectionObserver' in window)){
+    els.forEach(function(e){e.classList.add('in')}); return;
+  }
+  var io=new IntersectionObserver(function(entries){
+    entries.forEach(function(en){
+      if(en.isIntersecting){ en.target.classList.add('in'); io.unobserve(en.target); }
+    });
+  },{threshold:.18, rootMargin:'0px 0px -6% 0px'});
+  els.forEach(function(e){io.observe(e)});
+  if(matchMedia('(hover:hover) and (pointer:fine)').matches){
+    var b=document.getElementById('pricingCta');
+    if(b){
+      var r;
+      b.addEventListener('pointermove',function(e){
+        r=r||b.getBoundingClientRect();
+        var dx=(e.clientX-r.left-r.width/2)/r.width, dy=(e.clientY-r.top-r.height/2)/r.height;
+        b.style.transform='translate('+(dx*6).toFixed(1)+'px,'+(dy*5).toFixed(1)+'px)';
+      });
+      b.addEventListener('pointerleave',function(){ b.style.transform=''; r=null; });
+    }
+  }
+})();
+/* faq-final */
+(function(){
+  var els=document.querySelectorAll('.faq-reveal');
+  if(matchMedia('(prefers-reduced-motion: reduce)').matches || !('IntersectionObserver' in window)){
+    els.forEach(function(e){e.classList.add('in')}); return;
+  }
+  var t0=performance.now();
+  var io=new IntersectionObserver(function(entries){
+    entries.forEach(function(en){
+      if(en.isIntersecting){
+        /* одиночный вход на скролле - без мёртвой паузы stagger */
+        if(performance.now()-t0>1200){ en.target.style.transitionDelay='0ms'; }
+        en.target.classList.add('in'); io.unobserve(en.target);
+      }
+    });
+  },{threshold:.18, rootMargin:'0px 0px -6% 0px'});
+  els.forEach(function(e){io.observe(e)});
+  if(matchMedia('(hover:hover) and (pointer:fine)').matches){
+    var b=document.getElementById('faqCta');
+    if(b){
+      b.addEventListener('pointermove',function(e){
+        var r=b.getBoundingClientRect();
+        var dx=(e.clientX-r.left-r.width/2)/r.width, dy=(e.clientY-r.top-r.height/2)/r.height;
+        b.style.setProperty('--mx',(dx*6).toFixed(1)+'px');
+        b.style.setProperty('--my',(dy*5).toFixed(1)+'px');
+      });
+      b.addEventListener('pointerleave',function(){
+        b.style.setProperty('--mx','0px'); b.style.setProperty('--my','0px');
+      });
+    }
+  }
+})();
+</script>
+</body>
+</html>
