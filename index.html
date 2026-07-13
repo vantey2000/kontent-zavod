@@ -46,6 +46,33 @@ body{
   font-size:16px; line-height:1.6; overflow-x:hidden;
 }
 
+/* ═══ атмосфера цеха: рельсы конвейера ═══ */
+.bg-rails{
+  position:fixed; inset:0; z-index:-1; pointer-events:none;
+  -webkit-mask-image:linear-gradient(180deg, transparent, #000 14%, #000 86%, transparent);
+  mask-image:linear-gradient(180deg, transparent, #000 14%, #000 86%, transparent);
+}
+.bg-rails::before{ /* направляющие по краям контентной колонны */
+  content:""; position:absolute; top:0; bottom:0; left:50%; transform:translateX(-50%);
+  width:min(1240px, calc(100vw - 32px));
+  border-left:1px solid rgba(223,182,92,.10);
+  border-right:1px solid rgba(223,182,92,.10);
+}
+.bg-rails::after{ /* внутренние рельсы на третях */
+  content:""; position:absolute; top:0; bottom:0; left:50%; transform:translateX(-50%);
+  width:min(1240px, calc(100vw - 32px));
+  background:
+    linear-gradient(rgba(223,182,92,.05), rgba(223,182,92,.05)) 33.4% 0/1px 100% no-repeat,
+    linear-gradient(rgba(223,182,92,.05), rgba(223,182,92,.05)) 66.7% 0/1px 100% no-repeat;
+}
+@media (max-width:700px){
+  .bg-rails::after{content:none}
+}
+/* слои цеха: тёплый подсвет от золотой линии на входе секции */
+.pain-stage,.cases-stage,.pricing-stage{
+  background:linear-gradient(180deg, rgba(223,182,92,.05), rgba(223,182,92,.015) 240px, rgba(223,182,92,0) 620px);
+}
+
 /* ═══ экран hero ═══ */
 /* атмосфера: зерно + одно тёплое свечение */
 .hero-stage{position:relative; min-height:100svh; isolation:isolate; overflow:clip}
@@ -1106,6 +1133,13 @@ body{
   background-image:radial-gradient(rgba(255,255,255,.045) .5px,transparent .5px);
   background-size:3px 3px;
 }
+.pricing-stage::after{ /* одно тёплое свечение за карточкой тарифа, принцип одного источника света */
+  content:""; position:absolute; z-index:-1; pointer-events:none;
+  left:50%; top:52%; width:72vw; height:72vw; max-width:760px; max-height:760px;
+  transform:translate(-50%,-50%);
+  background:radial-gradient(circle, rgba(201,162,75,.13), rgba(201,162,75,.04) 45%, transparent 68%);
+  filter:blur(12px);
+}
 .pricing-goldline{
   display:block; height:1px; border:0; max-width:1200px; margin:0 auto;
   background:linear-gradient(90deg, var(--gold-2), rgba(203,155,50,0) 72%);
@@ -1364,6 +1398,7 @@ body{
 </style>
 </head>
 <body>
+<div class="bg-rails" aria-hidden="true"></div>
 <section id="hero" class="hero-stage">
   <header class="hero-mast">
     <span class="hero-nick hero-goldtext">Иван Логинов</span>
