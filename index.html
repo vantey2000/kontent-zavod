@@ -232,9 +232,13 @@ section{position:relative;scroll-margin-top:76px}
 .method-steps{display:flex;align-items:flex-end;gap:14px;margin:26px 0 10px}
 .method-step{flex:1;text-align:center}
 .method-step .bar{display:block;border-radius:8px 8px 4px 4px;background:linear-gradient(to top,rgba(5,230,247,.25),var(--cyan));box-shadow:0 0 18px -4px rgba(5,230,247,.6);margin-bottom:12px}
-.method-step b{display:block;font-size:clamp(28px,3vw,40px);line-height:1.1;font-weight:700;color:var(--ink);font-variant-numeric:tabular-nums}
+.method-step b{display:block;font-size:clamp(22px,3vw,40px);line-height:1.1;font-weight:700;color:var(--ink);font-variant-numeric:tabular-nums;white-space:nowrap}
 .method-step:last-child b{background:var(--grad);-webkit-background-clip:text;background-clip:text;color:transparent;padding-bottom:.06em}
-.method-step small{display:block;margin-top:4px;font-size:10px;font-weight:600;letter-spacing:.12em;text-transform:uppercase;color:var(--dim)}
+.method-step small{display:block;margin-top:4px;font-size:10px;font-weight:600;letter-spacing:.12em;text-transform:uppercase;color:var(--dim);white-space:nowrap}
+@media(max-width:640px){
+  .method-steps{gap:10px}
+  .method-step small{font-size:8px;letter-spacing:.05em}
+}
 .method-ladderFoot{font-size:13.5px!important;color:var(--txt2)!important;margin-top:16px}
 .method-tempo{margin-top:64px;text-align:center;font-size:clamp(22px,2.6vw,30px);font-weight:600;color:var(--ink)}
 .method-ctaRow{display:flex;justify-content:center;margin-top:30px}
