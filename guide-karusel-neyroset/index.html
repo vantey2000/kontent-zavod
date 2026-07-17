@@ -1,0 +1,257 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Как сделать карусель для Инстаграм нейросетью: гайд с телефона</title>
+<meta name="description" content="Пошаговый план: бесплатная нейросеть пишет текст карусели, Canva собирает слайды 1080 на 1350. Готовый запрос, точные клики и частые грабли - всё с телефона">
+<link rel="canonical" href="https://ivan-loginov.ru/guide-karusel-neyroset/">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Как сделать карусель для Инстаграм нейросетью: гайд с телефона">
+<meta property="og:description" content="Нейросеть пишет текст, Canva собирает слайды. Первый раз - за вечер, дальше 10-15 минут на карусель">
+<meta property="og:url" content="https://ivan-loginov.ru/guide-karusel-neyroset/">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Rubik:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<script type="application/ld+json">
+{"@context":"https://schema.org","@type":"Article","headline":"Как сделать карусель для Instagram нейросетью: пошагово с телефона","inLanguage":"ru","author":{"@type":"Person","name":"Иван Логинов","url":"https://ivan-loginov.ru/"},"mainEntityOfPage":"https://ivan-loginov.ru/guide-karusel-neyroset/","keywords":"как сделать карусель для инстаграм нейросетью"}
+</script>
+<style>
+:root{
+  --bg:#1F1F1F; --bg2:#141414; --panel:#1A1A1A; --panel2:#0F0F0F;
+  --ink:#EDFEFF; --txt:#A6A6A6; --txt2:#858585; --dim:#5A5A5A;
+  --line:#2A2A2A; --line2:#262626; --line3:#333333;
+  --cyan:#05E6F7; --teal:#23676C;
+  --c40:rgba(5,230,247,.4); --c35:rgba(5,230,247,.35); --c25:rgba(5,230,247,.25);
+  --c15:rgba(5,230,247,.15); --c12:rgba(5,230,247,.12); --c08:rgba(5,230,247,.08);
+  --grad:linear-gradient(to bottom right,#05E6F7,#23676C);
+  --grad-hero:linear-gradient(to bottom right,#EDFEFF 15%,#05E6F7 55%,#23676C 100%);
+  --grad-tile:linear-gradient(to bottom right,rgba(5,230,247,.2),rgba(35,103,108,.2));
+  --ease:cubic-bezier(.4,0,.2,1);
+  --glow-btn:0 0 40px -8px rgba(5,230,247,.7);
+  --shadow-card:0 30px 80px -20px rgba(0,0,0,.7);
+  --font:'Rubik',system-ui,-apple-system,'Segoe UI',Roboto,sans-serif;
+  --mono:ui-monospace,SFMono-Regular,Menlo,monospace;
+}
+*{margin:0;padding:0;box-sizing:border-box}
+html{scroll-behavior:smooth;overflow-x:clip}
+body{background:var(--bg);color:var(--ink);font-family:var(--font);font-size:18px;line-height:1.62;-webkit-font-smoothing:antialiased;overflow-x:clip}
+@supports not (overflow:clip){html,body{overflow-x:hidden}}
+img{max-width:100%;height:auto;display:block}
+a{color:inherit;text-decoration:none}
+b,strong{font-weight:600;color:var(--ink)}
+.wrap{max-width:760px;margin-inline:auto;padding-inline:24px;position:relative;z-index:2}
+.acc{background:var(--grad);-webkit-background-clip:text;background-clip:text;color:transparent}
+.acc-hero{background:var(--grad-hero);-webkit-background-clip:text;background-clip:text;color:transparent}
+.kicker{display:block;font-size:12px;font-weight:500;letter-spacing:.18em;text-transform:uppercase;color:var(--dim)}
+
+.nav{position:fixed;top:0;left:0;right:0;z-index:50;background:rgba(20,20,20,.75);-webkit-backdrop-filter:blur(12px);backdrop-filter:blur(12px);border-bottom:1px solid var(--line2)}
+.nav-in{max-width:1152px;margin-inline:auto;padding-inline:24px;height:64px;display:flex;align-items:center;justify-content:space-between;gap:16px}
+.nav-brand{font-weight:700;font-size:17px;letter-spacing:-.01em;color:var(--ink);display:flex;align-items:center;gap:9px}
+.nav-brand .dot{width:7px;height:7px;border-radius:50%;background:var(--cyan);box-shadow:0 0 12px rgba(5,230,247,.8)}
+.nav-cta{display:inline-flex;align-items:center;height:40px;padding:0 20px;border-radius:999px;font-size:14px;font-weight:600;color:var(--cyan);background:var(--c08);border:1px solid var(--c40);transition:background-color .15s var(--ease)}
+.nav-cta:hover{background:rgba(5,230,247,.16)}
+
+.hero{padding:140px 0 30px}
+.h1{font-size:clamp(30px,5.4vw,46px);line-height:1.1;letter-spacing:-.03em;font-weight:700;text-wrap:balance;margin:16px 0 20px}
+.lead{font-size:18px;line-height:1.62;color:var(--txt)}
+
+article{padding:10px 0 40px}
+h2{font-size:clamp(24px,3.4vw,32px);line-height:1.15;letter-spacing:-.02em;font-weight:700;margin:56px 0 18px;text-wrap:balance;scroll-margin-top:80px}
+article p{color:var(--txt);margin:0 0 18px}
+article p strong,article li strong{color:var(--ink)}
+.tldr{display:flex;gap:12px;align-items:flex-start;background:var(--panel);border:1px solid var(--line);border-left:3px solid var(--cyan);border-radius:12px;padding:16px 18px;margin:0 0 22px;color:var(--txt)}
+.tldr b{color:var(--cyan);font-weight:600;white-space:nowrap}
+.steps{list-style:none;counter-reset:st;margin:0 0 18px}
+.steps li{counter-increment:st;position:relative;padding:0 0 18px 58px;color:var(--txt)}
+.steps li::before{content:counter(st);position:absolute;left:0;top:-2px;width:40px;height:40px;border-radius:12px;background:var(--grad-tile);border:1px solid var(--c25);display:grid;place-items:center;color:var(--cyan);font-weight:700;font-size:16px}
+.copy-wrap{background:var(--panel2);border:1px solid var(--line);border-radius:12px;overflow:hidden;margin:14px 0 18px}
+.copy-bar{display:flex;align-items:center;justify-content:space-between;padding:8px 8px 8px 14px;border-bottom:1px solid var(--line2);background:var(--panel)}
+.copy-bar span{font-family:var(--mono);font-size:10px;letter-spacing:.06em;text-transform:uppercase;color:var(--cyan)}
+.copybtn{font-family:var(--font);font-size:12px;font-weight:600;color:var(--ink);background:rgba(5,230,247,.08);border:1px solid var(--c40);border-radius:999px;padding:6px 14px;cursor:pointer;transition:background-color .15s var(--ease)}
+.copybtn:hover{background:rgba(5,230,247,.18)}
+.copy-wrap pre{margin:0;padding:14px 16px;font-family:var(--mono);font-size:14px;line-height:1.6;color:var(--ink);white-space:pre-wrap;word-break:break-word;overflow-x:auto}
+.win{background:var(--bg);border:1px solid var(--line);border-radius:16px;overflow:hidden;box-shadow:var(--shadow-card);margin:8px 0 22px}
+.win-bar{display:flex;align-items:center;gap:6px;padding:10px 14px;border-bottom:1px solid var(--line2);background:var(--panel)}
+.win-bar i{width:10px;height:10px;border-radius:50%;display:block}
+.win-bar i:nth-child(1){background:#FF5F57}.win-bar i:nth-child(2){background:#FEBC2E}.win-bar i:nth-child(3){background:#28C840}
+.win-bar span{margin-left:8px;font-family:var(--mono);font-size:10px;letter-spacing:.08em;text-transform:uppercase;color:var(--dim)}
+.win-body{padding:18px}
+.chat-q{max-width:85%;margin-left:auto;background:var(--c12);border:1px solid var(--c25);border-radius:14px 14px 4px 14px;padding:10px 14px;font-size:14px;color:var(--ink);margin-bottom:12px}
+.chat-a{max-width:85%;background:var(--panel);border:1px solid var(--line2);border-radius:14px 14px 14px 4px;padding:10px 14px;font-size:14px;color:var(--txt)}
+.chat-a b{color:var(--ink)}
+.fake-input{display:flex;align-items:center;justify-content:space-between;gap:10px;border:1px solid var(--line3);border-radius:999px;padding:10px 16px;color:var(--dim);font-size:14px;margin-top:14px}
+.fake-input i{width:26px;height:26px;border-radius:50%;background:var(--grad);flex:none;display:grid;place-items:center;color:#000;font-style:normal;font-size:13px;font-weight:700}
+.dlg{max-width:340px;margin-inline:auto}
+.dlg-row{display:flex;gap:10px;margin:0 0 12px}
+.dlg-field{flex:1;border:1px solid var(--line3);border-radius:10px;padding:8px 12px;font-size:14px;color:var(--ink)}
+.dlg-field small{display:block;font-size:10px;letter-spacing:.06em;text-transform:uppercase;color:var(--dim)}
+.dlg-btn{display:block;text-align:center;background:var(--cyan);color:#000;font-weight:600;font-size:14px;border-radius:999px;padding:10px}
+.slide-mini{width:150px;aspect-ratio:4/5;background:linear-gradient(160deg,#232323,#0d0d0d);border:1px solid var(--line3);border-radius:10px;display:grid;place-items:center;padding:12px;text-align:center;font-weight:700;font-size:13px;line-height:1.3;color:var(--ink);margin-inline:auto}
+.warm{background:var(--bg2);border-top:1px solid var(--line2);border-bottom:1px solid var(--line2);padding:8px 0 24px;margin-top:48px}
+.cta-card{background:radial-gradient(90% 60% at 100% 0%,rgba(5,230,247,.1),transparent 60%),linear-gradient(#181818,#0F0F0F);border:1px solid var(--c35);border-radius:24px;padding:34px 28px;text-align:center;margin:40px 0 20px}
+.cta-card .h2c{font-size:clamp(24px,3.4vw,32px);font-weight:700;letter-spacing:-.02em;line-height:1.15;margin-bottom:12px}
+.cta-card p{color:var(--txt);margin-bottom:22px}
+.btn-primary{display:inline-flex;align-items:center;justify-content:center;gap:10px;height:56px;padding:0 34px;border-radius:999px;font-size:16px;font-weight:600;background:var(--cyan);color:#000;box-shadow:var(--glow-btn);transition:filter .15s var(--ease)}
+.btn-primary:hover{filter:brightness(1.08)}
+.footer{padding:36px 0 44px;border-top:1px solid var(--line2);background:var(--bg2)}
+.footer p{font-size:13px;color:var(--dim);margin-bottom:10px}
+.footer a{text-decoration:underline;text-underline-offset:3px}
+.footer .req span{white-space:nowrap}
+.footer .dot{color:var(--line3)}
+@media (max-width:640px){
+  body{font-size:17px}
+  .hero{padding:120px 0 20px}
+  .steps li{padding-left:50px}
+  .steps li::before{width:34px;height:34px;border-radius:10px;font-size:14px}
+  .win-body{padding:14px}
+}
+</style>
+</head>
+<body>
+
+<nav class="nav"><div class="nav-in">
+  <a class="nav-brand" href="/"><span class="dot"></span>Иван Логинов</a>
+  <a class="nav-cta" href="/">Мини-курс</a>
+</div></nav>
+
+<header class="hero"><div class="wrap">
+  <span class="kicker">Гайд · бесплатно · 10 минут чтения</span>
+  <h1 class="h1">Как сделать карусель для Instagram <span class="acc-hero">нейросетью</span>: пошагово с телефона</h1>
+  <p class="lead">Гайд для эксперта, который ведёт Instagram сам: психолога, нутрициолога, юриста, любого, кто продаёт свои знания. Ниже весь путь: что открыть, куда нажать, какой запрос вставить и что получится на каждом шаге. Без дизайнера, без съёмок, с телефона. Первый раз займёт вечер вместе с регистрациями, дальше - 10-15 минут на карусель</p>
+</div></header>
+
+<article><div class="wrap">
+
+<h2>Что даёт карусель, кроме красивой ленты</h2>
+<p class="tldr"><b>Коротко:</b><span>карусель - самый доступный виральный формат: её листают, сохраняют и пересылают, а сниматься для неё не нужно. Мои карусели набирают до 118 000 лайков без рубля рекламы</span></p>
+<p>«Несколько часов на карусель, а новеньких - прям несколько человек». Это дословная фраза из моего опроса экспертов, и под ней подпишутся психолог, астролог и предприниматель, которые мне отвечали. Дело не в тебе и не в таланте. Алгоритм раскручивает объём и стабильность, а не красивую картинку. Пока ты вылизываешь один пост в неделю, лента хоронит его среди тысяч других</p>
+<p>Карусель решает две проблемы сразу. Первая: не надо сниматься - если твоя работа лечить, учить и консультировать, а не выступать, карусель продаёт текстом. Вторая: она делается быстро, если снять с себя самую долгую часть - придумывание и написание текста. Именно её мы отдадим нейросети</p>
+
+<h2>Как устроена связка: нейросеть плюс Canva</h2>
+<p class="tldr"><b>Коротко:</b><span>текст пишет бесплатная нейросеть DeepSeek по готовому запросу из этого гайда, слайды собирает бесплатный редактор Canva. Твоя работа - выбрать тему и поправить текст под себя</span></p>
+<p>Сразу про «волшебную кнопку». Если открыть нейросеть и написать «сделай пост» - она выдаст безликий шаблон, который пролистают. Шаблон получается из пустого запроса: дай нейросети тему, профессию и правила, и она напишет заготовку под тебя. Потом поправишь пару фраз руками, и от шаблона не останется следа</p>
+<p>Конвейер выглядит так: тема → запрос в нейросеть → правка текста → сборка слайдов → публикация. Пять шагов, каждый ниже расписан до клика</p>
+
+<h2 id="step0">Шаг 0. Заведи два бесплатных аккаунта</h2>
+<p class="tldr"><b>Коротко:</b><span>понадобятся телефон или компьютер и почта. DeepSeek и Canva бесплатны, банковская карта не нужна. Открываются оба сервиса так же, как у тебя открывается Instagram</span></p>
+<ol class="steps">
+<li>Заведи нейросеть. Открой в браузере тем же способом, каким заходишь в Instagram:
+<div class="copy-wrap"><div class="copy-bar"><span>адрес</span><button class="copybtn" type="button">Скопировать</button></div><pre>chat.deepseek.com</pre></div>
+Нажми «Sign up» (регистрация) и войди через Google-аккаунт или почту. Что увидишь: чат с полем ввода внизу экрана - туда мы вставим запрос на Шаге 2. Оплата не нужна, чат бесплатный</li>
+<li>Заведи Canva. Открой в браузере:
+<div class="copy-wrap"><div class="copy-bar"><span>адрес</span><button class="copybtn" type="button">Скопировать</button></div><pre>canva.com</pre></div>
+Нажми «Зарегистрироваться», войди через тот же Google-аккаунт или почту. Что увидишь: главный экран с кнопкой «Создать дизайн» справа вверху. Бесплатного тарифа для карусели хватает</li>
+</ol>
+<div class="win"><div class="win-bar"><i></i><i></i><i></i><span>chat.deepseek.com</span></div><div class="win-body">
+<div class="chat-a">Привет! Чем помочь?</div>
+<div class="fake-input">Спроси о чём угодно…<i>➤</i></div>
+</div></div>
+
+<h2 id="step1">Шаг 1. Сформулируй тему - одну боль клиента</h2>
+<p class="tldr"><b>Коротко:</b><span>тема карусели = один вопрос, который твой клиент задаёт себе сам. Формула: боль клиента + конкретная ситуация</span></p>
+<p>Не «10 фактов обо мне» и не «польза правильного питания». Рабочая тема звучит как мысль в голове твоего клиента, дословно</p>
+<p>Мой пример: карусель «Если с карты украли деньги» набрала 64 099 лайков. Тема - ситуация, в которой человек уже гуглит ответ, паникует и листает до конца</p>
+<p>Примерь формулу на свою нишу. Психолог: «Ты устаёшь даже после выходных - вот почему». Нутрициолог: «Ешь мало, а вес стоит - что проверить первым». Юрист: «Работодатель не отдаёт расчёт при увольнении - по шагам». Один вопрос, одна ситуация, никакой «пользы вообще»</p>
+<p>Запиши тему одним предложением - она нужна для следующего шага</p>
+
+<h2 id="step2">Шаг 2. Вставь готовый запрос в нейросеть</h2>
+<p class="tldr"><b>Коротко:</b><span>скопируй запрос ниже, подставь свою тему и профессию, отправь. Через полминуты получишь обложку, 5 слайдов и финальный вопрос</span></p>
+<p>Открой chat.deepseek.com и вставь в поле ввода этот запрос целиком, заменив квадратные скобки на своё:</p>
+<div class="copy-wrap"><div class="copy-bar"><span>запрос для нейросети</span><button class="copybtn" type="button">Скопировать</button></div><pre>Напиши текст карусели для Instagram из 7 слайдов на тему: [твоя тема одним предложением].
+Я [твоя профессия], мои клиенты - [кто твои клиенты].
+Структура: слайд 1 - цепляющий заголовок до 8 слов по теме. Слайды 2-6 - по одной короткой мысли с конкретным примером или действием. Слайд 7 - вопрос читателю, на который хочется ответить в комментариях.
+Правила: пиши разговорным языком, как живой человек. Без канцелярита, без общих слов, без «в современном мире». На каждом слайде не больше 30 слов. Пронумеруй слайды.</pre></div>
+<p>Что увидишь: пронумерованный текст - «Слайд 1: …», «Слайд 2: …» и так далее до седьмого. Это заготовка, не финал</p>
+<div class="win"><div class="win-bar"><i></i><i></i><i></i><span>chat.deepseek.com</span></div><div class="win-body">
+<div class="chat-q">Напиши текст карусели для Instagram из 7 слайдов на тему: работодатель не отдаёт расчёт при увольнении…</div>
+<div class="chat-a"><b>Слайд 1:</b> Уволился, а денег нет? Забирай по закону<br><b>Слайд 2:</b> Расчёт обязаны выдать в день увольнения…<br><b>Слайд 3:</b> …</div>
+</div></div>
+<p>Если ответ похож на лекцию или рекламный буклет - не переписывай руками, а отправь вторым сообщением: «Перепиши проще, разговорным языком, как будто рассказываешь другу». Нейросеть переписывает за секунды, попросить можно сколько угодно раз</p>
+
+<h2 id="step3">Шаг 3. Причеши текст - три правила</h2>
+<p class="tldr"><b>Коротко:</b><span>обложка до 8 слов, один слайд = одна мысль, финал = вопрос. Всё, что ты не сказал бы клиенту вслух - переписывай своими словами</span></p>
+<ol class="steps">
+<li>Обложка до 8 слов. Это единственный слайд, который видят все. Если заголовок длиннее - режь до сути: не «Что делать, если вы устали и ничего не помогает», а «Устаёшь даже после выходных? Вот почему»</li>
+<li>Один слайд - одна мысль. Если на слайде два совета, дели на два слайда. Листать легче, чем читать</li>
+<li>Прочитай текст вслух. Фразу, на которой запнулся или которую ты бы никогда не сказал клиенту в кабинете, - переписывай своими словами. Именно этот шаг убирает «нейросетевой» привкус</li>
+</ol>
+<p>Итог шага: 7 блоков текста, каждый влезает в 30 слов. Скопируй их в заметки - сейчас разложим по слайдам</p>
+
+<h2 id="step4">Шаг 4. Собери слайды в Canva</h2>
+<p class="tldr"><b>Коротко:</b><span>«Создать дизайн» → «Настраиваемые размеры» → 1080 на 1350 → одна страница = один слайд → «Поделиться» → «Скачать» в PNG</span></p>
+<ol class="steps">
+<li>В Canva нажми «Создать дизайн» (справа вверху) → выбери «Настраиваемые размеры» → впиши ширину 1080 и высоту 1350 (пиксели) → «Создать». Что увидишь: пустая белая страница с панелью инструментов слева. Это формат 4:5 - карусель занимает максимум экрана в ленте</li>
+<li>Поставь фон. Слева панель: вкладка «Загрузки» → «Загрузить файлы» → выбери своё фото (портрет или рабочее место) и растяни на всю страницу. Нет фото - вкладка «Элементы», в поиске «тёмный фон», выбери однотонный. Тёмный фон и светлый текст - сочетание, которое стоит у меня на всех каруселях, бери как дефолт</li>
+<li>Положи текст. Кнопка «Текст» на левой панели → «Добавить заголовок» → вставь текст обложки. Растяни так, чтобы заголовок занимал примерно треть страницы. Проверка: уменьши масштаб ползунком в правом нижнем углу и посмотри, читается ли заголовок, когда страница размером с экран телефона</li>
+<li>Наделай страниц. Под страницей есть кнопка «Дублировать страницу» (две страницы с плюсом) - нажми её 6 раз и на каждой копии замени текст на следующий слайд. Фон и шрифт останутся, карусель будет выглядеть единой</li>
+<li>Скачай. «Поделиться» (справа вверху) → «Скачать» → тип файла PNG → если Canva спросит, какие страницы, выбери все → «Скачать». Что увидишь: в загрузки упадёт один файл-архив ZIP (так Canva отдаёт несколько картинок разом). Тапни по нему - телефон распакует, внутри слайды по одному файлу на страницу</li>
+</ol>
+<div class="win"><div class="win-bar"><i></i><i></i><i></i><span>canva.com · настраиваемые размеры</span></div><div class="win-body"><div class="dlg">
+<div class="dlg-row"><span class="dlg-field"><small>Ширина, px</small>1080</span><span class="dlg-field"><small>Высота, px</small>1350</span></div>
+<span class="dlg-btn">Создать дизайн</span>
+</div></div></div>
+<div class="win"><div class="win-bar"><i></i><i></i><i></i><span>слайд-обложка 1080×1350</span></div><div class="win-body"><div class="slide-mini">Уволился,<br>а денег нет?<br><span class="acc">Забирай по закону</span></div></div></div>
+
+<h2 id="step5">Шаг 5. Выложи карусель в Instagram</h2>
+<p class="tldr"><b>Коротко:</b><span>плюс → «Публикация» → значок стопки → выбери слайды по порядку → подпись с вопросом → «Поделиться»</span></p>
+<ol class="steps">
+<li>В Instagram нажми плюс внизу → «Публикация»</li>
+<li>Над галереей нажми значок стопки (выбрать несколько) → отмечай слайды строго по порядку: обложка первой, финальный вопрос последним. Цифры на миниатюрах покажут порядок</li>
+<li>«Далее» → фильтры пропускай → «Далее»</li>
+<li>Подпись: первой строкой продублируй заголовок обложки, дальше 2-3 предложения по теме и тот же финальный вопрос. Вопрос в подписи собирает комментарии, а комментарии разгоняют охват</li>
+<li>«Поделиться». Карусель в ленте</li>
+</ol>
+
+<h2>Частые грабли</h2>
+<p class="tldr"><b>Коротко:</b><span>сайт не открывается - сверь доступ по Instagram. Нейросеть льёт воду - попроси переписать проще. Текст не читается - меньше слов, крупнее шрифт</span></p>
+<ol class="steps">
+<li>DeepSeek или Canva не загружается, висит белый экран. Проверка простая: открой Instagram. Открывается - с доступом всё в порядке, обнови страницу, сервис бывает перегружен. Не открывается - сначала верни себе Instagram привычным способом и заходи снова: DeepSeek и Canva открываются ровно так же</li>
+<li>Нейросеть пишет как чиновник: «в современном мире каждый сталкивается…». Не правь руками весь текст - отправь одно сообщение: «Перепиши проще, короче, разговорным языком». Помогает с первого раза. А чтобы канцелярита почти не было сразу, не выбрасывай из запроса на Шаге 2 блок «Правила» - он это и запрещает</li>
+<li>На телефоне текст слайда не читается. Значит на слайде слишком много слов. Правило: до 30 слов на слайд, заголовок обложки - примерно треть страницы. Лучше добавить слайд, чем уменьшить шрифт</li>
+</ol>
+
+</div>
+
+<div class="warm"><div class="wrap">
+
+<h2>Что меняется, когда пост перестаёт стоить трёх часов</h2>
+<p class="tldr"><b>Коротко:</b><span>скорость - это не про удобство, а про охваты: алгоритм раскручивает тех, кто публикует стабильно и много</span></p>
+<p>Конец 2024-го. Я тратил три часа на один рилс: дубли, пересъёмка, монтаж. Итог - 742 просмотра за неделю. У других взлетает, у меня тишина - честно хотелось всё бросить</p>
+<p>Потом я перестал вылизывать один пост и поставил конвейер: 10 единиц контента в день, час работы, ни одного пропущенного дня с октября 2024-го. Сегодня - более 750 тысяч подписчиков, и цифра растёт каждый день на 1-3 тысячи. Чистая органика, ни рубля рекламы. Открой мой профиль <a href="https://www.instagram.com/ivan.loginov_ai" target="_blank" rel="noopener" style="color:var(--cyan)">@ivan.loginov_ai</a> и проверь</p>
+<p>Та самая карусель «Если с карты украли деньги» с 64 099 лайками собрана ровно так, как описано выше: тема-ситуация, текст заготовкой, фон и крупный заголовок, без дизайнера. Разница между «несколько часов на пост» и «10 единиц в день» - не талант, а конвейер</p>
+
+<h2>Почему одна карусель ничего не решит</h2>
+<p class="tldr"><b>Коротко:</b><span>разовая карусель - лотерея. Результат делают темы, которые уже залетали, серийность и воронка, которая превращает просмотры в заявки</span></p>
+<p>После первой карусели у тебя появятся три вопроса. Где брать темы каждый день, чтобы не высасывать из пальца? Как из одной идеи получать сразу рилс и карусель, а не начинать с нуля? И главный: как сделать, чтобы зритель не просто полайкал, а оставил заявку?</p>
+<p>Это уже не «ещё один пост», это система. Я собрал её в мини-курс <a href="/" style="color:var(--cyan)">«Контент-завод за выходные»</a>: 7 модулей, уроки по 5-15 минут, каждый заканчивается действием в твоём аккаунте. Внутри - банк из 700 тем, каждая проверена реальными охватами моего аккаунта, и готовые запросы для триггерных заголовков. И связка «кодовое слово → Telegram → заявка»: зритель пишет слово под твоим постом и доходит до заявки сам. Всё с телефона, доступ без ограничения срока</p>
+
+<div class="cta-card">
+  <div class="h2c">Забери <span class="acc">систему целиком</span></div>
+  <p>Первую карусель ты теперь соберёшь сам - гайд выше закрывает это полностью. Конвейер, который превращает карусели в подписчиков и заявки, здесь:</p>
+  <a class="btn-primary" href="/">Мини-курс «Контент-завод за выходные» - 2 990 ₽</a>
+  <p style="margin:16px 0 0;font-size:14px;color:var(--dim)">К понедельнику первая пачка контента уже будет стоять у тебя в ленте</p>
+</div>
+
+</div></div>
+</article>
+
+<footer class="footer"><div class="wrap">
+  <p>Обучение методу. Не&nbsp;гарантирую доход, число подписчиков или заявок - результат зависит от&nbsp;ниши и&nbsp;исполнения</p>
+  <p>Meta Platforms Inc. признана экстремистской организацией, её&nbsp;деятельность запрещена на&nbsp;территории&nbsp;РФ. DeepSeek и&nbsp;Canva - сторонние сервисы со&nbsp;своими условиями использования</p>
+  <p class="req"><span>ИП&nbsp;Логинов&nbsp;Иван&nbsp;Владимирович</span> <span class="dot">·</span> <span>ИНН&nbsp;420529937430</span> <span class="dot">·</span> <span>ОГРНИП&nbsp;326420500041676</span> <span class="dot">·</span> <a href="/oferta.html">оферта</a> <span class="dot">·</span> <a href="/vozvrat.html">политика возврата</a> <span class="dot">·</span> <a href="/privacy.html">конфиденциальность</a></p>
+</div></footer>
+
+<script>
+document.querySelectorAll('.copybtn').forEach(function(btn){
+  btn.addEventListener('click',function(){
+    var pre=btn.closest('.copy-wrap').querySelector('pre');
+    var txt=pre.textContent;
+    function done(){btn.textContent='Скопировано ✓';setTimeout(function(){btn.textContent='Скопировать'},1800)}
+    if(navigator.clipboard&&navigator.clipboard.writeText){navigator.clipboard.writeText(txt).then(done)}
+    else{var ta=document.createElement('textarea');ta.value=txt;document.body.appendChild(ta);ta.select();try{document.execCommand('copy');done()}catch(e){}document.body.removeChild(ta)}
+  });
+});
+</script>
+</body>
+</html>
