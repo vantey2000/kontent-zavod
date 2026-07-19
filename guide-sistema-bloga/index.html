@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Как устроен блог, который приводит клиентов: система по шагам</title>
+<meta name="description" content="Разбор системы по шагам: темы из банка, ролики и карусели нейросетью без съёмок, кодовое слово в комментариях - и бот сам ведёт зрителя в Telegram">
+<link rel="canonical" href="https://ivan-loginov.ru/guide-sistema-bloga/">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Как устроен блог, который приводит клиентов: система по шагам">
+<meta property="og:description" content="Шесть шагов от темы до клиента: посты без съёмок, кодовое слово в комментариях, бот и Telegram. Вся система одним разбором">
+<meta property="og:url" content="https://ivan-loginov.ru/guide-sistema-bloga/">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Rubik:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<script type="application/ld+json">
+{"@context":"https://schema.org","@type":"Article","headline":"Как устроен блог, который сам приводит клиентов: вся система по шагам","inLanguage":"ru","author":{"@type":"Person","name":"Иван Логинов","url":"https://ivan-loginov.ru/"},"mainEntityOfPage":"https://ivan-loginov.ru/guide-sistema-bloga/","keywords":"как вести блог с помощью нейросетей"}
+</script>
+<style>
+:root{
+  --bg:#1F1F1F; --bg2:#141414; --panel:#1A1A1A; --panel2:#0F0F0F;
+  --ink:#EDFEFF; --txt:#A6A6A6; --txt2:#858585; --dim:#5A5A5A;
+  --line:#2A2A2A; --line2:#262626; --line3:#333333;
+  --cyan:#05E6F7; --teal:#23676C;
+  --c40:rgba(5,230,247,.4); --c35:rgba(5,230,247,.35); --c25:rgba(5,230,247,.25);
+  --c15:rgba(5,230,247,.15); --c12:rgba(5,230,247,.12); --c08:rgba(5,230,247,.08);
+  --grad:linear-gradient(to bottom right,#05E6F7,#23676C);
+  --grad-hero:linear-gradient(to bottom right,#EDFEFF 15%,#05E6F7 55%,#23676C 100%);
+  --grad-tile:linear-gradient(to bottom right,rgba(5,230,247,.2),rgba(35,103,108,.2));
+  --ease:cubic-bezier(.4,0,.2,1);
+  --glow-btn:0 0 40px -8px rgba(5,230,247,.7);
+  --shadow-card:0 30px 80px -20px rgba(0,0,0,.7);
+  --font:'Rubik',system-ui,-apple-system,'Segoe UI',Roboto,sans-serif;
+  --mono:ui-monospace,SFMono-Regular,Menlo,monospace;
+}
+*{margin:0;padding:0;box-sizing:border-box}
+html{scroll-behavior:smooth;overflow-x:clip}
+body{background:var(--bg);color:var(--ink);font-family:var(--font);font-size:18px;line-height:1.62;-webkit-font-smoothing:antialiased;overflow-x:clip}
+@supports not (overflow:clip){html,body{overflow-x:hidden}}
+img{max-width:100%;height:auto;display:block}
+a{color:inherit;text-decoration:none}
+b,strong{font-weight:600;color:var(--ink)}
+.wrap{max-width:760px;margin-inline:auto;padding-inline:24px;position:relative;z-index:2}
+.acc{background:var(--grad);-webkit-background-clip:text;background-clip:text;color:transparent}
+.acc-hero{background:var(--grad-hero);-webkit-background-clip:text;background-clip:text;color:transparent}
+.kicker{display:block;font-size:12px;font-weight:500;letter-spacing:.18em;text-transform:uppercase;color:var(--dim)}
+
+.nav{position:fixed;top:0;left:0;right:0;z-index:50;background:rgba(20,20,20,.75);-webkit-backdrop-filter:blur(12px);backdrop-filter:blur(12px);border-bottom:1px solid var(--line2)}
+.nav-in{max-width:1152px;margin-inline:auto;padding-inline:24px;height:64px;display:flex;align-items:center;justify-content:space-between;gap:16px}
+.nav-brand{font-weight:700;font-size:17px;letter-spacing:-.01em;color:var(--ink);display:flex;align-items:center;gap:9px}
+.nav-brand .dot{width:7px;height:7px;border-radius:50%;background:var(--cyan);box-shadow:0 0 12px rgba(5,230,247,.8)}
+.nav-cta{display:inline-flex;align-items:center;height:40px;padding:0 20px;border-radius:999px;font-size:14px;font-weight:600;color:var(--cyan);background:var(--c08);border:1px solid var(--c40);transition:background-color .15s var(--ease)}
+.nav-cta:hover{background:rgba(5,230,247,.16)}
+
+.hero{padding:140px 0 30px}
+.h1{font-size:clamp(30px,5.4vw,46px);line-height:1.1;letter-spacing:-.03em;font-weight:700;text-wrap:balance;margin:16px 0 20px}
+.lead{font-size:18px;line-height:1.62;color:var(--txt)}
+
+article{padding:10px 0 40px}
+h2{font-size:clamp(24px,3.4vw,32px);line-height:1.15;letter-spacing:-.02em;font-weight:700;margin:56px 0 18px;text-wrap:balance;scroll-margin-top:80px}
+article p{color:var(--txt);margin:0 0 18px}
+article p strong,article li strong{color:var(--ink)}
+.tldr{display:flex;gap:12px;align-items:flex-start;background:var(--panel);border:1px solid var(--line);border-left:3px solid var(--cyan);border-radius:12px;padding:16px 18px;margin:0 0 22px;color:var(--txt)}
+.tldr b{color:var(--cyan);font-weight:600;white-space:nowrap}
+.steps{list-style:none;counter-reset:st;margin:0 0 18px}
+.steps li{counter-increment:st;position:relative;padding:0 0 18px 58px;color:var(--txt)}
+.steps li::before{content:counter(st);position:absolute;left:0;top:-2px;width:40px;height:40px;border-radius:12px;background:var(--grad-tile);border:1px solid var(--c25);display:grid;place-items:center;color:var(--cyan);font-weight:700;font-size:16px}
+.copy-wrap{background:var(--panel2);border:1px solid var(--line);border-radius:12px;overflow:hidden;margin:14px 0 18px}
+.copy-bar{display:flex;align-items:center;justify-content:space-between;padding:8px 8px 8px 14px;border-bottom:1px solid var(--line2);background:var(--panel)}
+.copy-bar span{font-family:var(--mono);font-size:10px;letter-spacing:.06em;text-transform:uppercase;color:var(--cyan)}
+.copybtn{font-family:var(--font);font-size:12px;font-weight:600;color:var(--ink);background:rgba(5,230,247,.08);border:1px solid var(--c40);border-radius:999px;padding:6px 14px;cursor:pointer;transition:background-color .15s var(--ease)}
+.copybtn:hover{background:rgba(5,230,247,.18)}
+.copy-wrap pre{margin:0;padding:14px 16px;font-family:var(--mono);font-size:14px;line-height:1.6;color:var(--ink);white-space:pre-wrap;word-break:break-word;overflow-x:auto}
+.win{background:var(--bg);border:1px solid var(--line);border-radius:16px;overflow:hidden;box-shadow:var(--shadow-card);margin:8px 0 22px}
+.win-bar{display:flex;align-items:center;gap:6px;padding:10px 14px;border-bottom:1px solid var(--line2);background:var(--panel)}
+.win-bar i{width:10px;height:10px;border-radius:50%;display:block}
+.win-bar i:nth-child(1){background:#FF5F57}.win-bar i:nth-child(2){background:#FEBC2E}.win-bar i:nth-child(3){background:#28C840}
+.win-bar span{margin-left:8px;font-family:var(--mono);font-size:10px;letter-spacing:.08em;text-transform:uppercase;color:var(--dim)}
+.win-body{padding:18px}
+.chat-q{max-width:85%;margin-left:auto;background:var(--c12);border:1px solid var(--c25);border-radius:14px 14px 4px 14px;padding:10px 14px;font-size:14px;color:var(--ink);margin-bottom:12px}
+.chat-a{max-width:85%;background:var(--panel);border:1px solid var(--line2);border-radius:14px 14px 14px 4px;padding:10px 14px;font-size:14px;color:var(--txt)}
+.chat-a b{color:var(--ink)}
+.fake-input{display:flex;align-items:center;justify-content:space-between;gap:10px;border:1px solid var(--line3);border-radius:999px;padding:10px 16px;color:var(--dim);font-size:14px;margin-top:14px}
+.fake-input i{width:26px;height:26px;border-radius:50%;background:var(--grad);flex:none;display:grid;place-items:center;color:#000;font-style:normal;font-size:13px;font-weight:700}
+.dlg{max-width:340px;margin-inline:auto}
+.dlg-row{display:flex;gap:10px;margin:0 0 12px}
+.dlg-field{flex:1;border:1px solid var(--line3);border-radius:10px;padding:8px 12px;font-size:14px;color:var(--ink)}
+.dlg-field small{display:block;font-size:10px;letter-spacing:.06em;text-transform:uppercase;color:var(--dim)}
+.dlg-btn{display:block;text-align:center;background:var(--cyan);color:#000;font-weight:600;font-size:14px;border-radius:999px;padding:10px}
+.slide-mini{width:150px;aspect-ratio:4/5;background:linear-gradient(160deg,#232323,#0d0d0d);border:1px solid var(--line3);border-radius:10px;display:grid;place-items:center;padding:12px;text-align:center;font-weight:700;font-size:13px;line-height:1.3;color:var(--ink);margin-inline:auto}
+.warm{background:var(--bg2);border-top:1px solid var(--line2);border-bottom:1px solid var(--line2);padding:8px 0 24px;margin-top:48px}
+.cta-card{background:radial-gradient(90% 60% at 100% 0%,rgba(5,230,247,.1),transparent 60%),linear-gradient(#181818,#0F0F0F);border:1px solid var(--c35);border-radius:24px;padding:34px 28px;text-align:center;margin:40px 0 20px}
+.cta-card .h2c{font-size:clamp(24px,3.4vw,32px);font-weight:700;letter-spacing:-.02em;line-height:1.15;margin-bottom:12px}
+.cta-card p{color:var(--txt);margin-bottom:22px}
+.btn-primary{display:inline-flex;align-items:center;justify-content:center;gap:10px;height:56px;padding:0 34px;border-radius:999px;font-size:16px;font-weight:600;background:var(--cyan);color:#000;box-shadow:var(--glow-btn);transition:filter .15s var(--ease)}
+.btn-primary:hover{filter:brightness(1.08)}
+.footer{padding:36px 0 44px;border-top:1px solid var(--line2);background:var(--bg2)}
+.footer p{font-size:13px;color:var(--dim);margin-bottom:10px}
+.footer a{text-decoration:underline;text-underline-offset:3px}
+.footer .req span{white-space:nowrap}
+.footer .dot{color:var(--line3)}
+@media (max-width:640px){
+  body{font-size:17px}
+  .hero{padding:120px 0 20px}
+  .steps li{padding-left:50px}
+  .steps li::before{width:34px;height:34px;border-radius:10px;font-size:14px}
+  .win-body{padding:14px}
+}
+</style>
+</head>
+<body>
+
+<nav class="nav"><div class="nav-in">
+  <a class="nav-brand" href="/"><span class="dot"></span>Иван Логинов</a>
+  <a class="nav-cta" href="/">Мини-курс</a>
+</div></nav>
+
+<header class="hero"><div class="wrap">
+  <span class="kicker">Разбор · бесплатно · 7 минут чтения</span>
+  <h1 class="h1">Как устроен блог, который <span class="acc-hero">сам приводит клиентов</span>: вся система по шагам</h1>
+  <p class="lead">Этот разбор - для эксперта, который ведёт блог сам: психолога, нутрициолога, юриста, мастера, любого, кто продаёт свои знания и услуги. Ниже вся система целиком: что должно происходить в блоге каждый день, чтобы из просмотров получались клиенты. Без съёмок часами, без дизайнера и без бюджета на рекламу. В конце - готовый промпт для нейросети, чтобы сделать первый шаг уже сегодня</p>
+</div></header>
+
+<article><div class="wrap">
+
+<h2>Карта системы одним экраном</h2>
+<p class="tldr"><b>Коротко:</b><span>весь путь - шесть шагов от темы до клиента, и на каждом хватает одного человека с телефоном и нейросетью</span></p>
+<p>Блог, который растёт и продаёт, устроен проще, чем кажется. Вот весь путь:</p>
+<p><b>Тема из банка → пост без съёмок (ролик или карусель) → под постом кодовое слово → человек пишет слово в комментариях → бот сам приходит к нему в директ → Telegram: польза, знакомство, предложение</b></p>
+<p>Шесть шагов. Ни на одном не нужны дизайнер, оператор или отдел продаж - всё делает один человек с телефоном и нейросетью. Теперь по порядку: что происходит на каждом шаге и почему это работает</p>
+
+<h2 id="step1">Шаг 1. Темы: не выдумывать, а брать проверенные</h2>
+<p class="tldr"><b>Коротко:</b><span>рабочая тема = боль клиента плюс конкретная ситуация. Темы не выдумывают из головы, а берут из банка проверенных</span></p>
+<p>Самое сложное в блоге - не «как снять», а «о чём сегодня». Если каждый день выжимать идеи из головы или листать чужую ленту, блог умирает за месяц</p>
+<p>Решение - банк тем. Рабочая тема - это не «10 фактов обо мне» и не «польза моей профессии». Это боль клиента плюс конкретная ситуация, слово в слово как мысль в его голове. Сравни: «как правильно питаться» - мимо, «ешь мало, а вес стоит» - в точку. Залетают темы, которые касаются многих, цепляют за живое и внутри которых уже есть спор</p>
+<p>Проверка на моём блоге: карусель «Если с карты украли деньги» набрала 64 099 лайков. Тема - ситуация, в которой человек уже в панике гуглит ответ</p>
+
+<h2 id="step2">Шаг 2. Ролики без съёмок</h2>
+<p class="tldr"><b>Коротко:</b><span>ролик = 5-7 секунд с телефона или вообще без лица, текст пишет нейросеть. Объём и стабильность решают больше, чем картинка</span></p>
+<p>Видео в этой системе - это 5-7 секунд: ты в кадре с телефона или вообще без лица, а весь смысл несёт текст на экране. Текст пишет нейросеть по готовому промпту, ты правишь пару фраз под себя</p>
+<p>Почему так коротко и просто? Зритель решает за первые секунды, а лента раскручивает объём и стабильность, а не красивую картинку. Десять простых роликов каждый день обгоняют один вылизанный в неделю. И на такой ролик не нужно ни студии, ни монтажа, ни смелости актёра: твоя работа лечить, учить и консультировать, а не выступать</p>
+
+<h2 id="step3">Шаг 3. Карусели: самый недооценённый формат</h2>
+<p class="tldr"><b>Коротко:</b><span>одна тема даёт сразу два поста - ролик и карусель. Карусель собирается нейросетью без дизайнера</span></p>
+<p>Карусель - листалка из картинок с текстом. Её листают, сохраняют и пересылают, а сниматься для неё не нужно вообще. При этом большинство блогов её недооценивает - и зря</p>
+<p>В этой системе карусель работает в паре с роликом: одна тема даёт сразу два поста. Ролик цепляет широкую публику, карусель раскрывает тему глубже и собирает сохранения. А если ролик залетел - та же тема переезжает в карусель и второй раз собирает просмотры</p>
+<p>Что это даёт, видно по моему блогу: одна карусель набрала 1 000 000 просмотров и привела больше 15 000 подписчиков. Собрана без дизайнера: текст написала нейросеть, слайды собраны в бесплатном редакторе, у меня на это уходит 5 минут с телефона. Пошаговый разбор сборки - в <a href="/guide-karusel-neyroset/" style="color:var(--cyan)">отдельном гайде на этом сайте</a></p>
+
+<h2 id="step4">Шаг 4. Темп: час в день, а не вся жизнь</h2>
+<p class="tldr"><b>Коротко:</b><span>пачка постов готовится за один присест, в ленту выходит постепенно - по лесенке, по мере роста просмотров</span></p>
+<p>Система держится не на таланте, а на ритме. Пачка постов готовится за один присест: нейросеть пишет тексты по темам из банка, ты правишь и собираешь. У меня на десять постов уходит час в день, и так каждый день с октября 2024-го</p>
+<p>В ленту пачка выходит постепенно, по лесенке: сначала один пост в день, потом больше - по мере роста просмотров. Выкладывать всё разом в первый день нельзя, и любой честный разбор обязан об этом предупредить</p>
+
+<h2 id="step5">Шаг 5. Кодовое слово в комментариях</h2>
+<p class="tldr"><b>Коротко:</b><span>под каждым постом стоит кодовое слово: человек пишет его в комментариях, бот сам приходит к нему в директ с материалом</span></p>
+<p>Дальше - место, где просмотры превращаются в клиентов. У большинства блогов пост заканчивается ничем: зритель полистал, подумал «полезно» и ушёл. Работа сделана, толку ноль</p>
+<p>В этой системе под каждым постом стоит кодовое слово. Человек пишет его в комментариях - и бот сам приходит к нему в директ с обещанным материалом. Заметь: не «напишите мне в личку, обсудим», а один простой шаг, который человек делает сам, и мгновенный ответ</p>
+<div class="win"><div class="win-bar"><i></i><i></i><i></i><span>комментарии под постом</span></div><div class="win-body">
+<div class="chat-q">Комментарий: <b>СИСТЕМА</b></div>
+<div class="chat-a">Бот в директ: Привет! Держи разбор, о котором писал в посте 👉 ссылка</div>
+</div></div>
+<p>Ты уже видел эту механику в действии: скорее всего, ты читаешь этот разбор, потому что написал кодовое слово под моим постом. Она сработала на тебе за пару минут. Ровно так же она работает на клиентах</p>
+
+<h2 id="step6">Шаг 6. Что происходит в Telegram</h2>
+<p class="tldr"><b>Коротко:</b><span>сначала польза, потом знакомство, предложение в самом конце. Одно сообщение = одна мысль = одно действие</span></p>
+<p>Дальше человек попадает в Telegram. Сначала он получает пользу - материал, ради которого написал слово. Потом ещё пользу: короткие сообщения по теме, по одному в день. И только потом - предложение. Без давления и «купи-купи»: одно сообщение - одна мысль - одно действие</p>
+<p>Так зритель проходит путь от «полистал карусель» до «написал и купил» сам, шаг за шагом. Никто никого не ловит в личке и не уговаривает</p>
+
+</div>
+
+<div class="warm"><div class="wrap">
+
+<h2>Почему мне можно верить</h2>
+<p class="tldr"><b>Коротко:</b><span>я прошёл эту систему на себе: от 742 просмотров за неделю до блога больше 750 тысяч подписчиков без рекламы</span></p>
+<p>Всю эту систему я сначала прошёл на себе. В конце 2024-го я тратил три часа на один ролик и получал 742 просмотра за неделю - честно хотелось бросить. Потом увидел чужой ролик на 1 300 000 просмотров, снятый за две минуты с руки, и понял: дело не в таланте, а в системе. Сейчас у блога больше 750 тысяч подписчиков, чистая органика, ни рубля рекламы. Открой профиль <a href="https://www.instagram.com/ivan.loginov_ai" target="_blank" rel="noopener" style="color:var(--cyan)">@ivan.loginov_ai</a> и проверь</p>
+
+<h2>Сделай первый шаг сегодня</h2>
+<p class="tldr"><b>Коротко:</b><span>скопируй промпт, подставь свою тему - получишь сценарий ролика без съёмок</span></p>
+<p>Забери кусок системы прямо сейчас. Вот промпт, который пишет сценарий короткого ролика без съёмок - вставь в любую нейросеть:</p>
+<div class="copy-wrap"><div class="copy-bar"><span>промпт для нейросети</span><button class="copybtn" type="button">Скопировать</button></div><pre>Напиши сценарий короткого рилса для Instagram на тему: [боль твоего клиента + конкретная ситуация].
+Я [твоя профессия], мои клиенты - [кто они].
+Формат: хук до 8 слов, который останавливает листание, затем 3-4 короткие фразы текстом на экране, в конце вопрос зрителю.
+Пиши разговорным языком, без канцелярита и общих слов. Больше конкретики: примеры, цифры, ситуации.</pre></div>
+<p>Подставь свою тему - и собери первый сценарий прямо сейчас</p>
+
+<h2>Чего не видно на карте</h2>
+<p class="tldr"><b>Коротко:</b><span>схема у тебя есть. Начинка каждого шага - банк тем, промпты, настройка бота - собрана в мини-курсе</span></p>
+<p>Схему ты теперь знаешь целиком. Но между «понимаю, как устроено» и «работает у меня» лежит начинка каждого шага: где взять банк тем под свою нишу, какие промпты дают живой текст, как собрать карусель без дизайнера, как настроить бота с кодовым словом. Я собрал всё это в мини-курс <a href="/" style="color:var(--cyan)">«Контент-завод за выходные»</a>: 7 модулей, уроки по 5-15 минут, каждый заканчивается действием в твоём аккаунте. Внутри банк из 700 тем, проверенных реальными просмотрами, готовые промпты для нейросети и настройка той самой цепочки: слово в комментариях → Telegram. За выходные у тебя в аккаунте стоит первая пачка постов, дальше час в день. Доступ без ограничения срока</p>
+
+<div class="cta-card">
+  <div class="h2c">Забери <span class="acc">систему целиком</span></div>
+  <p>Схема у тебя есть. Система, которая собирает её в твоём аккаунте за выходные, здесь:</p>
+  <a class="btn-primary" href="/">Мини-курс «Контент-завод за выходные» - 2 990 ₽</a>
+  <p style="margin:16px 0 0;font-size:14px;color:var(--dim)">К понедельнику первая пачка контента уже будет стоять у тебя в ленте</p>
+</div>
+
+</div></div>
+</article>
+
+<footer class="footer"><div class="wrap">
+  <p>Обучение методу. Не&nbsp;гарантирую доход, число подписчиков или заявок - результат зависит от&nbsp;ниши и&nbsp;исполнения</p>
+  <p>Meta Platforms Inc. признана экстремистской организацией, её&nbsp;деятельность запрещена на&nbsp;территории&nbsp;РФ. Telegram - сторонний сервис со&nbsp;своими условиями использования</p>
+  <p class="req"><span>ИП&nbsp;Логинов&nbsp;Иван&nbsp;Владимирович</span> <span class="dot">·</span> <span>ИНН&nbsp;420529937430</span> <span class="dot">·</span> <span>ОГРНИП&nbsp;326420500041676</span> <span class="dot">·</span> <a href="/oferta.html">оферта</a> <span class="dot">·</span> <a href="/vozvrat.html">политика возврата</a> <span class="dot">·</span> <a href="/privacy.html">конфиденциальность</a></p>
+</div></footer>
+
+<script>
+document.querySelectorAll('.copybtn').forEach(function(btn){
+  btn.addEventListener('click',function(){
+    var pre=btn.closest('.copy-wrap').querySelector('pre');
+    var txt=pre.textContent;
+    function done(){btn.textContent='Скопировано ✓';setTimeout(function(){btn.textContent='Скопировать'},1800)}
+    if(navigator.clipboard&&navigator.clipboard.writeText){navigator.clipboard.writeText(txt).then(done)}
+    else{var ta=document.createElement('textarea');ta.value=txt;document.body.appendChild(ta);ta.select();try{document.execCommand('copy');done()}catch(e){}document.body.removeChild(ta)}
+  });
+});
+</script>
+</body>
+</html>
