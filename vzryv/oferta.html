@@ -28,8 +28,13 @@ body{background:var(--bg); color:var(--ink-2); font-family:var(--fb);
   border-bottom:1px solid var(--line); backdrop-filter:saturate(160%) blur(8px)}
 .bar-in{max-width:calc(var(--measure) + 44px); margin:0 auto; padding:0 22px;
   min-height:var(--bar); display:flex; align-items:center; justify-content:space-between; gap:14px}
+/* АУДИТ ui-ux-pro-max §2 «Touch Target Size» (Severity High), правка 05.08.
+   Замер до правки на 390: высота ссылки возврата 35,8px при пороге 44. Она единственная
+   в липкой полосе и единственный путь назад на лендинг - промах по ней стоит человеку
+   выхода со страницы. Полоса держит min-height:var(--bar)=54px, поэтому 44px влезают
+   без роста полосы: замер после правки высоту .bar не двигает */
 .bar-back{font-size:14px; font-weight:700; color:var(--ink); text-decoration:none;
-  display:inline-flex; align-items:center; gap:7px; padding:6px 0}
+  display:inline-flex; align-items:center; gap:7px; padding:11px 0; min-height:44px}
 .bar-back:hover{color:var(--accent)}
 .bar-back .ar{color:var(--accent); font-weight:700}
 .bar-kind{font-family:var(--fm); font-weight:500; font-size:11px; letter-spacing:.14em;
