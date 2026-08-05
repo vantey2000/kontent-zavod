@@ -135,6 +135,17 @@ canvas.embers{position:absolute;inset:0;width:100%;height:100%;pointer-events:no
 /* ---------- reveal: база 30px/.7s (hero, pain, who, story, method, compare, honor) ---------- */
 .js .rv{opacity:0;transform:translateY(30px)}
 .js .rv.on{opacity:1;transform:none;transition:opacity .7s var(--ease),transform .7s var(--ease);transition-delay:var(--d,0ms)}
+/* МОБИЛЬНЫЙ ПРОФИЛЬ ПОЯВЛЕНИЯ (правка Ивана 05.08, «как на мини-курсе»).
+   Там ход 16px и время .6s - на коротком экране это читается как плавность, а
+   десктопные 30px/.7s на телефоне превращаются в рывок: блок проезжает заметную
+   долю экрана. Меняем только две величины, механика и задержки общие.
+   Карточкам доски почёта нужна своя строка: у них в transform живёт ещё и наклон
+   карточки (--rot), и общий translateY его бы стёр */
+@media(max-width:768px){
+  .js .rv{transform:translateY(16px)}
+  .js .rv.on{transition-duration:.6s}
+  .js .hn-card.rv{transform:translateY(16px) rotate(var(--rot))}
+}
 
 /* ============================================================
    ЭКРАН 01 HERO + навбар + бегущая строка
@@ -1561,7 +1572,6 @@ h1 .grad{background:linear-gradient(100deg,#BE4A24,#C0763A,#A83F1E,#BE4A24);back
 /* ---------- мобайл ---------- */
 @media(max-width:768px){
   .pg{padding:76px 0 72px}
-  .js .pg .rv{opacity:1;transform:none}
   /* .pg-body И .pg-chips транзишены ЖИВЫ и на мобиле - раскрытие панели и схлопывание чипов
      не дёргают соседей скачком (аудит CLS + фикс судьи: мгновенный снап чипов сдвинул бы лист);
      остальное ниже - чистая косметика, ей анимация на таче не нужна */
@@ -1710,8 +1720,6 @@ html.fanim .fm-master.on .fm-stamp{animation:fmStamp .3s var(--ease) .45s backwa
 /* ---------- мобайл ---------- */
 @media(max-width:768px){
   .fm{padding:72px 0 68px}
-  .js .fm .rv{opacity:1;transform:none}
-  .js .fm-card{transition:none}
   .fm-grid{grid-template-columns:1fr;grid-auto-rows:auto;margin-top:36px}
   .fm-card{padding:20px}
   .fm-scale{margin-top:40px}
@@ -1799,10 +1807,6 @@ html.fanim .fm-master.on .fm-stamp{animation:fmStamp .3s var(--ease) .45s backwa
 .js .nf-row.on .nf-note{opacity:1}
 
 /* ---------- мобайл ---------- */
-@media(max-width:768px){
-  .js .nf .rv{opacity:1;transform:none}
-  .js .nf-note{opacity:1}
-}
 @media(max-width:480px){
   .wrap{padding:0 20px}
   .nf{padding:64px 0 60px}
@@ -2039,9 +2043,7 @@ html.fanim .fm-master.on .fm-stamp{animation:fmStamp .3s var(--ease) .45s backwa
   /* костыли встречных радиусов канала на стыке двух <ol> СНЯТЫ (правка судей 03.08, вторая волна):
      подложка переехала на записи, полосы стыкуются сами - перехвату между 05 и 06 взяться неоткуда */
 }
-@media(max-width:768px){
-  .js .fq .rv{opacity:1;transform:none}
-}
+
 @media(max-width:480px){
   .wrap{padding:0 20px}
   .fq{padding:64px 0 64px}
@@ -2538,9 +2540,7 @@ textarea.fn-in{min-height:76px;padding:12px 14px;line-height:1.5;resize:vertical
   .fn-submit{border:1px solid ButtonText}
   .fn-in{border:1px solid CanvasText}
 }
-@media(max-width:768px){
-  .js .fn .rv{opacity:1;transform:none}
-}
+
 
 /* ============================================================
    ФИНАЛЬНЫЙ БЛОК: reduced-motion. Стоит последним сознательно -
@@ -2596,12 +2596,23 @@ textarea.fn-in{min-height:76px;padding:12px 14px;line-height:1.5;resize:vertical
     c.classList.add('rv');c.style.setProperty('--d',(140+i*70)+'ms');
   });
 
+  /* ПРАВКА ИВАНА 05.08: «в мобильной версии сделай анимированные элементы, как на сайте
+     мини-курса, такая же плавная анимация». До правки условие показа было `mob||reduce` -
+     то есть НА ТЕЛЕФОНЕ ПОЯВЛЕНИЕ БЫЛО ВЫКЛЮЧЕНО ЦЕЛИКОМ: блоки просто стояли на месте.
+     Мини-курс (kontent-zavod/index.html) наблюдатель на мобиле не отключает вовсе, и
+     страница листается «живой». Приводим к тому же: гасим только по prefers-reduced-motion
+     и когда наблюдателя нет в браузере.
+     Порог входа на телефоне мягче: -8% против -14% на десктопе (значение мини-курса).
+     Экран у телефона короткий, и жёсткий порог заставлял бы дотягивать блок почти до
+     середины, прежде чем он оживёт. Тяжёлая декорация (искры на канвасах, плавающие
+     объекты) остаётся выключенной классом .static - на телефоне она стоит батарейки,
+     а Иван просил именно плавное появление блоков */
   var rvs=[].slice.call(document.querySelectorAll('.rv'));
   function showAll(){rvs.forEach(function(e){e.classList.add('on')})}
-  if(mob||reduce||!('IntersectionObserver' in window)){showAll()}
+  if(reduce||!('IntersectionObserver' in window)){showAll()}
   else{
     try{
-      var io=new IntersectionObserver(function(es){es.forEach(function(en){if(en.isIntersecting){en.target.classList.add('on');io.unobserve(en.target)}})},{rootMargin:'0px 0px -14% 0px'});
+      var io=new IntersectionObserver(function(es){es.forEach(function(en){if(en.isIntersecting){en.target.classList.add('on');io.unobserve(en.target)}})},{rootMargin:mob?'0px 0px -8% 0px':'0px 0px -14% 0px',threshold:mob?.08:0});
       rvs.forEach(function(e){io.observe(e)});
     }catch(e){showAll()}
   }
