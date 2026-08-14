@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Распаковка в Claude: готовый проект, который разберёт тебя и твою аудиторию</title>
-<meta name="description" content="Пошаговый гайд: создаёшь проект в Claude, вставляешь один готовый промпт - и нейросеть за два-три разговора находит твоё направление, упаковывает опыт в метод и выдаёт 30 тем для контента">
+<meta name="description" content="Пошаговый гайд для учеников: создаёшь проект в Claude, вставляешь один готовый промпт - и нейросеть за два-три разговора находит твоё направление, упаковывает опыт в метод и выдаёт 30 тем для контента">
 <link rel="canonical" href="https://ivan-loginov.ru/guide-raspakovka-claude/">
 <meta property="og:type" content="article">
 <meta property="og:title" content="Распаковка в Claude: готовый проект, который разберёт тебя и твою аудиторию">
@@ -12,109 +12,104 @@
 <meta property="og:url" content="https://ivan-loginov.ru/guide-raspakovka-claude/">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Rubik:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Unbounded:wght@600;700;800&family=Manrope:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
 <script type="application/ld+json">
-{"@context":"https://schema.org","@type":"Article","headline":"Распаковка себя и анализ аудитории в Claude: готовый проект с промптом","inLanguage":"ru","author":{"@type":"Person","name":"Иван Логинов","url":"https://ivan-loginov.ru/"},"mainEntityOfPage":"https://ivan-loginov.ru/guide-raspakovka-claude/","keywords":"распаковка эксперта нейросетью, анализ целевой аудитории нейросетью"}
+{"@context":"https://schema.org","@type":"Article","headline":"Распаковка себя и анализ аудитории в Claude: готовый проект с промптом","inLanguage":"ru","author":{"@type":"Person","name":"Иван Логинов","url":"https://ivan-loginov.ru/"},"mainEntityOfPage":"https://ivan-loginov.ru/guide-raspakovka-claude/"}
 </script>
 <style>
 :root{
-  --bg:#1F1F1F; --bg2:#141414; --panel:#1A1A1A; --panel2:#0F0F0F;
-  --ink:#EDFEFF; --txt:#A6A6A6; --txt2:#858585; --dim:#5A5A5A;
-  --line:#2A2A2A; --line2:#262626; --line3:#333333;
-  --cyan:#05E6F7; --teal:#23676C;
-  --c40:rgba(5,230,247,.4); --c35:rgba(5,230,247,.35); --c25:rgba(5,230,247,.25);
-  --c15:rgba(5,230,247,.15); --c12:rgba(5,230,247,.12); --c08:rgba(5,230,247,.08);
-  --grad:linear-gradient(to bottom right,#05E6F7,#23676C);
-  --grad-hero:linear-gradient(to bottom right,#EDFEFF 15%,#05E6F7 55%,#23676C 100%);
-  --grad-tile:linear-gradient(to bottom right,rgba(5,230,247,.2),rgba(35,103,108,.2));
-  --ease:cubic-bezier(.4,0,.2,1);
-  --glow-btn:0 0 40px -8px rgba(5,230,247,.7);
-  --shadow-card:0 30px 80px -20px rgba(0,0,0,.7);
-  --font:'Rubik',system-ui,-apple-system,'Segoe UI',Roboto,sans-serif;
-  --mono:ui-monospace,SFMono-Regular,Menlo,monospace;
+  --bg:#FAF6EF; --bg2:#F3ECE0; --card:#FFFFFF;
+  --ink:#1C1815; --muted:#6E6358; --line:#E4DACB;
+  --navy:#1C1815; --navy2:#2A231D; --navy3:#161210;
+  --accent:#BE4A24; --accent-h:#A83F1E; --accent-l:#DA5E30;
+  --acc-100:#EFD9CF; --acc-50:#F8ECE5;
+  --gold:#C98A3C; --gold-l:#DBB36A; --gold-ink:#8F6224;
+  --cream:#E8DFD2; --cream2:#CBC1B2; --cream3:#9E9184;
+  --ease:cubic-bezier(.22,1,.36,1);
+  --fd:'Unbounded',system-ui,sans-serif;
+  --fb:'Manrope',system-ui,sans-serif;
+  --fm:'JetBrains Mono',ui-monospace,monospace;
 }
 *{margin:0;padding:0;box-sizing:border-box}
 html{scroll-behavior:smooth;overflow-x:clip}
-body{background:var(--bg);color:var(--ink);font-family:var(--font);font-size:18px;line-height:1.62;-webkit-font-smoothing:antialiased;overflow-x:clip}
+body{background:var(--bg);color:var(--ink);font-family:var(--fb);font-size:17px;line-height:1.66;-webkit-font-smoothing:antialiased;overflow-x:clip}
 @supports not (overflow:clip){html,body{overflow-x:hidden}}
 img{max-width:100%;height:auto;display:block}
 a{color:inherit;text-decoration:none}
-b,strong{font-weight:600;color:var(--ink)}
+b,strong{font-weight:700;color:var(--ink)}
 .wrap{max-width:760px;margin-inline:auto;padding-inline:24px;position:relative;z-index:2}
-.acc{background:var(--grad);-webkit-background-clip:text;background-clip:text;color:transparent}
-.acc-hero{background:var(--grad-hero);-webkit-background-clip:text;background-clip:text;color:transparent}
-.kicker{display:block;font-size:12px;font-weight:500;letter-spacing:.18em;text-transform:uppercase;color:var(--dim)}
 
-.nav{position:fixed;top:0;left:0;right:0;z-index:50;background:rgba(20,20,20,.75);-webkit-backdrop-filter:blur(12px);backdrop-filter:blur(12px);border-bottom:1px solid var(--line2)}
-.nav-in{max-width:1152px;margin-inline:auto;padding-inline:24px;height:64px;display:flex;align-items:center;justify-content:space-between;gap:16px}
-.nav-brand{font-weight:700;font-size:17px;letter-spacing:-.01em;color:var(--ink);display:flex;align-items:center;gap:9px}
-.nav-brand .dot{width:7px;height:7px;border-radius:50%;background:var(--cyan);box-shadow:0 0 12px rgba(5,230,247,.8)}
-.nav-cta{display:inline-flex;align-items:center;height:40px;padding:0 20px;border-radius:999px;font-size:14px;font-weight:600;color:var(--cyan);background:var(--c08);border:1px solid var(--c40);transition:background-color .15s var(--ease)}
-.nav-cta:hover{background:rgba(5,230,247,.16)}
+.nav{position:sticky;top:0;z-index:100;background:rgba(250,246,239,.88);-webkit-backdrop-filter:blur(12px);backdrop-filter:blur(12px);border-bottom:1px solid var(--line)}
+.nav-in{max-width:1160px;margin:0 auto;padding:13px 24px;display:flex;align-items:center;justify-content:space-between;gap:16px}
+.nav-brand{font-family:var(--fd);font-weight:700;font-size:15px;color:var(--ink);display:flex;align-items:center;gap:10px}
+.nav-brand .dot{width:8px;height:8px;border-radius:50%;background:var(--accent);box-shadow:0 0 0 3px rgba(190,74,36,.18);flex:none}
+.nav-tag{font-family:var(--fm);font-weight:600;font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--gold-ink)}
 
-.hero{padding:140px 0 30px}
-.h1{font-size:clamp(30px,5.4vw,46px);line-height:1.1;letter-spacing:-.03em;font-weight:700;text-wrap:balance;margin:16px 0 20px}
-.lead{font-size:18px;line-height:1.62;color:var(--txt)}
+.eyebrow{display:inline-flex;align-items:center;gap:9px;font-family:var(--fm);font-weight:600;font-size:.72rem;letter-spacing:.1em;text-transform:uppercase;color:var(--accent);background:var(--acc-50);border:1px solid var(--acc-100);padding:8px 15px;border-radius:100px}
+.eyebrow .dot{width:7px;height:7px;border-radius:50%;background:var(--gold);box-shadow:0 0 0 3px rgba(201,138,60,.25);flex:none}
 
-article{padding:10px 0 40px}
-h2{font-size:clamp(24px,3.4vw,32px);line-height:1.15;letter-spacing:-.02em;font-weight:700;margin:56px 0 18px;text-wrap:balance;scroll-margin-top:80px}
-article p{color:var(--txt);margin:0 0 18px}
+.hero{padding:64px 0 26px}
+.h1{font-family:var(--fd);font-size:clamp(1.65rem,4.4vw,2.6rem);line-height:1.12;letter-spacing:-.01em;font-weight:800;text-wrap:balance;margin:18px 0 20px}
+.h1 .acc{color:var(--accent)}
+.lead{font-size:17px;line-height:1.66;color:var(--muted);font-weight:500}
+
+article{padding:10px 0 48px}
+h2{font-family:var(--fd);font-size:clamp(1.3rem,3vw,1.8rem);line-height:1.16;letter-spacing:-.005em;font-weight:700;margin:58px 0 18px;text-wrap:balance;scroll-margin-top:84px}
+article p{color:var(--muted);font-weight:500;margin:0 0 18px}
 article p strong,article li strong{color:var(--ink)}
-.tldr{display:flex;gap:12px;align-items:flex-start;background:var(--panel);border:1px solid var(--line);border-left:3px solid var(--cyan);border-radius:12px;padding:16px 18px;margin:0 0 22px;color:var(--txt)}
-.tldr b{color:var(--cyan);font-weight:600;white-space:nowrap}
+.tldr{display:flex;gap:12px;align-items:flex-start;background:var(--card);border:1px solid var(--line);border-left:3px solid var(--accent);border-radius:14px;padding:16px 18px;margin:0 0 22px;color:var(--muted);font-weight:500;box-shadow:0 10px 24px -18px rgba(28,24,21,.25)}
+.tldr b{color:var(--accent);font-weight:700;white-space:nowrap}
 .steps{list-style:none;counter-reset:st;margin:0 0 18px}
-.steps li{counter-increment:st;position:relative;padding:0 0 18px 58px;color:var(--txt)}
-.steps li::before{content:counter(st);position:absolute;left:0;top:-2px;width:40px;height:40px;border-radius:12px;background:var(--grad-tile);border:1px solid var(--c25);display:grid;place-items:center;color:var(--cyan);font-weight:700;font-size:16px}
-.copy-wrap{background:var(--panel2);border:1px solid var(--line);border-radius:12px;overflow:hidden;margin:14px 0 18px}
-.copy-bar{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:8px 8px 8px 14px;border-bottom:1px solid var(--line2);background:var(--panel)}
-.copy-bar span{font-family:var(--mono);font-size:10px;letter-spacing:.06em;text-transform:uppercase;color:var(--cyan)}
-.copybtn{font-family:var(--font);font-size:12px;font-weight:600;color:var(--ink);background:rgba(5,230,247,.08);border:1px solid var(--c40);border-radius:999px;padding:6px 14px;cursor:pointer;transition:background-color .15s var(--ease);flex:none}
-.copybtn:hover{background:rgba(5,230,247,.18)}
-.copy-wrap pre{margin:0;padding:14px 16px;font-family:var(--mono);font-size:14px;line-height:1.6;color:var(--ink);white-space:pre-wrap;word-break:break-word;overflow-x:auto}
-.prompt-clip{position:relative;max-height:320px;overflow:hidden;transition:max-height .3s var(--ease)}
-.prompt-clip::after{content:'';position:absolute;left:0;right:0;bottom:0;height:120px;background:linear-gradient(transparent,var(--panel2));pointer-events:none}
+.steps li{counter-increment:st;position:relative;padding:0 0 18px 58px;color:var(--muted);font-weight:500}
+.steps li::before{content:counter(st);position:absolute;left:0;top:-2px;width:40px;height:40px;border-radius:12px;background:var(--acc-50);border:1px solid var(--acc-100);display:grid;place-items:center;color:var(--accent);font-family:var(--fd);font-weight:700;font-size:15px}
+.copy-wrap{background:var(--navy3);border:1px solid var(--navy2);border-radius:14px;overflow:hidden;margin:14px 0 18px;box-shadow:0 22px 50px -24px rgba(22,18,16,.55)}
+.copy-bar{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:9px 9px 9px 15px;border-bottom:1px solid rgba(232,223,210,.12);background:var(--navy2)}
+.copy-bar span{font-family:var(--fm);font-size:10px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--gold-l)}
+.copybtn{font-family:var(--fb);font-size:13px;font-weight:800;color:#fff;background:var(--accent);border:0;border-radius:10px;padding:8px 16px;cursor:pointer;box-shadow:0 8px 18px rgba(190,74,36,.35),0 2px 0 var(--accent-h);transition:background-color .15s var(--ease);flex:none}
+.copybtn:hover{background:var(--accent-l)}
+.copy-wrap pre{margin:0;padding:16px 18px;font-family:var(--fm);font-size:13px;line-height:1.62;color:var(--cream);white-space:pre-wrap;word-break:break-word;overflow-x:auto}
+.prompt-clip{position:relative;max-height:320px;overflow:hidden}
+.prompt-clip::after{content:'';position:absolute;left:0;right:0;bottom:0;height:120px;background:linear-gradient(transparent,var(--navy3));pointer-events:none}
 .prompt-open .prompt-clip{max-height:none}
 .prompt-open .prompt-clip::after{display:none}
-.expandbtn{display:block;width:100%;border:0;border-top:1px solid var(--line2);background:var(--panel);color:var(--cyan);font-family:var(--font);font-size:13px;font-weight:600;padding:12px;cursor:pointer;transition:background-color .15s var(--ease)}
-.expandbtn:hover{background:#202020}
-.win{background:var(--bg);border:1px solid var(--line);border-radius:16px;overflow:hidden;box-shadow:var(--shadow-card);margin:8px 0 22px}
-.win-bar{display:flex;align-items:center;gap:6px;padding:10px 14px;border-bottom:1px solid var(--line2);background:var(--panel)}
+.expandbtn{display:block;width:100%;border:0;border-top:1px solid rgba(232,223,210,.12);background:var(--navy2);color:var(--gold-l);font-family:var(--fb);font-size:13px;font-weight:700;padding:12px;cursor:pointer;transition:filter .15s var(--ease)}
+.expandbtn:hover{filter:brightness(1.15)}
+.win{background:var(--card);border:1px solid var(--line);border-radius:16px;overflow:hidden;box-shadow:0 18px 44px -26px rgba(28,24,21,.4);margin:8px 0 22px}
+.win-bar{display:flex;align-items:center;gap:6px;padding:10px 14px;border-bottom:1px solid var(--line);background:var(--bg2)}
 .win-bar i{width:10px;height:10px;border-radius:50%;display:block}
 .win-bar i:nth-child(1){background:#FF5F57}.win-bar i:nth-child(2){background:#FEBC2E}.win-bar i:nth-child(3){background:#28C840}
-.win-bar span{margin-left:8px;font-family:var(--mono);font-size:10px;letter-spacing:.08em;text-transform:uppercase;color:var(--dim)}
+.win-bar span{margin-left:8px;font-family:var(--fm);font-size:10px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--cream3)}
 .win-body{padding:18px}
-.chat-q{max-width:85%;margin-left:auto;background:var(--c12);border:1px solid var(--c25);border-radius:14px 14px 4px 14px;padding:10px 14px;font-size:14px;color:var(--ink);margin-bottom:12px}
-.chat-a{max-width:85%;background:var(--panel);border:1px solid var(--line2);border-radius:14px 14px 14px 4px;padding:10px 14px;font-size:14px;color:var(--txt)}
+.chat-q{max-width:85%;margin-left:auto;background:var(--acc-50);border:1px solid var(--acc-100);border-radius:14px 14px 4px 14px;padding:10px 14px;font-size:14px;font-weight:600;color:var(--ink);margin-bottom:12px}
+.chat-a{max-width:85%;background:var(--bg);border:1px solid var(--line);border-radius:14px 14px 14px 4px;padding:10px 14px;font-size:14px;font-weight:500;color:var(--muted)}
 .chat-a b{color:var(--ink)}
-.fake-input{display:flex;align-items:center;justify-content:space-between;gap:10px;border:1px solid var(--line3);border-radius:999px;padding:10px 16px;color:var(--dim);font-size:14px;margin-top:14px}
-.fake-input i{width:26px;height:26px;border-radius:50%;background:var(--grad);flex:none;display:grid;place-items:center;color:#000;font-style:normal;font-size:13px;font-weight:700}
+.fake-input{display:flex;align-items:center;justify-content:space-between;gap:10px;border:1px solid var(--line);border-radius:999px;padding:10px 16px;color:var(--cream3);font-size:14px;font-weight:500;margin-top:14px;background:var(--bg)}
+.fake-input i{width:26px;height:26px;border-radius:50%;background:var(--accent);flex:none;display:grid;place-items:center;color:#fff;font-style:normal;font-size:13px;font-weight:700}
 .dlg{max-width:340px;margin-inline:auto}
 .dlg-row{display:flex;gap:10px;margin:0 0 12px}
-.dlg-field{flex:1;border:1px solid var(--line3);border-radius:10px;padding:8px 12px;font-size:14px;color:var(--ink)}
-.dlg-field small{display:block;font-size:10px;letter-spacing:.06em;text-transform:uppercase;color:var(--dim)}
-.dlg-btn{display:block;text-align:center;background:var(--cyan);color:#000;font-weight:600;font-size:14px;border-radius:999px;padding:10px}
-.route{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin:0 0 18px;color:var(--txt);font-size:15px}
-.route span{background:var(--panel);border:1px solid var(--line3);border-radius:999px;padding:6px 14px;color:var(--ink);font-weight:600;font-size:14px}
-.route span.on{border-color:var(--c40);color:var(--cyan);background:var(--c08)}
-.route i{color:var(--dim);font-style:normal}
-.warm{background:var(--bg2);border-top:1px solid var(--line2);border-bottom:1px solid var(--line2);padding:8px 0 24px;margin-top:48px}
-.cta-card{background:radial-gradient(90% 60% at 100% 0%,rgba(5,230,247,.1),transparent 60%),linear-gradient(#181818,#0F0F0F);border:1px solid var(--c35);border-radius:24px;padding:34px 28px;text-align:center;margin:40px 0 20px}
-.cta-card .h2c{font-size:clamp(24px,3.4vw,32px);font-weight:700;letter-spacing:-.02em;line-height:1.15;margin-bottom:12px}
-.cta-card p{color:var(--txt);margin-bottom:22px}
-.btn-primary{display:inline-flex;align-items:center;justify-content:center;gap:10px;height:56px;padding:0 34px;border-radius:999px;font-size:16px;font-weight:600;background:var(--cyan);color:#000;box-shadow:var(--glow-btn);transition:filter .15s var(--ease)}
-.btn-primary:hover{filter:brightness(1.08)}
-.footer{padding:36px 0 44px;border-top:1px solid var(--line2);background:var(--bg2)}
-.footer p{font-size:13px;color:var(--dim);margin-bottom:10px}
-.footer a{text-decoration:underline;text-underline-offset:3px}
-.footer .req span{white-space:nowrap}
-.footer .dot{color:var(--line3)}
+.dlg-field{flex:1;border:1px solid var(--line);border-radius:10px;padding:8px 12px;font-size:14px;font-weight:600;color:var(--ink);background:var(--bg)}
+.dlg-field small{display:block;font-family:var(--fm);font-size:9px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--cream3)}
+.dlg-btn{display:block;text-align:center;background:var(--accent);color:#fff;font-weight:800;font-size:14px;border-radius:12px;padding:11px;box-shadow:0 8px 18px rgba(190,74,36,.3),0 2px 0 var(--accent-h)}
+.route{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin:0 0 18px;color:var(--muted);font-size:15px;font-weight:600}
+.route span{background:var(--card);border:1px solid var(--line);border-radius:999px;padding:6px 14px;color:var(--ink);font-weight:700;font-size:14px}
+.route span.on{border-color:var(--acc-100);color:var(--accent);background:var(--acc-50)}
+.route i{color:var(--cream2);font-style:normal}
+.darksec{background:var(--navy3);border-top:1px solid rgba(232,223,210,.1);padding:14px 0 46px;margin-top:56px}
+.darksec h2{color:var(--cream)}
+.darksec p{color:var(--cream2)}
+.darksec p strong{color:var(--cream)}
+.footer{padding:36px 0 40px;border-top:1px solid rgba(232,223,210,.1);background:var(--navy3)}
+.footer .brandline{color:var(--cream2);font-weight:600;font-size:.9rem;margin-bottom:14px}
+.footer .brandline .b1{font-family:var(--fd);font-weight:800;font-size:.92rem;color:var(--cream)}
+.footer .sep{color:var(--cream2);opacity:.6}
+.footer p{font-size:.82rem;font-weight:500;line-height:1.5;color:var(--cream3);margin-bottom:8px}
 @media (max-width:640px){
-  body{font-size:17px}
-  .hero{padding:120px 0 20px}
+  .hero{padding:44px 0 16px}
   .steps li{padding-left:50px}
-  .steps li::before{width:34px;height:34px;border-radius:10px;font-size:14px}
+  .steps li::before{width:34px;height:34px;border-radius:10px;font-size:13px}
   .win-body{padding:14px}
   .copy-bar{flex-wrap:wrap}
+  .nav-tag{display:none}
 }
 </style>
 </head>
@@ -122,12 +117,12 @@ article p strong,article li strong{color:var(--ink)}
 
 <nav class="nav"><div class="nav-in">
   <a class="nav-brand" href="/"><span class="dot"></span>Иван Логинов</a>
-  <a class="nav-cta" href="/">Мини-курс</a>
+  <span class="nav-tag">Гайд для учеников</span>
 </div></nav>
 
 <header class="hero"><div class="wrap">
-  <span class="kicker">Гайд · бесплатно · настройка за 5 минут</span>
-  <h1 class="h1">Распаковка в <span class="acc-hero">Claude</span>: проект, который разберёт тебя и твою аудиторию</h1>
+  <span class="eyebrow"><span class="dot"></span>Гайд для учеников · настройка за 5 минут</span>
+  <h1 class="h1">Распаковка в <span class="acc">Claude</span>: проект, который разберёт тебя и твою аудиторию</h1>
   <p class="lead">Создаёшь в Claude проект, один раз вставляешь готовый промпт из этого гайда - и дальше просто отвечаешь на вопросы. За два-три разговора нейросеть находит твоё направление, упаковывает опыт в авторский метод и разбирает аудиторию до 30 готовых тем для контента. Ничего устанавливать не нужно</p>
 </div></header>
 
@@ -422,26 +417,18 @@ article p strong,article li strong{color:var(--ink)}
 
 </div>
 
-<div class="warm"><div class="wrap">
+<div class="darksec"><div class="wrap">
 
 <h2>Что у тебя на руках после трёх разговоров</h2>
-<p class="tldr"><b>Коротко:</b><span>направление, упакованный метод, разбор аудитории и 30 тем - фундамент, на котором строится контент и продукт</span></p>
-<p>После распаковки и анализа у тебя три документа: твоё направление с преимуществом, паспорт метода и разбор аудитории с банком тем. Это не «интересно почитать» - это рабочие материалы: из банка тем собирается контент на месяц вперёд, из языка аудитории - заголовки и офферы, из сегментов понятно, кому и что продавать</p>
-<p>Дальше эти материалы превращаются в систему: контент каждый день, воронка, которая ловит заявки, продукт. Как это устроено целиком - я собрал в мини-курс</p>
-
-<div class="cta-card">
-  <div class="h2c">Дальше - <span class="acc">система</span></div>
-  <p>Распаковка даёт фундамент. Конвейер, который превращает темы в подписчиков и заявки, здесь:</p>
-  <a class="btn-primary" href="/">Мини-курс «Контент-завод за выходные» - 2 990 ₽</a>
-</div>
+<p>После распаковки и анализа у тебя три документа: направление с преимуществом, паспорт метода и разбор аудитории с банком тем. Это не «интересно почитать» - это рабочие материалы: из банка тем собирается контент на месяц вперёд, из языка аудитории - заголовки и офферы, из сегментов понятно, кому и что предлагать</p>
+<p>Держи их под рукой: дальше по программе на этот фундамент ложится всё остальное - контент, воронка, продукт. И сам проект в Claude остаётся с тобой: в нём же можно просить посты, офферы и лид-магниты на основе анализа</p>
 
 </div></div>
 </article>
 
 <footer class="footer"><div class="wrap">
-  <p>Обучение методу. Не&nbsp;гарантирую доход, число подписчиков или заявок - результат зависит от&nbsp;ниши и&nbsp;исполнения</p>
-  <p>Claude и&nbsp;ChatGPT - сторонние сервисы компаний Anthropic и&nbsp;OpenAI со&nbsp;своими условиями использования</p>
-  <p class="req"><span>ИП&nbsp;Логинов&nbsp;Иван&nbsp;Владимирович</span> <span class="dot">·</span> <span>ИНН&nbsp;420529937430</span> <span class="dot">·</span> <span>ОГРНИП&nbsp;326420500041676</span> <span class="dot">·</span> <a href="/oferta.html">оферта</a> <span class="dot">·</span> <a href="/vozvrat.html">политика возврата</a> <span class="dot">·</span> <a href="/privacy.html">конфиденциальность</a></p>
+  <p class="brandline"><span class="b1">Гайд для учеников</span> <span class="sep">·</span> Иван Логинов</p>
+  <p>Claude и ChatGPT - сторонние сервисы компаний Anthropic и OpenAI со своими условиями использования</p>
 </div></footer>
 
 <script>
