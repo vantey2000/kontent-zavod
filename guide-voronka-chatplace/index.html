@@ -1,0 +1,224 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Воронка из карусели в личку: кодовое слово, ChatPlace, статья, Telegram</title>
+<meta name="description" content="Пошаговая инструкция: кодовое слово в карусели, ChatPlace, статья-лидмагнит на Teletype, ссылка на Telegram. Два готовых промпта для Claude и чек-лист">
+<link rel="canonical" href="https://ivan-loginov.ru/guide-voronka-chatplace/">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Воронка из карусели в личку: кодовое слово, ChatPlace, статья, Telegram">
+<meta property="og:description" content="Пошаговая инструкция: кодовое слово в карусели, ChatPlace, статья-лидмагнит на Teletype, ссылка на Telegram. Два готовых промпта для Claude и чек-лист">
+<meta property="og:url" content="https://ivan-loginov.ru/guide-voronka-chatplace/">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Unbounded:wght@600;700;800&family=Manrope:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;700&display=swap">
+<script type="application/ld+json">
+{"@context": "https://schema.org", "@type": "Article", "headline": "Воронка из карусели в личку: кодовое слово, ChatPlace, статья, Telegram", "inLanguage": "ru", "author": {"@type": "Person", "name": "Иван Логинов", "url": "https://ivan-loginov.ru/"}, "mainEntityOfPage": "https://ivan-loginov.ru/guide-voronka-chatplace/", "datePublished": "2026-09-22", "description": "Пошаговая инструкция: кодовое слово в карусели, ChatPlace, статья-лидмагнит на Teletype, ссылка на Telegram. Два готовых промпта для Claude и чек-лист"}
+</script>
+<style>
+:root{
+  --bg:#FAF6EF; --bg2:#F3ECE0; --card:#FFFFFF;
+  --ink:#1C1815; --muted:#5E544A; --line:#E4DACB;
+  --navy2:#2A231D; --navy3:#161210;
+  --accent:#BE4A24; --accent-h:#A83F1E; --accent-l:#DA5E30;
+  --acc-100:#EFD9CF; --acc-50:#F8ECE5;
+  --gold:#C98A3C; --gold-l:#DBB36A; --gold-ink:#8F6224;
+  --cream:#E8DFD2; --cream2:#CBC1B2; --cream3:#9E9184;
+  --code-bg:#F3ECE0; --code-ink:#8F3A1C;
+  --fd:'Unbounded',system-ui,sans-serif; --fb:'Manrope',system-ui,sans-serif; --fm:'JetBrains Mono',ui-monospace,monospace;
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--fb);font-size:17px;line-height:1.66;-webkit-font-smoothing:antialiased}
+a{color:var(--accent);text-decoration:underline;text-decoration-thickness:1px;text-underline-offset:3px;word-break:break-word}
+.nav{position:sticky;top:env(safe-area-inset-top,0px);z-index:100;background:color-mix(in srgb,var(--bg) 88%,transparent);-webkit-backdrop-filter:blur(12px);backdrop-filter:blur(12px);border-bottom:1px solid var(--line)}
+.nav-in{max-width:1160px;margin:0 auto;padding:13px 24px;display:flex;align-items:center;justify-content:space-between;gap:16px}
+.nav-brand{text-decoration:none;color:var(--ink);font-family:var(--fd);font-weight:700;font-size:15px;display:flex;align-items:center;gap:10px}
+.nav-brand .dot{width:8px;height:8px;border-radius:50%;background:var(--accent);box-shadow:0 0 0 3px rgba(190,74,36,.18);flex:none}
+.nav-tag{font-family:var(--fm);font-weight:600;font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--gold-ink)}
+.wrap{max-width:760px;margin-inline:auto;padding-inline:20px}
+.hero{padding-block:56px 10px}
+.eyebrow{display:inline-flex;align-items:center;gap:9px;font-family:var(--fm);font-weight:600;font-size:.72rem;letter-spacing:.1em;text-transform:uppercase;color:var(--accent);background:var(--acc-50);border:1px solid var(--acc-100);padding:8px 15px;border-radius:100px}
+.eyebrow .dot{width:7px;height:7px;border-radius:50%;background:var(--gold);box-shadow:0 0 0 3px rgba(201,138,60,.25);flex:none}
+h1{font-family:var(--fd);font-size:clamp(1.55rem,4.4vw,2.5rem);line-height:1.14;letter-spacing:-.01em;font-weight:800;text-wrap:balance;margin:18px 0 20px}
+h1 .acc{color:var(--accent)}
+.lead{font-size:17px;color:var(--muted);font-weight:500}
+article{padding-block:6px 48px}
+h2{font-family:var(--fd);font-size:clamp(1.25rem,3vw,1.7rem);line-height:1.18;font-weight:700;margin:56px 0 16px;text-wrap:balance;scroll-margin-top:84px}
+h3{font-family:var(--fd);font-size:clamp(1rem,2.2vw,1.2rem);line-height:1.22;font-weight:700;margin:36px 0 12px;text-wrap:balance}
+article p{color:var(--muted);font-weight:500;margin:0 0 18px}
+article p strong,article li strong{color:var(--ink)}
+article ul,article ol{margin:0 0 18px;padding-left:22px;color:var(--muted);font-weight:500}
+article li{margin-bottom:8px}
+code{font-family:var(--fm);font-size:.86em;background:var(--code-bg);color:var(--code-ink);padding:2px 6px;border-radius:6px}
+.steps{list-style:none;counter-reset:st;padding-left:0 !important}
+.steps li{counter-increment:st;position:relative;padding:0 0 14px 56px;min-height:40px}
+.steps li::before{content:counter(st);position:absolute;left:0;top:-2px;width:40px;height:40px;border-radius:12px;background:var(--acc-50);border:1px solid var(--acc-100);display:grid;place-items:center;color:var(--accent);font-family:var(--fd);font-weight:700;font-size:15px}
+.scheme pre{margin:8px 0 22px;padding:18px 20px;background:var(--card);border:1px solid var(--line);border-left:3px solid var(--accent);border-radius:14px;font-family:var(--fm);font-size:13.5px;line-height:1.6;color:var(--ink);white-space:pre-wrap;word-break:break-word;overflow-x:auto}
+.copy-wrap{background:var(--navy3);border:1px solid var(--navy2);border-radius:14px;overflow:hidden;margin:14px 0 26px;box-shadow:0 22px 50px -24px rgba(22,18,16,.55)}
+.copy-bar{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:9px 9px 9px 15px;border-bottom:1px solid rgba(232,223,210,.12);background:var(--navy2)}
+.copy-bar span{font-family:var(--fm);font-size:10px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--gold-l)}
+.copybtn{font-family:var(--fb);font-size:13px;font-weight:800;color:#fff;background:var(--accent);border:0;border-radius:10px;padding:8px 16px;cursor:pointer;box-shadow:0 2px 0 var(--accent-h);flex:none}
+.copybtn:hover{background:var(--accent-l)}
+.copybtn:focus-visible{outline:2px solid var(--gold-l);outline-offset:2px}
+.copy-wrap pre{margin:0;padding:16px 18px;font-family:var(--fm);font-size:13px;line-height:1.62;color:var(--cream);white-space:pre-wrap;word-break:break-word;overflow-x:auto}
+.copy-wrap.soft pre{font-family:var(--fb);font-size:15px;font-weight:500}
+.tbl{overflow-x:auto;margin:8px 0 22px}
+table{border-collapse:collapse;width:100%;min-width:480px;font-size:15px}
+th,td{text-align:left;padding:10px 12px;border-bottom:1px solid var(--line);vertical-align:top}
+th{font-family:var(--fm);font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--gold-ink);font-weight:700}
+td{color:var(--muted);font-weight:500}
+td:nth-child(2){color:var(--accent);font-weight:800;white-space:nowrap}
+.check{list-style:none;padding-left:0 !important}
+.check li{margin:0 0 10px}
+.check label{display:flex;gap:12px;align-items:flex-start;background:var(--card);border:1px solid var(--line);border-radius:12px;padding:12px 14px;cursor:pointer}
+.check input{width:20px;height:20px;margin:2px 0 0;accent-color:var(--accent);flex:none}
+.check input:checked + span{text-decoration:line-through;opacity:.6}
+.footer{border-top:1px solid var(--line);padding-block:28px 40px;color:var(--cream3);font-size:.85rem;font-weight:500}
+.footer b{font-family:var(--fd);color:var(--ink);font-size:.9rem}
+@media (max-width:640px){ .hero{padding-block:40px 8px} .nav-tag{display:none} .steps li{padding-left:50px} .steps li::before{width:34px;height:34px;font-size:13px;border-radius:10px} }
+@media (prefers-reduced-motion: no-preference){ .copybtn{transition:background-color .15s} }
+</style>
+</head>
+<body>
+<nav class="nav"><div class="nav-in"><a class="nav-brand" href="/"><span class="dot"></span>Иван Логинов</a><span class="nav-tag">Гайд для учеников</span></div></nav>
+<main class="wrap">
+<header class="hero"><span class="eyebrow"><span class="dot"></span>Инструкция для учеников</span>
+<h1>Воронка из карусели в личку: <span class="acc">кодовое слово</span>, ChatPlace, статья, Telegram</h1></header>
+<article>
+<p class="lead">Инструкция по разбору с зума 20 сентября. Собрана из того, что Иван объяснял Сергею, плюс точные названия кнопок из уже собранных воронок Ивана. Делаешь по шагам сверху вниз - в конце у тебя каждая карусель сама приводит людей в личку</p>
+<h2>Зачем это вообще</h2>
+<p>Сейчас у большинства карусель заканчивается так: полезная информация и точка. Человек прочитал, может лайкнул, ушёл. Написать тебе в директ ему не с чего - он тебя не знает, доверия нет, повода нет</p>
+<p>Призыв «пиши в директ» работает слабо по той же причине: чтобы человек написал незнакомому эксперту, его надо сначала прогреть. Поэтому между каруселью и личкой ставится лидмагнит - бесплатная полезная статья, которую человек получает за кодовое слово. Первая половина статьи даёт пользу и создаёт доверие, вторая плавно подводит к работе с тобой</p>
+<p>У Ивана эта штука стоит на каждой карусели. Его слова с зума: «Я вот это подключил, ещё карусели начали залетать - и у меня в директе каждую минуту пишут». Разница с «инфа и точка» именно в этой вороночке, вшитой в каждый пост</p>
+<h2>Схема целиком</h2>
+<div class="scheme"><pre>Карусель (последний слайд + приписка: «напиши слово ЖИР в комментариях»)
+        ↓
+Человек пишет слово в комментарий или в директ
+        ↓
+ChatPlace ловит слово и сам отправляет ему в директ ссылку
+        ↓
+Статья-лидмагнит на Teletype: польза → мостик → предложение поработать
+        ↓
+В конце статьи ссылка на твой Telegram → человек пишет тебе сам</pre></div>
+<p>Пять звеньев. Дальше каждое по отдельности</p>
+<h2>Шаг 1. Тема, кодовое слово, лидмагнит</h2>
+<p>Правило: одно кодовое слово = одна тема = один лидмагнит. Не смешивать. Иван прямо сказал: «если будешь всё в одно замешивать, конверсия порежется, получится винегрет»</p>
+<p>Для фитнеса и здоровья напрашиваются три темы, и Иван их же назвал: тренировки, питание, добавки. Под каждую - своё слово и своя статья:</p>
+<div class="tbl"><table><thead><tr><th>Тема каруселей</th><th>Кодовое слово (пример)</th><th>Что получает человек</th></tr></thead><tbody><tr><td>Похудение, питание</td><td>ЖИР</td><td>пошаговая инструкция по питанию</td></tr><tr><td>Набор массы, тренировки</td><td>МЫШЦЫ</td><td>инструкция по тренировкам</td></tr><tr><td>Добавки, витамины</td><td>ДОБАВКИ</td><td>разбор, что реально работает</td></tr></tbody></table></div>
+<p>Начни с одной темы. Иван: «сначала один какой-нибудь лидмагнит, по тренировкам или по питанию». Вторая и третья - когда первая заработала</p>
+<p>Правила кодового слова:</p>
+<ul><li>одно короткое слово, кириллицей, без опечаток и дефисов</li><li>связано с темой, чтобы человек сразу понимал, что получит</li><li>регистр не важен: ChatPlace сам пишет, что заглавные и строчные буквы не различает, «жир» и «ЖИР» - одно и то же</li><li>у каждой темы своё слово, повторять нельзя - иначе бот не поймёт, какую статью слать</li></ul>
+<h2>Шаг 2. Написать лидмагнит с Claude</h2>
+<p>Структура статьи ровно та, что описал Иван:</p>
+<ol class="steps"><li><strong>Польза (примерно две трети текста).</strong> Конкретно как делать: как правильно питаться, как строить тренировки, что с добавками. Человек должен закрыть статью с ощущением «мне реально помогли, бесплатно»</li><li><strong>Мостик.</strong> Одно-два предложения, которые связывают пользу с тобой: «это можно сделать самому по инструкции выше, а можно быстрее и без ошибок - под наблюдением, когда программу подбирают под тебя и корректируют по ходу»</li><li><strong>Предложение поработать.</strong> Что такое твоё сопровождение, кому подходит, как это устроено. Без цен и жёсткой продажи</li><li><strong>Контакт.</strong> Ссылка на твой Telegram: «если хочешь лично - напиши мне, подробности расскажу в переписке». Иван подчеркнул: ссылка на личное сопровождение должна стоять в каждом лидмагните, независимо от темы</li></ol>
+<p>Одна оговорка для темы здоровья: в статье не ставим диагнозы и не обещаем вылечить. Цифры результатов - только те, что реально были у твоих клиентов. Общие фразы «минус 15 кг за 3 месяца» без реального случая за ними не пишем</p>
+<p>Иван: «прям в Клод закинь, он тебе составит лидмагнит». Вот промпт, который это делает</p>
+<p><strong>Промпт 1. Написать статью-лидмагнит.</strong> Кому: тем, кто делает первую статью под кодовое слово. Открываешь новый чат с Claude, вставляешь целиком, подставляешь своё в квадратных скобках</p>
+<div class="copy-wrap"><div class="copy-bar"><span>промпт для Claude</span><button class="copybtn" type="button" onclick="copyPre(this)">Скопировать</button></div><pre>Ты пишешь для меня статью-лидмагнит. Я [кто ты: тренер / специалист по питанию / ...], работаю с людьми лично: [что делаешь на сопровождении: составляю программу, веду по питанию, корректирую каждую неделю]. Читатель получит эту статью бесплатно за кодовое слово [СЛОВО] после моей карусели про [тема карусели].
+
+Читатель: [кто он: мужчина или женщина, возраст, ситуация - например «хочет похудеть, пробовал диеты, срывается»]. Пишет мне после карусели, меня ещё не знает.
+
+Что должно быть в статье:
+1. Заголовок с конкретным обещанием, без кликбейта.
+2. Польза - две трети текста. Пошаговая инструкция по теме [тема]: что делать, в каком порядке, какие типичные ошибки. Мои принципы, которые обязательно учесть: [2-4 своих принципа, например «без голодных диет», «дефицит калорий считается так-то»]. Никаких диагнозов и обещаний вылечить. Цифры результатов только из моих реальных случаев: [опиши 1-2 реальных случая или напиши «без цифр»].
+3. Мостик - одно-два предложения: всё это можно сделать самому по инструкции выше, а можно быстрее и без ошибок под наблюдением.
+4. Что такое моя работа лично: [как устроено сопровождение, срок, формат]. Без цен и давления.
+5. В конце: «Хочешь лично - напиши мне в Telegram: [ссылка на твой Telegram]. Подробности расскажу в переписке».
+
+Тон: живой, простыми словами, как объясняю клиенту на первой встрече. Без канцелярита и без штампов из нейросети. Обращение на «ты». Объём 900-1400 слов.
+
+Сначала задай мне уточняющие вопросы, если чего-то не хватает. Потом выдай статью целиком одним сообщением с заголовком «ЛИДМАГНИТ: [СЛОВО]» - я скопирую её в Teletype без правок.</pre></div>
+<p>Статью прочитай глазами клиента. Если где-то Claude придумал цифру или факт, которого у тебя не было - убери. Готовый текст сохрани себе в файл</p>
+<h2>Шаг 3. Опубликовать статью на Teletype</h2>
+<p>Иван: «Самый простой сервис - Teletype». Бесплатный, регистрация за минуту, статья выглядит прилично и открывается с телефона без приложений</p>
+<ol class="steps"><li>Зайди на teletype.in, зарегистрируйся (почта или соцсеть)</li><li>Нажми «Написать» - откроется редактор</li><li>Вставь заголовок и текст статьи из шага 2. Разбей на подзаголовки, чтобы читалось с телефона. Одна-две картинки по желанию, не обязательно</li><li>Ссылку на Telegram в конце вставь как ссылку (выдели текст → вставить ссылку), чтобы она была кликабельной. Формат: <code><a href="https://t.me/твой_ник" target="_blank" rel="noopener">https://t.me/твой_ник</a></code></li><li>Нажми «Опубликовать» и скопируй ссылку на статью</li><li>Открой эту ссылку с телефона, в режиме инкогнито или с другого аккаунта: статья видна, читается, ссылка на Telegram в конце нажимается и открывает чат с тобой</li></ol>
+<p>Эта ссылка на статью - то, что ChatPlace будет раздавать людям. Сохрани её</p>
+<h2>Шаг 4. Настроить ChatPlace</h2>
+<p>ChatPlace - сервис, который следит за комментариями и директом твоего Instagram и сам отвечает человеку, когда тот написал кодовое слово. Ты в это время можешь спать. Иван: «подключается ChatPlace, такая программа, которая автоматически по кодовому слову скидывает ссылку в директ»</p>
+<h3>4.1. Подключить аккаунт</h3>
+<ol class="steps"><li>Зарегистрируйся на app.chatplace.io</li><li>Подключи свой Instagram: сервис проведёт по шагам сам. Аккаунт должен быть профессиональным (тип «автор» или «бизнес» в настройках Instagram), иначе подключение не пройдёт</li><li>Проверь, что аккаунт в ChatPlace показан как подключённый</li></ol>
+<h3>4.2. Создать автоматизацию под слово</h3>
+<p>В ChatPlace автоматизация рисуется как схема из блоков: условие запуска → сообщение. Тебе нужен самый простой вариант из двух блоков</p>
+<p><strong>Блок «Условия запуска»</strong> (панель настроек автоматизации):</p>
+<ul><li>События: «Сообщение в Директ» + «Комментарий к публикации». Включи оба (переключатель «Несколько условий»), чтобы слово ловилось и в комментариях, и в директе</li><li>Срабатывать на: «Сообщение или комментарий, которые содержат в себе» → впиши своё слово, например <code>жир</code></li><li>«Запретить повторный запуск» - включи. Тогда один человек получает статью один раз и не заваливается повторами</li></ul>
+<p>Ответ на сторис ловится этим же условием: ChatPlace считает ответ на сторис обычным сообщением в директ. Так что призыв «напиши слово ЖИР» работает и в сторис. Только просить надо написать слово текстом, а не «поставь реакцию» - реакции в директ не доходят</p>
+<p><strong>Блок «Сообщение»</strong> - что человек получит в директ:</p>
+<ul><li>текст в 2-3 предложения: что внутри статьи и зачем её открыть</li><li>кнопка со ссылкой на статью. Важно: используй тип блока «Карточка» с кнопкой-ссылкой, а не «быстрый ответ». Быстрый ответ не умеет держать ссылку и исчезает после первого нажатия</li></ul>
+<p>Пример текста сообщения (перепиши под себя и под свою статью):</p>
+<div class="copy-wrap soft"><div class="copy-bar"><span>текст</span><button class="copybtn" type="button" onclick="copyPre(this)">Скопировать</button></div><pre>Держи инструкцию по питанию, о которой писал в карусели: как выстроить рацион, чтобы вес уходил без голодовок и срывов. Жми кнопку, читается за 7 минут. Если по ходу появятся вопросы - пиши сюда, отвечу</pre></div>
+<p>Кнопка: <code>Забрать инструкцию</code> → ссылка на статью в Teletype</p>
+<p>Ссылки в Instagram обычно никуда не ведут (в описании и в комментариях они не кликаются), а в директе через ChatPlace кнопка со ссылкой работает - ради этого вся конструкция</p>
+<h3>4.3. Публичный ответ на комментарий</h3>
+<p>Когда человек пишет слово под постом, ему хорошо бы ответить и публично, чтобы остальные видели: «отправил тебе в директ». Это и подсказка другим читателям, и сигнал алгоритму, что под постом идёт переписка</p>
+<p>Настраивается отдельно, не в автоматизации: левое меню ChatPlace → «Инструменты роста» → «Ответы в комментариях». Там указываешь слово-триггер и тексты ответов</p>
+<p>Сделай 10-15 разных вариантов ответа, сервис будет их чередовать. Одинаковые комментарии подряд Instagram режет как спам. Примеры:</p>
+<div class="copy-wrap soft"><div class="copy-bar"><span>текст</span><button class="copybtn" type="button" onclick="copyPre(this)">Скопировать</button></div><pre>Отправил тебе инструкцию в директ, загляни
+Лови в личке, только что ушло
+Написал тебе в директ, проверь запросы
+Всё ушло в личные сообщения, открывай
+Инструкция уже у тебя в директе</pre></div>
+<p>Остальные варианты в том же духе, своими словами</p>
+<h3>4.4. По желанию: второе сообщение через пару часов</h3>
+<p>Instagram разрешает боту писать человеку в течение 24 часов после его последнего сообщения. В это окно можно добавить ещё одно сообщение с задержкой, например через 2 часа: «Прочитал? Если что-то из инструкции не получается применить - напиши, разберём». Это уже уровень два. Сначала запусти базовую цепочку из шага 4.2, дополнительные сообщения добавишь, когда увидишь, что база работает</p>
+<h2>Шаг 5. Вшить призыв в каждую карусель</h2>
+<p>Это самая важная часть, и именно её у тебя сейчас нет. Иван: «В каждую карусель call to action - последний слайд плюс приписка. И я такой мостик делаю от темы поста к своему офферу»</p>
+<p>Призыв стоит в двух местах:</p>
+<ol class="steps"><li><strong>Последний слайд карусели</strong> - коротко, 2-3 строки</li><li><strong>Приписка в конце текста под постом</strong> - те же 2-3 предложения, можно чуть развёрнутее</li></ol>
+<p>Формула призыва:</p>
+<ul><li><strong>Мостик</strong> - одно предложение, которое цепляется за тему именно этого поста и переводит к твоей инструкции</li><li><strong>Что пришлю</strong> - конкретно, простыми словами</li><li><strong>Действие</strong> - «напиши слово ЖИР в комментариях»</li></ul>
+<p>Примеры под твои темы (цифры - только если это твой реальный результат с клиентами):</p>
+<p>Пост про ошибки в питании:</p>
+<div class="copy-wrap soft"><div class="copy-bar"><span>текст</span><button class="copybtn" type="button" onclick="copyPre(this)">Скопировать</button></div><pre>Это три самые частые ошибки, но список длиннее. Собрал пошаговую инструкцию, как выстроить питание, чтобы вес уходил без голодовок. Напиши слово ЖИР в комментариях - пришлю в директ</pre></div>
+<p>Пост про набор массы:</p>
+<div class="copy-wrap soft"><div class="copy-bar"><span>текст</span><button class="copybtn" type="button" onclick="copyPre(this)">Скопировать</button></div><pre>Тренировки - половина результата, вторая половина - как ты восстанавливаешься и ешь. Расписал всё в одну инструкцию по набору массы. Напиши слово МЫШЦЫ в комментариях - отправлю</pre></div>
+<p>Пост про добавки:</p>
+<div class="copy-wrap soft"><div class="copy-bar"><span>текст</span><button class="copybtn" type="button" onclick="copyPre(this)">Скопировать</button></div><pre>Большинство добавок из этого списка не нужны. Что реально стоит принимать и когда - собрал в короткий разбор. Напиши слово ДОБАВКИ в комментариях - скину</pre></div>
+<p>Слово выбирается по теме поста: карусель про еду → ЖИР, про зал → МЫШЦЫ. Иван: «в каждую карусель по смыслу вставлять разные лидмагниты». Пока лидмагнит один - все карусели ведут на него, слово одно</p>
+<p><strong>Промпт 2. Призыв под конкретный пост.</strong> Кому: на каждую новую карусель, чтобы не выдумывать мостик руками. Вставляешь в Claude вместе с текстом поста</p>
+<div class="copy-wrap"><div class="copy-bar"><span>промпт для Claude</span><button class="copybtn" type="button" onclick="copyPre(this)">Скопировать</button></div><pre>Вот текст моей карусели:
+[вставь текст всех слайдов]
+
+Напиши к ней призыв к действию в двух вариантах: (1) для последнего слайда - до 3 коротких строк, (2) приписка в конец текста под постом - 2-3 предложения.
+
+Правила:
+- первое предложение - мостик: цепляется за тему или главную мысль именно этого поста и переводит к моей бесплатной инструкции по теме [тема лидмагнита]
+- дальше одной фразой - что человек получит
+- заканчивается дословно: «Напиши слово [СЛОВО] в комментариях» плюс «пришлю в директ» или похожее
+- простыми словами, как для человека, который не разбирается в фитнесе
+- никаких обещаний цифр и сроков, никаких диагнозов
+- без длинных тире, только дефис
+
+Выдай оба варианта одним сообщением, без пояснений.</pre></div>
+<h2>Шаг 6. Проверить на себе</h2>
+<p>Прежде чем ставить призыв в карусели, прогони цепочку сам. Нужен второй аккаунт Instagram (любой, хоть друга)</p>
+<ol class="steps"><li>Со второго аккаунта напиши кодовое слово в комментарий под любым своим постом</li><li>Проверь: появился ли публичный ответ под комментарием</li><li>Проверь директ второго аккаунта: пришло ли сообщение с кнопкой. Сообщение от незнакомого аккаунта может упасть в «Запросы» - это нормально, так будет и у людей</li><li>Нажми кнопку: открылась ли статья на Teletype</li><li>Долистай до конца: нажимается ли ссылка на твой Telegram, открывает ли чат с тобой</li><li>Повтори то же самое, написав слово в директ, а не в комментарий</li></ol>
+<p>Если на каком-то шаге не сработало: проверь, что автоматизация в ChatPlace включена, слово в условии запуска совпадает с тем, что ты писал, аккаунт подключён. Если публичный ответ есть, а директа нет - смотри блок «Сообщение» и кнопку</p>
+<p>Только когда все шесть пунктов прошли - ставь призыв в карусели</p>
+<h2>Актуальные: минимум, но обязательно</h2>
+<p>Отдельный пункт от Ивана: «обязательно сделай актуальные, хотя бы элементарные». Человек, который пришёл с карусели, первым делом заходит в профиль и смотрит, кто ты. Если в актуальных пусто - доверие ниже, и слово он не напишет</p>
+<p>Минимум два кружка:</p>
+<ul><li><strong>Обо мне</strong> - кто ты, чем занимаешься, с кем работаешь, 3-5 сторис</li><li><strong>Как работаю</strong> (или «Сопровождение») - что делаешь с клиентом, как это выглядит, как связаться</li></ul>
+<p>Это можно сделать за вечер, и лучше до того, как воронка заработает</p>
+<h2>Что дальше и чего не делать</h2>
+<p><strong>Порядок, который назвал Иван:</strong> сначала лидмагниты, которые ведут в Telegram, и продажа лично в переписке. Лендинг и приём оплаты - потом. «Лендинг сейчас проще создать, чем даже приём платежей: Продамус, Яндекс - там юридическая волокита»</p>
+<p><strong>Не делать:</strong></p>
+<ul><li>ссылку сразу на оплату программы без лендинга. Человек не купит программу за 900 рублей у незнакомого человека по голой ссылке на оплату, и на этом Иван отдельно остановился</li><li>одну статью «про всё»: и питание, и тренировки, и добавки, и сопровождение в одном тексте. Это тот самый винегрет</li><li>призыв только в одной карусели из десяти. Приписка должна стоять в каждой</li></ul>
+<p><strong>Когда первая цепочка заработала:</strong></p>
+<ol class="steps"><li>Второй лидмагнит под вторую тему и второе слово. Потом третий</li><li>Отдельная воронка на программу тренировок: слово → статья → в конце ссылка на покупку программы. Для неё нужен лендинг с описанием программы и приём оплаты</li><li>Посадочная страница со всеми услугами, где отдельно программа, отдельно сопровождение, отдельно разбор по добавкам. Лендинг тоже делается через Claude</li></ol>
+<h2>Чек-лист</h2>
+<ul class="check"><li><label><input type="checkbox" id="chk0"> <span>Выбрана одна тема и одно кодовое слово</span></label></li><li><label><input type="checkbox" id="chk1"> <span>Статья-лидмагнит написана: польза → мостик → предложение → ссылка на Telegram в конце</span></label></li><li><label><input type="checkbox" id="chk2"> <span>Статья опубликована на Teletype, ссылка проверена с телефона, ссылка на Telegram кликается</span></label></li><li><label><input type="checkbox" id="chk3"> <span>Instagram подключён к ChatPlace</span></label></li><li><label><input type="checkbox" id="chk4"> <span>Автоматизация: условия запуска (директ + комментарий, слово), сообщение с кнопкой «Карточка» и ссылкой на статью, повторный запуск запрещён</span></label></li><li><label><input type="checkbox" id="chk5"> <span>Ответы в комментариях: 10-15 вариантов на ротацию</span></label></li><li><label><input type="checkbox" id="chk6"> <span>Тест со второго аккаунта пройден: комментарий → публичный ответ → директ → статья → Telegram</span></label></li><li><label><input type="checkbox" id="chk7"> <span>Актуальные «Обо мне» и «Как работаю» заполнены</span></label></li><li><label><input type="checkbox" id="chk8"> <span>Призыв с мостиком и словом стоит на последнем слайде и в приписке каждой новой карусели</span></label></li></ul>
+</article>
+</main>
+<footer class="footer"><div class="wrap"><p style="margin:0 0 8px"><b>Гайд для учеников</b> · Иван Логинов · по разбору с зума 20 сентября 2026</p><p style="margin:0">ChatPlace, Teletype, Instagram, Telegram и Claude - сторонние сервисы со своими условиями использования</p></div></footer>
+<script>
+function copyPre(btn){
+  var pre=btn.closest('.copy-wrap').querySelector('pre');
+  var t=pre.innerText;
+  var done=function(){btn.textContent='Скопировано';setTimeout(function(){btn.textContent='Скопировать'},1600)};
+  if(navigator.clipboard&&navigator.clipboard.writeText){navigator.clipboard.writeText(t).then(done,function(){fallback()})}else{fallback()}
+  function fallback(){var r=document.createRange();r.selectNodeContents(pre);var s=window.getSelection();s.removeAllRanges();s.addRange(r);try{document.execCommand('copy');done()}catch(e){}s.removeAllRanges()}
+}
+</script>
+</body>
+</html>
