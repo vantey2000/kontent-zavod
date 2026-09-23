@@ -1,0 +1,822 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Конструктор каруселей - Иван Логинов</title>
+<meta name="description" content="Вставляешь текст поста и своё фото - слайды 1080×1350 для Instagram собираются сами. Два стиля, кабинет на 100 фото, шаблоны, скачивание одним архивом">
+<link rel="canonical" href="https://ivan-loginov.ru/karusel/">
+<meta property="og:title" content="Конструктор каруселей - Иван Логинов">
+<meta property="og:description" content="Текст поста и своё фото - слайды 1080×1350 собираются сами">
+<meta property="og:url" content="https://ivan-loginov.ru/karusel/">
+<link rel="preconnect" href="https://karusel-api.aivan-loginov.workers.dev" crossorigin>
+<style>
+@font-face{font-family:'Montserrat';font-style:normal;font-weight:400 800;font-display:swap;src:url(fonts/montserrat-cyr.woff2) format('woff2');unicode-range:U+0301,U+0400-045F,U+0490-0491,U+04B0-04B1,U+2116}
+@font-face{font-family:'Montserrat';font-style:normal;font-weight:400 800;font-display:swap;src:url(fonts/montserrat-lat.woff2) format('woff2');unicode-range:U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD}
+
+</style>
+<style>
+  :root{ --gold:#C9B37E; --bg:#17171a; --panel:#202024; --line:#2e2e34; --ink:#ededf0; --muted:#9a9aa2; --accent:#C9B37E; }
+  *{margin:0;padding:0;box-sizing:border-box}
+  body{font-family:'Montserrat',-apple-system,'Helvetica Neue',sans-serif;background:var(--bg);color:var(--ink);
+    -webkit-font-smoothing:antialiased;line-height:1.5;overflow-x:hidden;-webkit-text-size-adjust:100%}
+  html{overscroll-behavior-y:none}
+  .app{display:grid;grid-template-columns:380px 1fr;min-height:100vh;max-width:100vw}
+  /* канвас слайда имеет внутреннюю ширину 1080px - без min-width:0 он распирает грид-колонку */
+  .controls,.stage{min-width:0}
+  .card canvas{max-width:100%}
+
+  /* левая панель управления */
+  .controls{background:var(--panel);border-right:1px solid var(--line);padding:26px 22px 60px;overflow-y:auto;max-height:100vh}
+  .controls h1{font-size:19px;font-weight:800;letter-spacing:.2px;margin-bottom:4px}
+  .controls .sub{font-size:12.5px;color:var(--muted);margin-bottom:22px;line-height:1.4}
+  .field{margin-bottom:18px}
+  .field label{display:block;font-size:12px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.6px;margin-bottom:7px}
+  .field input[type=text], .field input[type=password], .field textarea, .field select{width:100%;background:#161619;border:1px solid var(--line);border-radius:10px;
+    color:var(--ink);font-family:inherit;font-size:14px;padding:11px 12px;outline:none}
+  .field input[type=text]:focus, .field input[type=password]:focus, .field textarea:focus, .field select:focus{border-color:var(--accent)}
+  .field textarea{min-height:190px;resize:vertical;line-height:1.5}
+  .hint{font-size:11.5px;color:#6f6f78;margin-top:6px;line-height:1.4}
+  .drop{border:1.5px dashed #3a3a42;border-radius:12px;padding:20px;text-align:center;cursor:pointer;transition:.15s;background:#161619}
+  .drop:hover{border-color:var(--accent);background:#191a1d}
+  .drop.small{padding:13px;font-size:13px}
+  .drop b{color:var(--accent)}
+  .toggles{display:flex;flex-wrap:wrap;gap:8px}
+  .tg{display:flex;align-items:center;gap:7px;font-size:13px;background:#161619;border:1px solid var(--line);
+    border-radius:8px;padding:8px 10px;cursor:pointer;user-select:none}
+  .tg input{accent-color:var(--accent);width:15px;height:15px}
+  .row2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+  .seg{display:flex;gap:6px}
+  .seg button{flex:1;background:#161619;border:1px solid var(--line);color:var(--muted);border-radius:8px;
+    padding:9px 4px;font-family:inherit;font-size:12.5px;cursor:pointer}
+  .seg button.on{background:var(--accent);color:#1a1a1a;border-color:var(--accent);font-weight:700}
+  .colorrow{display:flex;align-items:center;gap:10px}
+  .colorrow input[type=color]{width:44px;height:34px;border:1px solid var(--line);border-radius:8px;background:#161619;cursor:pointer}
+  .swatches{display:flex;gap:7px;flex-wrap:wrap}
+  .swatches button{width:28px;height:28px;border-radius:50%;border:1px solid #3a3a42;cursor:pointer;padding:0;
+    box-shadow:inset 0 0 0 1px rgba(0,0,0,.25)}
+  .swatches button.on{outline:2px solid var(--accent);outline-offset:2px}
+  .field input[type=range]{width:100%;accent-color:var(--accent);cursor:pointer}
+  .labelrow{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:7px}
+  .labelrow label{margin-bottom:0}
+  .clearbtn{background:transparent;border:1px solid var(--line);color:var(--muted);border-radius:8px;
+    padding:4px 11px;font-family:inherit;font-size:11.5px;cursor:pointer;transition:.15s}
+  .clearbtn:hover{color:var(--ink);border-color:var(--accent)}
+  .pct{font-size:12px;font-weight:700;color:var(--accent);font-variant-numeric:tabular-nums}
+
+  /* ===== стиль карусели: на панели видны только контролы выбранного стиля ===== */
+  body[data-style="plate"] .only-classic{display:none}
+  body[data-style="classic"] .only-plate{display:none}
+  details.fine>summary{cursor:pointer;font-size:13px;font-weight:600;color:var(--accent);padding:10px 12px;
+    border:1px solid var(--line);border-radius:10px;list-style:none;user-select:none}
+  details.fine>summary::-webkit-details-marker{display:none}
+  details.fine[open]>summary{margin-bottom:12px}
+
+  /* ===== пул фото: миниатюры под дропом, первое = главное (фон классики) ===== */
+  .pool{display:flex;flex-wrap:wrap;gap:8px;margin-top:10px;max-height:398px;overflow-y:auto} /* 5 рядов, дальше прокрутка: пул до 100 фото */
+  .pickgrid .thumb .pnum{position:absolute;left:0;right:0;bottom:0;background:rgba(0,0,0,.6);color:#fff;font-size:11px;text-align:center;padding:2px 0}
+  .pool:empty{display:none}
+  .pthumb{position:relative;width:56px;height:70px;border-radius:8px;overflow:hidden;background:#161619;border:2px solid var(--line);cursor:pointer;flex:none}
+  .pthumb img,.pthumb canvas{width:100%;height:100%;object-fit:cover;display:block}
+  .pthumb.main{border-color:var(--accent)}
+  .pthumb .pdel{position:absolute;top:2px;right:2px;width:18px;height:18px;border-radius:50%;border:none;background:rgba(0,0,0,.7);color:#fff;font-size:10px;line-height:1;cursor:pointer;padding:0}
+  .pthumb .pnum{position:absolute;left:0;right:0;bottom:0;background:rgba(0,0,0,.6);color:#fff;font-size:10px;text-align:center;padding:1px 0}
+  .card.pickable{cursor:pointer}
+  .card .ph{position:absolute;top:8px;right:8px;background:rgba(0,0,0,.6);color:#fff;font-size:11px;padding:3px 8px;border-radius:20px}
+  .pickgrid .thumb.on{outline:2px solid var(--accent);outline-offset:2px}
+
+  /* правая рабочая зона */
+  .stage{padding:26px 30px 80px;overflow-y:auto;max-height:100vh}
+  .stagehead{display:flex;align-items:center;justify-content:space-between;gap:14px;margin-bottom:18px;flex-wrap:wrap}
+  .count{font-size:14px;color:var(--muted)}
+  .count b{color:var(--ink)}
+  .btn{background:var(--accent);color:#1a1a1a;border:none;border-radius:10px;padding:12px 20px;font-family:inherit;
+    font-size:14px;font-weight:700;cursor:pointer}
+  .actions{display:flex;gap:10px;flex-wrap:wrap}
+  .btn.ghost{background:transparent;color:var(--ink);border:1px solid var(--line)}
+  .btn:disabled{opacity:.4;cursor:default}
+  .slides{display:flex;flex-wrap:wrap;gap:18px}
+  .card{position:relative}
+  .card canvas{width:270px;height:337.5px;border-radius:10px;display:block;box-shadow:0 8px 30px rgba(0,0,0,.45);background:#000}
+  .card .cap{position:absolute;top:8px;left:8px;background:rgba(0,0,0,.6);color:#fff;font-size:11px;padding:3px 8px;border-radius:20px}
+  .card .dl{position:absolute;bottom:8px;right:8px;background:rgba(0,0,0,.65);color:#fff;border:none;font-size:11px;
+    padding:5px 10px;border-radius:20px;cursor:pointer;font-family:inherit}
+  .empty{color:var(--muted);font-size:15px;padding:60px 20px;text-align:center;border:1.5px dashed var(--line);border-radius:14px}
+  .warn{background:#2a2410;border:1px solid #5a4d1a;color:#e8d68a;font-size:12.5px;padding:10px 12px;border-radius:9px;margin-top:10px}
+
+  /* инструкция */
+  .helpbtn{width:100%;margin-bottom:20px;background:transparent;border:1px solid var(--line);color:var(--accent);
+    border-radius:10px;padding:11px;font-family:inherit;font-size:13.5px;font-weight:600;cursor:pointer}
+  .helpbtn:hover{border-color:var(--accent)}
+  .helpov{position:fixed;inset:0;background:rgba(10,10,12,.78);z-index:100;display:none;overflow-y:auto;padding:24px 16px}
+  .helpov.open{display:block}
+  .helpbox{max-width:620px;margin:0 auto;background:var(--panel);border:1px solid var(--line);border-radius:16px;
+    padding:26px 24px 30px;position:relative}
+  .helpbox h2{font-size:18px;font-weight:800;margin-bottom:12px;padding-right:44px}
+  .helpbox h3{font-size:14.5px;font-weight:700;margin:18px 0 6px;color:var(--accent)}
+  .helpbox p,.helpbox li{font-size:13.5px;color:#c9c9d0;line-height:1.55}
+  .helpbox ul{margin:6px 0 0 18px}
+  .helpbox li{margin-bottom:6px}
+  .helpclose{position:absolute;top:14px;right:14px;background:#161619;border:1px solid var(--line);color:var(--ink);
+    width:34px;height:34px;border-radius:50%;cursor:pointer;font-size:15px;line-height:1}
+
+  /* ===== мобильная раскладка: ОДНА общая прокрутка, ничего не ездит ===== */
+  @media(max-width:900px){
+    .app{grid-template-columns:1fr}
+    /* убираем вложенные скроллы - страница скроллится как единое целое */
+    .controls{max-height:none;overflow:visible;border-right:none;border-bottom:1px solid var(--line);padding:20px 16px 10px}
+    .stage{max-height:none;overflow:visible;padding:18px 16px calc(130px + env(safe-area-inset-bottom))} /* запас под нижнюю панель */
+    /* 16px в полях ввода = iOS не автозумит страницу при фокусе */
+    .field input[type=text], .field input[type=password], .field textarea, .field select{font-size:16px}
+    .field textarea{min-height:150px}
+    /* главные кнопки всегда под пальцем - фиксированная панель внизу */
+    .actions{position:fixed;left:0;right:0;bottom:0;z-index:50;display:flex;gap:8px;flex-wrap:nowrap;
+      background:rgba(23,23,26,.97);border-top:1px solid var(--line);
+      padding:10px 12px calc(10px + env(safe-area-inset-bottom))}
+    .actions .btn{flex:1;padding:13px 8px;font-size:13.5px;white-space:nowrap}
+    /* слайды в две колонки на всю ширину */
+    .slides{gap:12px}
+    .card{width:calc(50% - 6px)}
+    .card canvas{width:100%;height:auto}
+  }
+
+  /* ===== личный кабинет ===== */
+  .cabgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(96px,1fr));gap:10px;margin-top:14px}
+  .thumb{position:relative;aspect-ratio:4/5;border-radius:10px;overflow:hidden;background:#161619;border:1px solid var(--line);cursor:pointer}
+  .thumb img{width:100%;height:100%;object-fit:cover;display:block}
+  .thumb .thumbdel{position:absolute;top:5px;right:5px;width:26px;height:26px;border-radius:50%;border:none;
+    background:rgba(0,0,0,.65);color:#fff;font-size:11px;cursor:pointer;line-height:1}
+  .thumb.inpool{border:2px solid var(--accent)}
+  .thumb .tnum{position:absolute;left:5px;top:5px;min-width:24px;height:24px;padding:0 7px;border-radius:12px;background:var(--accent);
+    color:#1a1a1a;font-size:12px;font-weight:700;display:flex;align-items:center;justify-content:center}
+  .addtile{display:flex;align-items:center;justify-content:center;font-size:34px;color:var(--accent);
+    border:1.5px dashed #3a3a42;background:transparent}
+  .cabrow{display:flex;gap:10px;margin-top:14px}
+  .cabrow .btn{flex:1}
+  .caberr{display:none;background:#2a1515;border:1px solid #5a2222;color:#e8a0a0;font-size:13px;padding:10px 12px;border-radius:9px;margin-top:12px}
+  .cabtop{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;margin-bottom:6px;padding-right:44px} /* не подлезать под крестик закрытия */
+  .cabmail{font-size:13.5px;color:var(--muted);word-break:break-all}
+  .cabdel{margin-top:24px;font-size:12px;color:#7a5a5a;background:none;border:none;cursor:pointer;
+    text-decoration:underline;font-family:inherit;padding:0}
+  .toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%) translateY(20px);background:#26262c;
+    border:1px solid var(--line);color:var(--ink);padding:11px 18px;border-radius:12px;font-size:13.5px;
+    opacity:0;pointer-events:none;transition:.25s;z-index:200;box-shadow:0 10px 30px rgba(0,0,0,.5);max-width:92vw;text-align:center}
+  .toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+  @media(max-width:900px){
+    /* тост выше фиксированной панели кнопок */
+    .toast{bottom:calc(90px + env(safe-area-inset-bottom))}
+  }
+
+  /* ===== шаблоны настроек ===== */
+  .tpllist{display:flex;flex-wrap:wrap;gap:8px;margin-top:10px}
+  .tpl{display:flex;align-items:center;gap:8px;background:#161619;border:1px solid var(--line);border-radius:9px;
+    padding:8px 11px;cursor:pointer;font-size:13px;color:var(--ink)}
+  .tpl:hover{border-color:var(--accent)}
+  .tpl .tpldel{background:none;border:none;color:var(--muted);cursor:pointer;font-size:12px;padding:0 2px;font-family:inherit}
+  .tpl .tpldel:hover{color:#e8a0a0}
+
+  /* ===== переключатель темы ===== */
+  .themesw{position:fixed;top:14px;right:16px;z-index:60;display:flex;gap:6px}
+  .stagehead{padding-right:92px} /* не подлезать под переключатель темы */
+  .themesw button{width:38px;height:38px;border-radius:50%;border:1px solid var(--line);background:var(--panel);
+    cursor:pointer;font-size:17px;line-height:1;opacity:.5;padding:0}
+  .themesw button.on{opacity:1;border-color:var(--accent)}
+  @media(max-width:900px){
+    .themesw{top:10px;right:12px}
+    .controls .sub{padding-right:88px}
+    .stagehead{padding-right:0} /* на мобиле кнопки внизу, конфликта нет */
+  }
+
+  /* ===== светлая тема (только интерфейс, слайды не трогает) ===== */
+  body.light{--bg:#f4f4f6;--panel:#ffffff;--line:#dcdce2;--ink:#1b1b1f;--muted:#6c6c76}
+  body.light .field input[type=text],body.light .field input[type=password],body.light .field textarea,
+  body.light .field select,body.light .drop,body.light .tg,body.light .seg button,
+  body.light .colorrow input[type=color],body.light .thumb,body.light .helpclose,body.light .tpl{background:#f1f1f4}
+  body.light .drop:hover{background:#ececf0}
+  body.light .drop,body.light .addtile{border-color:#c2c2cc}
+  body.light .helpbox p,body.light .helpbox li{color:#3f3f48}
+  body.light .toast{background:#ffffff;color:#1b1b1f;box-shadow:0 10px 30px rgba(0,0,0,.18)}
+  body.light .warn{background:#fdf6dc;border-color:#e0cf8a;color:#7a6a1e}
+  body.light .caberr{background:#fdecec;border-color:#e2b4b4;color:#a03535}
+  @media(max-width:900px){
+    body.light .actions{background:rgba(244,244,246,.97)}
+  }
+
+</style>
+<style>
+  /* ---------- оболочка сайта: вход, оплата, витрина ---------- */
+  body.gated .app{display:none}
+  .gate{display:none;min-height:100vh;padding:28px 16px 40px;
+    background:radial-gradient(900px 480px at 50% -10%,rgba(201,179,126,.13),transparent 70%),var(--bg)}
+  body.gated .gate{display:block}
+  .gtop{max-width:980px;margin:0 auto 26px;display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}
+  .gtop a{color:var(--muted);text-decoration:none;font-size:13px;font-weight:600}
+  .gtop a:hover{color:var(--accent)}
+  .gtop .gbrand{color:var(--ink);font-weight:800;font-size:14px;letter-spacing:.2px}
+  .gbox{max-width:480px;margin:0 auto;background:var(--panel);border:1px solid var(--line);border-radius:18px;padding:30px 26px 26px}
+  .gview[hidden]{display:none}
+  .gview h1{font-size:25px;line-height:1.2;font-weight:800;margin-bottom:10px}
+  .glead{font-size:14.5px;color:#c9c9d0;line-height:1.55;margin-bottom:16px}
+  .gfeat{list-style:none;margin:0 0 18px;padding:0}
+  .gfeat li{position:relative;padding-left:22px;font-size:13.5px;color:#c9c9d0;line-height:1.5;margin-bottom:7px}
+  .gfeat li::before{content:'';position:absolute;left:3px;top:.62em;width:8px;height:8px;border-radius:2px;background:var(--accent)}
+  .gprice{display:flex;align-items:baseline;gap:8px;margin:4px 0 18px;padding:14px 16px;border:1px solid rgba(201,179,126,.35);border-radius:12px;background:rgba(201,179,126,.06)}
+  .gprice b{font-size:26px;font-weight:800;color:var(--accent);white-space:nowrap}
+  .gprice span{font-size:13px;color:var(--muted);line-height:1.35}
+  .gbtns{display:flex;gap:10px;margin-top:4px}
+  .gbtns .btn{flex:1}
+  .gwide{display:block;width:100%;text-align:center;text-decoration:none;margin-top:10px}
+  .btn.off{opacity:.45;pointer-events:none}
+  .gerr{display:none;margin-top:12px;font-size:13px;line-height:1.45;background:#3a1f1f;border:1px solid #6b3434;color:#f0c4c4;border-radius:10px;padding:10px 12px}
+  .gnote{font-size:12.5px;color:var(--muted);line-height:1.5;margin-top:14px}
+  .gnote a,.gcheck a,.glegal a{color:var(--accent)}
+  .gcheck{display:flex;gap:10px;align-items:flex-start;font-size:12.5px;color:#c9c9d0;line-height:1.45;margin:12px 0 4px;cursor:pointer}
+  .gcheck input{accent-color:var(--accent);width:17px;height:17px;flex:0 0 auto;margin-top:1px}
+  .gmail{font-size:13px;color:var(--muted);margin-bottom:14px;word-break:break-all}
+  .gmail b{color:var(--ink)}
+  .glink{background:none;border:0;color:var(--muted);font-family:inherit;font-size:12.5px;text-decoration:underline;cursor:pointer;margin-top:14px;padding:0}
+  .gspin{width:34px;height:34px;border-radius:50%;border:3px solid var(--line);border-top-color:var(--accent);animation:gsp 0.9s linear infinite;margin:6px auto 16px}
+  @keyframes gsp{to{transform:rotate(360deg)}}
+  .gcenter{text-align:center}
+  .gmore{max-width:480px;margin:18px auto 0}
+  .gmore button{width:100%}
+  .glegal{max-width:480px;margin:22px auto 0;font-size:11.5px;color:#6f6f78;line-height:1.6;text-align:center}
+  .substat{font-size:12px;color:var(--muted);line-height:1.45;margin:-10px 0 16px}
+  .substat b{color:var(--ink);font-weight:600}
+  .substat button{background:none;border:0;color:var(--muted);font-family:inherit;font-size:12px;text-decoration:underline;cursor:pointer;padding:0;margin-left:6px}
+  #moreov{z-index:300}
+  .mgroup{margin-top:18px}
+  .mgroup h3{margin-top:0}
+  .mcard{display:block;text-decoration:none;border:1px solid var(--line);border-radius:12px;padding:12px 14px;margin-top:8px;background:rgba(255,255,255,.02)}
+  .mcard:hover{border-color:var(--accent)}
+  .mcard b{display:block;color:var(--ink);font-size:14px;line-height:1.35;margin-bottom:3px}
+  .mcard span{display:block;color:var(--muted);font-size:12.5px;line-height:1.45}
+  body.light .gate{background:radial-gradient(900px 480px at 50% -10%,rgba(201,179,126,.18),transparent 70%),var(--bg)}
+  body.light .glead,body.light .gfeat li,body.light .gcheck{color:#3f3f48}
+  body.light .gerr{background:#fdecec;border-color:#e2b4b4;color:#a03535}
+  @media(max-width:520px){ .gbox{padding:24px 18px 20px} .gview h1{font-size:22px} .gbtns{flex-direction:column} }
+</style>
+</head>
+<body class="gated">
+<div class="gate" id="gate">
+  <div class="gtop">
+    <a class="gbrand" href="/">Иван Логинов</a>
+    <a href="#" id="gmoretop">Гайды и курсы</a>
+  </div>
+  <div class="gbox">
+    <div class="gview" id="g-load">
+      <div class="gspin"></div>
+      <p class="glead gcenter" id="gloadmsg">Открываю конструктор…</p>
+    </div>
+
+    <div class="gview" id="g-auth" hidden>
+      <h1>Конструктор каруселей</h1>
+      <p class="glead">Вставляешь текст поста и своё фото - слайды 1080×1350 для Instagram собираются сами. Работает в браузере, с телефона и с компьютера</p>
+      <ul class="gfeat">
+        <li>Сам режет текст на слайды: обложка, пункты, финальный вопрос</li>
+        <li>Два стиля - «Классика» и «Плашка», 7 шрифтов, цвет текста, затемнение и насыщенность фото</li>
+        <li>Кабинет: до 100 своих фото, наборы фото и шаблоны, вход с любого устройства</li>
+        <li>Все слайды одним архивом или сразу «Поделиться» в Instagram с телефона</li>
+      </ul>
+      <div class="gprice"><b>1 500 ₽</b><span>в месяц, подписка. Отменить можно в любой момент</span></div>
+      <div class="field">
+        <label>Email</label>
+        <input type="text" id="gemail" placeholder="you@mail.ru" autocomplete="email" inputmode="email">
+      </div>
+      <div class="field">
+        <label>Пароль</label>
+        <input type="password" id="gpass" placeholder="не короче 8 знаков" autocomplete="current-password">
+      </div>
+      <label class="gcheck" id="gpdrow"><input type="checkbox" id="gpd"><span>Согласен на обработку персональных данных по <a href="/privacy.html" target="_blank">политике конфиденциальности</a> (нужно, чтобы создать кабинет)</span></label>
+      <div class="gbtns">
+        <button class="btn" id="glogin">Войти</button>
+        <button class="btn ghost" id="greg">Создать кабинет</button>
+      </div>
+      <div class="gerr" id="gautherr"></div>
+      <p class="gnote">Пользовался конструктором по старой ссылке? Входи с той же почтой и паролем - твои фото, наборы и шаблоны уже здесь. Забыл пароль - напиши Ивану в <a href="https://t.me/loginoff_ai" target="_blank" rel="noopener">Telegram</a></p>
+    </div>
+
+    <div class="gview" id="g-pay" hidden>
+      <h1 id="gpaytitle">Остался один шаг</h1>
+      <div class="gmail">Кабинет: <b id="gpaymail"></b></div>
+      <p class="glead" id="gpaylead">Оформи подписку - конструктор откроется сразу после оплаты, со всеми твоими фото и шаблонами</p>
+      <div class="gprice"><b>1 500 ₽</b><span>в месяц. Списание раз в месяц, отменить можно в любой момент</span></div>
+      <label class="gcheck"><input type="checkbox" id="gagree"><span>Принимаю <a href="oferta.html" target="_blank">условия оферты</a> и соглашаюсь на автоматическое списание 1 500 ₽ каждые 30 дней до отмены подписки</span></label>
+      <a class="btn gwide off" id="gpaybtn" href="#">Оформить подписку</a>
+      <button class="btn ghost gwide" id="gpaid">Я уже оплатил - проверить</button>
+      <div class="gerr" id="gpayerr"></div>
+      <p class="gnote">Платить нужно с той же почтой, что у кабинета, - она уже подставлена в форму оплаты. Вопросы по оплате - Ивану в <a href="https://t.me/loginoff_ai" target="_blank" rel="noopener">Telegram</a></p>
+      <button class="glink" id="gout1">Выйти из кабинета</button>
+    </div>
+
+    <div class="gview gcenter" id="g-wait" hidden>
+      <div class="gspin"></div>
+      <h1>Проверяю оплату</h1>
+      <p class="glead" id="gwaitmsg">Касса присылает подтверждение в течение минуты-двух. Страницу не закрывай - конструктор откроется сам</p>
+      <button class="btn ghost gwide" id="gwaitagain" hidden>Проверить ещё раз</button>
+      <button class="glink" id="gout2">Выйти из кабинета</button>
+    </div>
+  </div>
+  <div class="gmore"><button class="helpbtn" id="gmorebtn">Гайды и курсы Ивана</button></div>
+  <p class="glegal">ИП Логинов Иван Владимирович · ИНН 420529937430 · <a href="oferta.html">Оферта подписки</a> · <a href="/privacy.html">Конфиденциальность</a></p>
+</div>
+
+<div class="app">
+  <!-- ПАНЕЛЬ -->
+  <div class="controls">
+    <h1>Конструктор карусели</h1>
+    <div class="sub">Загрузи фон, впиши ник, вставь текст пунктами - слайды соберутся сами. Формат 1080×1350 (4:5)</div>
+    <div class="substat" id="substat"></div>
+    <button class="helpbtn" id="cabbtn" style="margin-bottom:10px">Личный кабинет</button>
+    <button class="helpbtn" id="helpbtn" style="margin-bottom:10px">Как пользоваться - инструкция</button>
+    <button class="helpbtn" id="morebtn">Гайды и курсы Ивана</button>
+
+    <div class="field">
+      <label>Фон (твоё фото)</label>
+      <div class="drop" id="drop">Перетащи сюда фото или <b>нажми, чтобы выбрать</b><br><span class="hint" style="color:#6f6f78" id="drophint">лучше вертикальное, человек сбоку</span></div>
+      <input type="file" id="bgfile" accept="image/*" multiple hidden>
+      <div class="pool" id="pool"></div>
+      <div id="poolbar" style="display:none;margin-top:8px">
+        <button type="button" class="clearbtn" id="shuffle" title="Случайный порядок фото">🎲 Перемешать фото</button>
+      </div>
+      <div class="hint" id="poolhint" style="display:none"></div>
+      <div class="warn" id="poolwarn" style="display:none"></div>
+      <div id="setrow" style="display:none;margin-top:10px">
+        <select id="setsel"></select>
+        <div class="hint">Наборы фото из кабинета. Выбери набор - фото карусели заменятся на него</div>
+      </div>
+    </div>
+
+    <div class="field">
+      <label>Твой ник</label>
+      <input type="text" id="nick" placeholder="@your.nickname" value="@YOUR.NICK">
+    </div>
+
+    <div class="field">
+      <label>Стиль карусели</label>
+      <div class="seg" id="stylesel">
+        <button data-v="classic" class="on">Классика</button>
+        <button data-v="plate">Плашка</button>
+      </div>
+      <div class="hint">Классика - текст прямо на фото, линии и иконки. Плашка - текст на тёмной плашке снизу, точки-индикатор, красная планка на обложке. Фото в «Плашке» не затемняется</div>
+    </div>
+
+    <div class="field only-classic">
+      <label>Где на фото человек</label>
+      <div class="seg" id="figside">
+        <button data-v="right" class="on">Справа</button>
+        <button data-v="left">Слева</button>
+        <button data-v="none">Нет / по центру</button>
+      </div>
+      <div class="hint">Текст будет обходить лицо с этой стороны</div>
+    </div>
+
+    <div class="field">
+      <label>Элементы рамки</label>
+      <div class="toggles">
+        <label class="tg"><input type="checkbox" id="t_nick" checked> ник</label>
+        <label class="tg only-classic"><input type="checkbox" id="t_lines" checked> линии</label>
+        <label class="tg only-classic"><input type="checkbox" id="t_icons" checked> иконки share/save</label>
+        <label class="tg"><input type="checkbox" id="t_arrow" checked> стрелка «дальше»</label>
+        <label class="tg only-classic"><input type="checkbox" id="t_counter" checked> счётчик N/total</label>
+        <label class="tg only-plate"><input type="checkbox" id="t_dots" checked> точки-индикатор</label>
+        <label class="tg only-plate"><input type="checkbox" id="t_bar" checked> цветная полоска на обложке</label>
+      </div>
+    </div>
+
+    <div class="field">
+      <div class="labelrow">
+        <label>Насыщенность фото</label>
+        <span class="pct" id="satpct">100%</span>
+      </div>
+      <input type="range" id="sat" min="0" max="100" value="100">
+      <div class="hint">100 - цвет как на фото, 0 - чёрно-белое. Между ними - приглушённый цвет. Действует на все слайды сразу</div>
+    </div>
+
+    <div class="field only-classic">
+      <div class="labelrow">
+        <label id="darklabel">Затемнение фона</label>
+        <span class="pct" id="darkpct">45%</span>
+      </div>
+      <input type="range" id="darklvl" min="0" max="85" value="45">
+      <div class="hint" id="darkhint">Чем темнее фон, тем лучше читается текст. 0 - без затемнения</div>
+    </div>
+
+    <details class="field only-plate fine" id="platefine">
+      <summary>Тонкая настройка плашки - открыть</summary>
+      <div class="hint" style="margin:0 0 14px">Значения по умолчанию сняты с эталона, менять не обязательно</div>
+      <div class="field">
+        <div class="labelrow">
+          <label>Плотность плашки</label>
+          <span class="pct" id="platealphapct">88%</span>
+        </div>
+        <input type="range" id="platealpha" min="50" max="100" value="88">
+        <div class="hint">100 - плашка полностью закрывает фото, ниже - фото чуть просвечивает сквозь неё. Цвет плашки подбирается сам: тёмная под светлый текст, светлая под тёмный</div>
+      </div>
+      <div class="field">
+        <div class="labelrow">
+          <label>Плашка обложки: высота</label>
+          <span class="pct" id="coverbottompct">74%</span>
+        </div>
+        <input type="range" id="coverbottom" min="55" max="90" value="74">
+        <div class="hint">Где стоит нижний край плашки на обложке. Выше - видно руки и стол, ниже - больше места лицу</div>
+      </div>
+      <div class="field" style="margin-bottom:6px">
+        <div class="toggles">
+          <label class="tg"><input type="checkbox" id="t_coverfit"> обложка: вписать фото целиком</label>
+        </div>
+        <div class="hint">Для узкого вертикального фото: оно встанет целиком на тёмную подложку с полями по бокам. Выключено - фото заполняет кадр</div>
+      </div>
+    </details>
+
+    <div class="field">
+      <label id="accentlabel">Цвет линий</label>
+      <div class="colorrow">
+        <input type="color" id="accent" value="#C9B37E">
+        <span class="hint" style="margin:0" id="accenthint">верхняя и нижняя линии рамки</span>
+      </div>
+    </div>
+
+    <div class="field">
+      <label>Цвет текста</label>
+      <div class="colorrow">
+        <input type="color" id="textcolor" value="#FFFFFF">
+        <div class="swatches" id="swatches">
+          <button type="button" data-c="#FFFFFF" style="background:#FFFFFF" title="Белый"></button>
+          <button type="button" data-c="#F0E4CC" style="background:#F0E4CC" title="Кремовый"></button>
+          <button type="button" data-c="#C9B37E" style="background:#C9B37E" title="Золото"></button>
+          <button type="button" data-c="#8A8A93" style="background:#8A8A93" title="Серый"></button>
+          <button type="button" data-c="#161616" style="background:#161616" title="Чёрный"></button>
+        </div>
+      </div>
+      <div class="hint" id="textcolorhint">Весь текст слайдов сразу: заголовок, пункты, ник, счётчик. Берёшь тёмный цвет для светлого фото - подсветка под текстом и вуаль фона перевернутся сами, читаться будет так же</div>
+    </div>
+
+    <div class="field only-classic">
+      <div class="labelrow">
+        <label>Длина верхней линии</label>
+        <span class="pct" id="linelenpct">72%</span>
+      </div>
+      <input type="range" id="linelen" min="20" max="100" value="72">
+      <div class="hint">Укорачивай, если линия ложится на лицо. При «человек слева» линия и ник сами уходят вправо. Нижняя линия всегда во всю ширину</div>
+    </div>
+
+    <div class="field">
+      <label>Шрифт</label>
+      <select id="fontsel">
+        <option value="Montserrat" selected>Montserrat - фирменный</option>
+        <option value="Inter">Inter</option>
+        <option value="Manrope">Manrope</option>
+        <option value="Rubik">Rubik</option>
+        <option value="Golos Text">Golos Text</option>
+        <option value="Playfair Display">Playfair Display - с засечками</option>
+        <option value="Unbounded">Unbounded - широкий</option>
+      </select>
+      <div class="hint">Меняет текст слайдов. Ник и счётчик остаются фирменным шрифтом (цвет у них общий с текстом). Новый шрифт подгружается из интернета пару секунд</div>
+    </div>
+
+    <div class="field">
+      <div class="labelrow">
+        <label>Размер шрифта: обложка</label>
+        <span class="pct" id="coverpct">100%</span>
+      </div>
+      <input type="range" id="coversize" min="70" max="130" value="100">
+    </div>
+
+    <div class="field">
+      <div class="labelrow">
+        <label>Размер шрифта: слайды</label>
+        <span class="pct" id="fontpct">100%</span>
+      </div>
+      <input type="range" id="fontsize" min="70" max="130" value="100">
+      <div class="hint">100% - стандарт. Обложка и остальные слайды настраиваются отдельно. Если текст с таким размером не влезает на слайд, программа сама ужмёт его до вмещения</div>
+    </div>
+
+    <div class="field">
+      <div class="labelrow">
+        <label>Текст поста</label>
+        <button type="button" class="clearbtn" id="cleartext">Очистить</button>
+      </div>
+      <textarea id="text" spellcheck="false" placeholder="Первая строка = обложка&#10;&#10;1. Первый пункт. Пояснение к нему в пару предложений&#10;&#10;2. Второй пункт. И его пояснение&#10;&#10;3. Третий пункт&#10;&#10;А ты уже так делаешь?"></textarea>
+      <div class="hint">Заголовок сверху, дальше блоки через пустую строку - каждый станет слайдом: первое предложение жирным, остальное обычным. Нумерация 1. 2. 3. не обязательна. В конце вопрос. Enter один раз = перенос строки на слайде ровно там, где ты его поставил</div>
+      <div class="warn" id="warn" style="display:none"></div>
+    </div>
+  </div>
+
+  <!-- СЦЕНА -->
+  <div class="stage">
+    <div class="stagehead">
+      <div class="count" id="count">Слайдов: <b>0</b></div>
+      <div class="actions">
+        <button class="btn ghost" id="demo">Демо-текст</button>
+        <button class="btn ghost" id="shareall" disabled>Поделиться</button>
+        <button class="btn" id="dlall" disabled>Скачать ZIP</button>
+      </div>
+    </div>
+    <div class="hint" id="sharehint" style="display:none;margin:-8px 0 14px"></div>
+    <div class="slides" id="slides"></div>
+    <div class="empty" id="empty">Загрузи фон и вставь текст - слайды появятся здесь</div>
+  </div>
+
+  <!-- ИНСТРУКЦИЯ -->
+  <div class="helpov" id="helpov">
+    <div class="helpbox">
+      <button class="helpclose" id="helpclose" aria-label="Закрыть">✕</button>
+      <h2>Как собрать карусель за 5 минут</h2>
+      <p>Слайды собираются прямо в твоём браузере. Фото и настройки хранятся в твоём кабинете на сервере, чтобы не загружать их заново</p>
+      <h3>1. Загрузи своё фото</h3>
+      <p>Лучше вертикальное, где ты стоишь сбоку кадра, а не по центру, на тёмном или спокойном фоне - так текст читается лучше всего. Можно выбрать сразу несколько фото: под дропом появятся миниатюры. В «Классике» на всех слайдах стоит первое фото (нажми на другую миниатюру - она станет первой). В «Плашке» фото расходятся по слайдам по очереди, а поменять фото на конкретном слайде можно тапом по самому слайду. Кнопка «🎲 Перемешать фото» ставит их в случайном порядке: каждый раз новая раскладка, одно фото - один слайд. Если фото меньше, чем слайдов, конструктор предупредит, что на каких слайдах они повторятся. Крестик на миниатюре убирает фото из карусели</p>
+      <h3>2. Впиши свой ник</h3>
+      <p>Как в Instagram, например @anna.smm - он появится сверху на каждом слайде</p>
+      <h3>3. Укажи, где ты на фото</h3>
+      <p>Кнопки «Справа / Слева / Нет». Текст сам обходит твоё лицо - программа должна знать, с какой ты стороны</p>
+      <h3>4. Настрой рамку под себя</h3>
+      <p>Галочки включают и выключают элементы: ник, линии, иконки, стрелку «дальше», счётчик. Пипетками меняешь цвет линий и цвет текста, ползунками - длину верхней линии (чтобы не ложилась на лицо) и затемнение фона (чем темнее, тем лучше читается текст). Ниже можно сменить шрифт слайдов и размеры текста в процентах - обложка и остальные слайды отдельно; если текст с выбранным размером не влезает, программа сама ужмёт его. Не уверен - оставь как есть</p>
+      <p><b>Про стиль «Плашка».</b> Переключатель «Стиль карусели» сверху: «Классика» - текст прямо на фото с линиями и иконками, «Плашка» - текст лежит на тёмной плашке внизу слайда, лицо сверху остаётся свободным, внизу точки-индикатор и стрелка «>>», на обложке красная планка слева. Фото в этом стиле не затемняется, поэтому годится и светлое. Ползунок «Насыщенность фото» работает в обоих стилях: 100 - цвет как на фото, 0 - чёрно-белое, между ними приглушённый цвет, как у многих авторов. Тонкие настройки (плотность плашки, высота плашки на обложке, «вписать фото целиком» для узких вертикальных снимков) спрятаны под кнопкой «Тонкая настройка плашки» - трогать их не обязательно, значения сняты с эталона</p>
+      <p><b>Про цвет текста.</b> Пять кружков рядом с пипеткой - готовые варианты (белый, кремовый, золото, серый, чёрный), пипетка даёт любой свой. Цвет ложится сразу на весь текст: обложку, пункты, ник и счётчик. Взял тёмный текст под светлое фото - программа сама перевернёт подсветку под буквами и вуаль на фоне (ползунок станет «Осветление фона»), так что читаться будет одинаково хорошо</p>
+      <h3>5. Вставь текст поста</h3>
+      <ul>
+        <li>первая строка = заголовок, он станет обложкой</li>
+        <li>дальше блоки через пустую строку - каждый станет отдельным слайдом: первое предложение выделится жирным, остальное пойдёт обычным текстом. Нумерация 1. 2. 3. не обязательна, но если есть - номера сохранятся</li>
+        <li>последняя строка = вопрос к читателю, он станет финальным слайдом</li>
+        <li>нужен перенос в конкретном месте - нажми Enter один раз, и строка на слайде оборвётся именно там. Enter дважды (пустая строка) - это уже новый слайд</li>
+      </ul>
+      <p>Между блоками оставляй пустую строку. Число слайдов посчитается само. Посмотреть пример - кнопка «Демо-текст»</p>
+      <h3>6. Выложи</h3>
+      <p>С телефона: «Поделиться» → в меню выбери Instagram → слайды падают прямо в новый пост. С компьютера: «Скачать ZIP» - один архив со всеми слайдами</p>
+      <h3>7. Личный кабинет</h3>
+      <p>Кнопка с твоей почтой наверху панели - это твой кабинет. Всё само: фото, которые ты загружаешь, сохраняются в кабинет, настройки рамки запоминаются. Зашёл в другой раз или с другого устройства - твой фон уже стоит, ник и рамка на месте. В кабинете до 100 фото: нажми на любое - оно добавится в карусель, ещё раз - уберётся. «Наборы фото»: собрал 8 снимков под одну карусель - сохрани их как набор с именем, и для каждой следующей карусели выбирай нужный набор из списка прямо под фото, не перебирая всё вручную. «Мои шаблоны»: сохрани текущий вид (фото + шрифт + рамка) под именем и переключайся между шаблонами в один клик</p>
+      <h3>Если что-то пошло не так</h3>
+      <ul>
+        <li>в меню «Поделиться» нет Instagram → выбери «Сохранить изображения», слайды упадут в галерею - выложи из Instagram как обычно</li>
+        <li>текст наехал на лицо → проверь шаг 3 или укороти верхнюю линию ползунком. Не помогло - возьми фото, где ты ближе к краю кадра</li>
+        <li>слайдов получилось не столько, сколько ждал → проверь нумерацию: каждый пункт «1.», «2.», «3.» с новой строки = один слайд</li>
+        <li>кнопка «Поделиться» пишет, что недоступна → ты на компьютере, она работает с телефона. Скачай ZIP</li>
+        <li>забыл пароль от кабинета → напиши Ивану в Telegram t.me/loginoff_ai</li>
+      </ul>
+    </div>
+  </div>
+
+  <!-- КАБИНЕТ -->
+  <div class="helpov" id="cabov">
+    <div class="helpbox">
+      <button class="helpclose" id="cabclose" aria-label="Закрыть">✕</button>
+      <div id="cabauth">
+        <h2>Личный кабинет</h2>
+        <p>Кабинет хранит твои фото и настройки на сервере: зашёл в другой раз или с другого устройства - твой фон уже стоит, ник и рамка на месте.</p>
+        <div class="field" style="margin-top:18px">
+          <label>Email</label>
+          <input type="text" id="cabemail" placeholder="you@mail.ru" autocomplete="email" inputmode="email">
+        </div>
+        <div class="field">
+          <label>Пароль</label>
+          <input type="password" id="cabpass" placeholder="не короче 8 знаков" autocomplete="current-password">
+        </div>
+        <div class="cabrow">
+          <button class="btn" id="cablogin">Войти</button>
+          <button class="btn ghost" id="cabreg">Создать кабинет</button>
+        </div>
+        <div class="caberr" id="caberr"></div>
+        <p class="hint" style="margin-top:12px">Первый раз здесь - жми «Создать кабинет». Забыл пароль - напиши Ивану в Telegram t.me/loginoff_ai</p>
+      </div>
+      <div id="cabmain" style="display:none">
+        <div class="cabtop">
+          <h2 style="margin:0">Мои фото</h2>
+          <button class="btn ghost" id="cabexit" style="padding:8px 14px;font-size:12.5px">Выйти</button>
+        </div>
+        <div class="cabmail" id="cabmail"></div>
+        <div class="hint" id="cabcount" style="margin-top:10px"></div>
+        <div style="display:flex;gap:8px;margin-top:10px;flex-wrap:wrap">
+          <button class="btn ghost" id="addall" style="padding:8px 14px;font-size:12.5px">Все фото в карусель</button>
+          <button class="btn ghost" id="clearpool" style="padding:8px 14px;font-size:12.5px">Убрать все из карусели</button>
+        </div>
+        <div class="cabgrid" id="cabgrid"></div>
+        <p class="hint" style="margin-top:12px">Нажми на фото - оно добавится в карусель, нажми ещё раз - уберётся. «Все фото в карусель» - разом все, до 100. Номер на фото = его место в карусели. Новые фото, которые ты загружаешь в конструктор, попадают сюда сами</p>
+        <div class="cabtop" style="margin-top:26px;padding-right:0"><h2 style="margin:0">Наборы фото</h2></div>
+        <div class="hint" id="setcount" style="margin-top:8px"></div>
+        <div class="tpllist" id="setlist"></div>
+        <button class="btn ghost" id="setsave" style="margin-top:12px;width:100%">Сохранить фото карусели как набор</button>
+        <p class="hint" style="margin-top:8px">Набор - подборка фото под одну карусель, например 8 снимков из офиса. Собери фото в карусель (нажимай на них выше), сохрани как набор, а потом переключай наборы прямо на панели под фото. До 12 наборов</p>
+        <div class="cabtop" style="margin-top:26px;padding-right:0"><h2 style="margin:0">Мои шаблоны</h2></div>
+        <div class="hint" id="tplcount" style="margin-top:8px"></div>
+        <div class="tpllist" id="tpllist"></div>
+        <button class="btn ghost" id="tplsave" style="margin-top:12px;width:100%">Сохранить текущие настройки как шаблон</button>
+        <p class="hint" style="margin-top:8px">Шаблон запоминает фото-фон, шрифт, размеры, цвет и всю рамку (текст поста не входит). Нажми на шаблон - все настройки встанут сами. До 12 шаблонов</p>
+        <button class="cabdel" id="cabdel">удалить кабинет и все фото</button>
+      </div>
+    </div>
+  </div>
+  <!-- ВЫБОР ФОТО ДЛЯ СЛАЙДА (стиль «Плашка», когда фото несколько) -->
+  <div class="helpov" id="pickov">
+    <div class="helpbox">
+      <button class="helpclose" id="pickclose" aria-label="Закрыть">✕</button>
+      <h2 id="picktitle">Фото для слайда</h2>
+      <p class="hint">Нажми на фото - оно встанет на этот слайд. Остальные слайды не меняются</p>
+      <div class="cabgrid pickgrid" id="pickgrid"></div>
+      <button class="btn ghost" id="pickauto" style="margin-top:16px;width:100%">Вернуть порядок: фото по слайдам по очереди</button>
+    </div>
+  </div>
+  <div class="themesw">
+    <button id="th_light" title="Светлая тема">☀️</button>
+    <button id="th_dark" title="Тёмная тема" class="on">🌙</button>
+  </div>
+  <div class="toast" id="toast"></div>
+  <input type="file" id="cabfile" accept="image/*" multiple hidden>
+</div>
+
+
+
+<div class="helpov" id="moreov">
+  <div class="helpbox">
+    <button class="helpclose" id="moreclose" aria-label="Закрыть">✕</button>
+    <h2>Гайды и курсы Ивана</h2>
+    <p>Всё живёт на сайте <a href="/" style="color:var(--accent)">ivan-loginov.ru</a></p>
+    <div class="mgroup"><h3>Курсы</h3><div id="mcourses"></div></div>
+    <div class="mgroup"><h3>Бесплатные гайды</h3><div id="mguides"></div></div>
+  </div>
+</div>
+
+<script>
+/* Оболочка конструктора на ivan-loginov.ru/karusel/: вход, оплата, загрузка кода конструктора.
+   Код конструктора в репо сайта не лежит - его отдаёт karusel-api (/api/app) только кабинету с подпиской.
+   Он исполняется и сразу убирается из страницы: «Сохранить страницу» не даёт рабочей копии */
+(function(){
+  const API='https://karusel-api.aivan-loginov.workers.dev', BUILD='d7926c0514';
+  const SITE='https://ivan-loginov.ru';
+  const COURSES=[
+    {t:'Контент-завод за выходные', d:'Мини-курс: за одни выходные - первая пачка рилсов и каруселей у тебя в аккаунте. С телефона, без съёмок, монтажа и дизайнера', u:'/'},
+    {t:'Взрывные алгоритмы', d:'Флагманский курс: ИИ контент-завод, который растит блог и приводит заявки. 6 недель, набор с личным отбором', u:'/vzryv/'}
+  ];
+  const GUIDES=[
+    {t:'Карусель для Инстаграм нейросетью', d:'Бесплатная нейросеть пишет текст, Canva собирает слайды 1080 на 1350 - всё с телефона', u:'/guide-karusel-neyroset/'},
+    {t:'Воронка из карусели в личку', d:'Кодовое слово, ChatPlace, статья-лидмагнит на Teletype, ссылка на Telegram', u:'/guide-voronka-chatplace/'},
+    {t:'Продающая статья', d:'Скелет из 14 блоков по статьям Ивана с Teletype, два промпта для Claude и чек-лист', u:'/guide-prodayushchaya-statya/'},
+    {t:'Система блога, который приводит клиентов', d:'Темы из банка, ролики и карусели нейросетью, кодовое слово и бот, который ведёт в Telegram', u:'/guide-sistema-bloga/'},
+    {t:'Распаковка в Claude', d:'Три промпта: распаковка себя, экспертности и аудитории с банком из 30 тем', u:'/guide-raspakovka-claude/'}
+  ];
+
+  const $=id=>document.getElementById(id);
+  const params=new URLSearchParams(location.search);
+  let token='', me=null, waitT=null, payUrl='';
+  try{ token=localStorage.getItem('kab_token')||''; }catch(e){}
+
+  function show(v){
+    document.body.classList.add('gated');
+    document.querySelectorAll('.gview').forEach(x=>{ x.hidden = x.id!=='g-'+v; });
+    window.scrollTo(0,0);
+  }
+  function err(id,msg){ const e=$(id); e.textContent=msg||''; e.style.display=msg?'block':'none'; }
+  function saveAuth(t,email){ token=t; try{ localStorage.setItem('kab_token',t); localStorage.setItem('kab_email',email); }catch(e){} }
+  function clearAuth(){ token=''; me=null; clearTimeout(waitT); try{ localStorage.removeItem('kab_token'); localStorage.removeItem('kab_email'); }catch(e){} }
+  // «24 октября», год - только если не текущий (без хвоста «г.», который переносится на отдельную строку)
+  function fmtDate(ms){ const d=new Date(ms), o={day:'numeric',month:'long'};
+    const s=d.toLocaleDateString('ru-RU',o); return d.getFullYear()===new Date().getFullYear()?s:s+' '+d.getFullYear(); }
+
+  async function call(path,opts={}){
+    const headers=Object.assign({},opts.headers||{});
+    if(token) headers['Authorization']='Bearer '+token;
+    let r;
+    try{ r=await fetch(API+path,Object.assign({},opts,{headers,cache:'no-store'})); }
+    catch(e){ return {status:0,j:{error:'Нет связи с сервером - проверь интернет и обнови страницу'}}; }
+    if(r.status===503&&!opts._retried){ await new Promise(res=>setTimeout(res,1600)); return call(path,Object.assign({},opts,{_retried:true})); }
+    let j={}; try{ j=await r.json(); }catch(e){}
+    return {status:r.status,j};
+  }
+
+  async function boot(){
+    if(!token) return show('auth');
+    show('load');
+    const r=await call('/api/me');
+    if(r.status===401){ clearAuth(); return show('auth'); }
+    if(r.status!==200){ $('gloadmsg').textContent=(r.j&&r.j.error)||'Сервер не ответил - обнови страницу через минуту'; return; }
+    me=r.j;
+    if(me.access&&me.access.paid) return loadApp();
+    if(params.has('paid')) return waitPay();
+    showPay();
+  }
+
+  function showPay(){
+    const acc=(me&&me.access)||{};
+    $('gpaymail').textContent=me?me.email:'';
+    if(acc.until&&acc.until<Date.now()){
+      $('gpaytitle').textContent='Подписка закончилась';
+      $('gpaylead').textContent='Доступ был открыт до '+fmtDate(acc.until)+'. Продли подписку - фото, наборы и шаблоны ждут в кабинете';
+    }
+    payUrl=''; $('gpaybtn').href='#'; syncPayBtn(); err('gpayerr','');
+    show('pay');
+    // ссылку собирает сервер: почта кабинета + подпись кассы
+    call('/api/paylink').then(r=>{
+      if(r.status===200&&r.j.url){ payUrl=r.j.url; $('gpaybtn').href=payUrl; }
+      else err('gpayerr',(r.j&&r.j.error)||'Оплата подключается - загляни чуть позже или напиши Ивану');
+      syncPayBtn();
+    });
+  }
+  function syncPayBtn(){ $('gpaybtn').classList.toggle('off', !($('gagree').checked&&payUrl)); }
+
+  function waitPay(){
+    show('wait');
+    $('gwaitagain').hidden=true;
+    $('gwaitmsg').textContent='Касса присылает подтверждение в течение минуты-двух. Страницу не закрывай - конструктор откроется сам';
+    const started=Date.now();
+    clearTimeout(waitT);
+    const tick=async()=>{
+      const r=await call('/api/me');
+      if(r.status===401){ clearAuth(); return show('auth'); }
+      if(r.status===200){ me=r.j; if(me.access&&me.access.paid) return loadApp(); }
+      if(Date.now()-started<4*60*1000){ waitT=setTimeout(tick,4000); return; }
+      $('gwaitmsg').textContent='Подтверждения от кассы пока нет. Если деньги списались, доступ откроется сам в ближайшие минуты - нажми «Проверить ещё раз». Платил с другой почты или прошло больше 15 минут - напиши Ивану в Telegram t.me/loginoff_ai';
+      $('gwaitagain').hidden=false;
+    };
+    tick();
+  }
+
+  async function loadApp(){
+    show('load');
+    $('gloadmsg').textContent='Открываю конструктор…';
+    let r;
+    try{ r=await fetch(API+'/api/app',{headers:{Authorization:'Bearer '+token},cache:'no-store'}); }
+    catch(e){ $('gloadmsg').textContent='Нет связи с сервером - проверь интернет и обнови страницу'; return; }
+    if(r.status===401){ clearAuth(); return show('auth'); }
+    if(r.status===402){ try{ const j=await r.json(); if(me) me.access=j.access; }catch(e){} return showPay(); }
+    if(!r.ok){ $('gloadmsg').textContent='Сервер не ответил - обнови страницу через минуту'; return; }
+    // страница из кэша старее кода на сервере: один раз перезагрузиться за свежей разметкой
+    const b=r.headers.get('X-App-Build')||'';
+    let reloaded=false; try{ reloaded=sessionStorage.getItem('kb_reload')===b; }catch(e){}
+    if(b&&b!==BUILD&&!reloaded){ try{ sessionStorage.setItem('kb_reload',b); }catch(e){} location.replace(location.pathname+'?v='+encodeURIComponent(b)); return; }
+    const code=await r.text();
+    if(params.has('paid')||params.has('v')) history.replaceState(null,'',location.pathname);
+    setSubStat();
+    document.body.classList.remove('gated');
+    const s=document.createElement('script');
+    s.textContent=code;
+    document.body.appendChild(s);
+    s.remove();
+  }
+
+  function setSubStat(){
+    const box=$('substat'); if(!box||!me) return;
+    const acc=me.access||{};
+    box.innerHTML='';
+    const t=document.createElement('span');
+    if(acc.forever) t.innerHTML='Доступ открыт <b>без срока</b>';
+    else if(acc.stopped) t.innerHTML='Автопродление выключено, доступ до <b>'+fmtDate(acc.until)+'</b>';
+    else if(acc.renews&&acc.next) t.innerHTML='Подписка активна, следующее списание <b>'+fmtDate(Date.parse(acc.next+'T12:00:00'))+'</b>';
+    else if(acc.until) t.innerHTML='Подписка до <b>'+fmtDate(acc.until)+'</b>';
+    box.appendChild(t);
+    if(acc.renews&&!acc.forever){
+      const c=document.createElement('button'); c.textContent='отменить подписку'; c.id='subcancel'; c.onclick=cancelSub; box.appendChild(c);
+    }
+    const out=document.createElement('button'); out.textContent='выйти'; out.id='subout'; out.onclick=logout; box.appendChild(out);
+  }
+  async function cancelSub(){
+    if(!confirm('Отменить подписку? Следующего списания не будет, конструктор работает до '+fmtDate(me.access.until)+'. Вернуться можно в любой момент, оформив подписку заново')) return;
+    const b=$('subcancel'); if(b){ b.disabled=true; b.textContent='отменяю…'; }
+    const r=await call('/api/sub/cancel',{method:'POST'});
+    if(r.status===200){ me.access=Object.assign({},me.access,{renews:false,stopped:true}); setSubStat(); alert('Подписка отменена. Конструктор работает до '+fmtDate(me.access.until)); }
+    else { if(b){ b.disabled=false; b.textContent='отменить подписку'; } alert((r.j&&r.j.error)||'Не получилось отменить - напиши Ивану в Telegram t.me/loginoff_ai'); }
+  }
+  function logout(){ clearAuth(); location.replace(location.pathname); }
+
+  async function auth(mode){
+    err('gautherr','');
+    const email=$('gemail').value.trim(), pw=$('gpass').value;
+    if(!/^\S+@\S+\.\S+$/.test(email)) return err('gautherr','Проверь email - похоже, в нём опечатка');
+    if(pw.length<8) return err('gautherr','Пароль не короче 8 знаков');
+    if(mode==='register'&&!$('gpd').checked) return err('gautherr','Чтобы создать кабинет, отметь согласие на обработку персональных данных');
+    $('glogin').disabled=$('greg').disabled=true;
+    const r=await call('/api/'+mode,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({email,password:pw})});
+    $('glogin').disabled=$('greg').disabled=false;
+    if(r.status!==200||!r.j.token) return err('gautherr',(r.j&&r.j.error)||'Не получилось - попробуй ещё раз');
+    $('gpass').value='';
+    saveAuth(r.j.token,r.j.email);
+    boot();
+  }
+
+  function renderMore(){
+    const card=x=>'<a class="mcard" href="'+x.u+'"><b>'+x.t+'</b><span>'+x.d+'</span></a>';
+    $('mcourses').innerHTML=COURSES.map(card).join('');
+    $('mguides').innerHTML=GUIDES.map(card).join('');
+  }
+  function openMore(e){ if(e) e.preventDefault(); $('moreov').classList.add('open'); }
+
+  $('glogin').onclick=()=>auth('login');
+  $('greg').onclick=()=>auth('register');
+  $('gpass').addEventListener('keydown',e=>{ if(e.key==='Enter') auth('login'); });
+  $('gagree').onchange=syncPayBtn;
+  $('gpaybtn').onclick=e=>{ if($('gpaybtn').classList.contains('off')){ e.preventDefault(); if(!$('gagree').checked) err('gpayerr','Отметь согласие с условиями подписки'); } };
+  $('gpaid').onclick=waitPay;
+  $('gwaitagain').onclick=waitPay;
+  $('gout1').onclick=$('gout2').onclick=()=>{ clearAuth(); show('auth'); };
+  $('gmorebtn').onclick=openMore; $('gmoretop').onclick=openMore;
+  const mb=$('morebtn'); if(mb) mb.onclick=openMore;
+  $('moreclose').onclick=()=>$('moreov').classList.remove('open');
+  $('moreov').addEventListener('click',e=>{ if(e.target===$('moreov')) $('moreov').classList.remove('open'); });
+  // тема устройства действует и на экранах входа
+  try{ if(localStorage.getItem('karusel_theme')==='light') document.body.classList.add('light'); }catch(e){}
+  renderMore();
+  boot();
+})();
+
+</script>
+</body>
+</html>
