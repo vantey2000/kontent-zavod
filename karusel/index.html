@@ -672,7 +672,7 @@
    Код конструктора в репо сайта не лежит - его отдаёт karusel-api (/api/app) только кабинету с подпиской.
    Он исполняется и сразу убирается из страницы: «Сохранить страницу» не даёт рабочей копии */
 (function(){
-  const API='https://karusel-api.aivan-loginov.workers.dev', BUILD='53aa9cadc0';
+  const API='https://karusel-api.aivan-loginov.workers.dev', BUILD='6bec006597';
   const SITE='https://ivan-loginov.ru';
   const COURSES=[
     {t:'Контент-завод за выходные', d:'Мини-курс: за одни выходные - первая пачка рилсов и каруселей у тебя в аккаунте. С телефона, без съёмок, монтажа и дизайнера', u:'/'},
@@ -688,7 +688,7 @@
 
   const $=id=>document.getElementById(id);
   const params=new URLSearchParams(location.search);
-  let token='', me=null, waitT=null, payUrl='';
+  let token='', me=null, waitT=null;
   try{ token=localStorage.getItem('kab_token')||''; }catch(e){}
   // пришёл по ссылке друга: код помним 60 дней, из адреса убираем
   if(/^[A-Za-z0-9]{6,12}$/.test(params.get('ref')||'')){
@@ -739,17 +739,24 @@
       $('gpaytitle').textContent='Подписка закончилась';
       $('gpaylead').textContent='Доступ был открыт до '+fmtDate(acc.until)+'. Продли подписку - фото, наборы и шаблоны ждут в кабинете';
     }
-    payUrl=''; $('gpaybtn').href='#'; syncPayBtn(); err('gpayerr','');
+    $('gpaybtn').href='#'; syncPayBtn(); err('gpayerr','');
     show('pay');
-    // ссылку собирает сервер: почта кабинета + подпись кассы
-    const rc=refCode();
-    call('/api/paylink'+(rc?'?ref='+encodeURIComponent(rc):'')).then(r=>{
-      if(r.status===200&&r.j.url){ payUrl=r.j.url; $('gpaybtn').href=payUrl; }
-      else err('gpayerr',(r.j&&r.j.error)||'Оплата подключается - загляни чуть позже или напиши Ивану');
-      syncPayBtn();
-    });
   }
-  function syncPayBtn(){ $('gpaybtn').classList.toggle('off', !($('gagree').checked&&payUrl)); }
+  function syncPayBtn(){ $('gpaybtn').classList.toggle('off', !$('gagree').checked); }
+  // ссылку на оплату собирает касса по запросу сервера (почта кабинета + подписка) - в момент нажатия,
+  // чтобы касса не копила брошенные счета от тех, кто просто посмотрел экран оплаты
+  let paying=false;
+  async function goPay(e){
+    e.preventDefault();
+    if(!$('gagree').checked) return err('gpayerr','Отметь согласие с условиями подписки');
+    if(paying) return;
+    paying=true; err('gpayerr',''); const b=$('gpaybtn'), label=b.textContent; b.textContent='Открываю оплату…';
+    const rc=refCode();
+    const r=await call('/api/paylink'+(rc?'?ref='+encodeURIComponent(rc):''));
+    if(r.status===200&&r.j.url){ location.href=r.j.url; return; }
+    paying=false; b.textContent=label;
+    err('gpayerr',(r.j&&r.j.error)||'Касса не ответила - попробуй ещё раз через минуту');
+  }
 
   function waitPay(){
     show('wait');
@@ -880,7 +887,7 @@
   $('greg').onclick=()=>auth('register');
   $('gpass').addEventListener('keydown',e=>{ if(e.key==='Enter') auth('login'); });
   $('gagree').onchange=syncPayBtn;
-  $('gpaybtn').onclick=e=>{ if($('gpaybtn').classList.contains('off')){ e.preventDefault(); if(!$('gagree').checked) err('gpayerr','Отметь согласие с условиями подписки'); } };
+  $('gpaybtn').onclick=goPay;
   $('gpaid').onclick=waitPay;
   $('gwaitagain').onclick=waitPay;
   $('gout1').onclick=$('gout2').onclick=()=>{ clearAuth(); show('auth'); };
