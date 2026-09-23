@@ -1,0 +1,282 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+<title>Админка конструктора</title>
+<style>
+@font-face{font-family:'Montserrat';font-style:normal;font-weight:400 800;font-display:swap;src:url(../fonts/montserrat-cyr.woff2) format('woff2');unicode-range:U+0301,U+0400-045F,U+0490-0491,U+04B0-04B1,U+2116}
+@font-face{font-family:'Montserrat';font-style:normal;font-weight:400 800;font-display:swap;src:url(../fonts/montserrat-lat.woff2) format('woff2');unicode-range:U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD}
+
+  :root{--bg:#17171a;--panel:#202024;--line:#2e2e34;--ink:#ededf0;--muted:#9a9aa2;--gold:#C9B37E;--green:#7fc48a;--red:#e08a8a;--blue:#8fb2e0}
+  *{margin:0;padding:0;box-sizing:border-box}
+  body{font-family:'Montserrat',-apple-system,sans-serif;background:var(--bg);color:var(--ink);-webkit-font-smoothing:antialiased;line-height:1.45;-webkit-text-size-adjust:100%}
+  .wrap{max-width:1100px;margin:0 auto;padding:20px 16px 60px}
+  h1{font-size:20px;font-weight:800}
+  .top{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:16px}
+  .top .sub{font-size:12px;color:var(--muted)}
+  .btn{background:var(--gold);color:#151515;border:0;border-radius:10px;font-family:inherit;font-weight:700;font-size:13px;padding:10px 14px;cursor:pointer}
+  .btn.ghost{background:transparent;color:var(--gold);border:1px solid var(--line)}
+  .btn.sm{padding:7px 10px;font-size:12px}
+  input,select{background:#161619;border:1px solid var(--line);border-radius:10px;color:var(--ink);font-family:inherit;font-size:16px;padding:10px 12px;outline:none;width:100%}
+  input:focus,select:focus{border-color:var(--gold)}
+  .cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:8px;margin-bottom:18px}
+  .card{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:12px 14px}
+  .card b{display:block;font-size:22px;font-weight:800}
+  .card span{font-size:11.5px;color:var(--muted)}
+  .card.gold b{color:var(--gold)}
+  .tabs{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:14px}
+  .tabs button{background:transparent;border:1px solid var(--line);color:var(--muted);border-radius:999px;padding:8px 14px;font-family:inherit;font-weight:600;font-size:13px;cursor:pointer}
+  .tabs button.on{background:var(--gold);color:#151515;border-color:var(--gold)}
+  .tools{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px;align-items:center}
+  .tools input[type=search]{flex:1;min-width:180px}
+  .chip{border:1px solid var(--line);border-radius:999px;padding:6px 10px;font-size:12px;color:var(--muted);cursor:pointer;background:transparent;font-family:inherit}
+  .chip.on{border-color:var(--gold);color:var(--gold)}
+  .chk{font-size:12px;color:var(--muted);display:flex;gap:6px;align-items:center}
+  .chk input{width:auto}
+  .row{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:12px 14px;margin-bottom:8px}
+  .row .h{display:flex;justify-content:space-between;gap:10px;align-items:baseline;flex-wrap:wrap;cursor:pointer}
+  .row .em{font-weight:700;font-size:14px;word-break:break-all}
+  .row .meta{font-size:12px;color:var(--muted);margin-top:4px;display:flex;gap:12px;flex-wrap:wrap}
+  .row .more{display:none;margin-top:10px;border-top:1px solid var(--line);padding-top:10px;font-size:12.5px;color:#c9c9d0}
+  .row.open .more{display:block}
+  .more .acts{display:flex;gap:6px;flex-wrap:wrap;margin-top:10px}
+  .badge{font-size:11px;font-weight:700;border-radius:999px;padding:3px 9px;white-space:nowrap}
+  .b-paying{background:rgba(127,196,138,.15);color:var(--green)}
+  .b-cancelled{background:rgba(201,179,126,.15);color:var(--gold)}
+  .b-gift{background:rgba(143,178,224,.15);color:var(--blue)}
+  .b-paid{background:rgba(127,196,138,.15);color:var(--green)}
+  .b-expired{background:rgba(224,138,138,.15);color:var(--red)}
+  .b-none{background:rgba(154,154,162,.12);color:var(--muted)}
+  table{width:100%;border-collapse:collapse;font-size:13px}
+  th,td{text-align:left;padding:8px 6px;border-bottom:1px solid var(--line);vertical-align:top}
+  th{color:var(--muted);font-weight:600;font-size:11.5px;text-transform:uppercase;letter-spacing:.4px}
+  td.num,th.num{text-align:right;white-space:nowrap}
+  .box{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:14px;margin-bottom:12px;overflow-x:auto}
+  .box h3{font-size:14px;margin-bottom:8px}
+  .hint{font-size:12px;color:var(--muted);margin-top:6px}
+  .err{display:none;background:#3a1f1f;border:1px solid #6b3434;color:#f0c4c4;border-radius:10px;padding:10px 12px;font-size:13px;margin:10px 0}
+  .ok{color:var(--green)}
+  .grid2{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+  .login{max-width:420px;margin:12vh auto 0}
+  .login p{font-size:13px;color:var(--muted);margin:8px 0 12px}
+  [hidden]{display:none!important}
+  @media(max-width:600px){ .grid2{grid-template-columns:1fr} .card b{font-size:19px} }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="login" id="login" hidden>
+    <h1>Админка конструктора</h1>
+    <p>Вставь ключ админки. Он запомнится на этом устройстве</p>
+    <input type="password" id="keyin" placeholder="ключ" autocomplete="off">
+    <button class="btn" id="keysave" style="margin-top:10px;width:100%">Войти</button>
+    <div class="err" id="loginerr"></div>
+  </div>
+
+  <div id="app" hidden>
+    <div class="top">
+      <div><h1>Конструктор каруселей</h1><div class="sub" id="loaded">загружаю…</div></div>
+      <div style="display:flex;gap:6px"><button class="btn ghost sm" id="reload">Обновить</button><button class="btn ghost sm" id="logout">Выйти</button></div>
+    </div>
+    <div class="err" id="apperr"></div>
+    <div class="cards" id="cards"></div>
+    <div class="tabs" id="tabs">
+      <button data-t="users" class="on">Участники</button>
+      <button data-t="pays">Оплаты</button>
+      <button data-t="ref">Рефералка</button>
+      <button data-t="grant">Выдать доступ</button>
+    </div>
+
+    <section data-s="users">
+      <div class="tools">
+        <input type="search" id="q" placeholder="Поиск по почте">
+        <label class="chk"><input type="checkbox" id="showtest"> тестовые</label>
+      </div>
+      <div class="tools" id="filters"></div>
+      <div id="users"></div>
+    </section>
+
+    <section data-s="pays" hidden>
+      <div class="box"><h3>По месяцам</h3><table id="months"></table></div>
+      <div class="box"><h3>Все оплаты</h3><table id="paylist"></table></div>
+    </section>
+
+    <section data-s="ref" hidden>
+      <div class="box"><h3>Ждут выплату</h3><div id="refopen"></div></div>
+      <div class="box"><h3>Кто приводит людей</h3><table id="reftable"></table>
+        <div class="hint">Начисление становится доступным к выводу через 14 дней после оплаты друга. «Перевёл» отмечает выплату, у человека она уйдёт в «выплачено»</div></div>
+    </section>
+
+    <section data-s="grant" hidden>
+      <div class="box">
+        <h3>Бесплатный доступ</h3>
+        <div class="grid2">
+          <input type="text" id="gemail" placeholder="почта кабинета" inputmode="email">
+          <select id="gdays"><option value="30">на 30 дней</option><option value="90">на 90 дней</option><option value="365">на год</option><option value="forever">навсегда</option></select>
+        </div>
+        <input type="text" id="gnote" placeholder="заметка для себя: за что подарок" style="margin-top:8px">
+        <div style="display:flex;gap:8px;margin-top:10px;flex-wrap:wrap">
+          <button class="btn" id="gdo">Выдать доступ</button>
+          <button class="btn ghost" id="gundo">Забрать подарок</button>
+        </div>
+        <div class="hint">Подарок не трогает оплаченную подписку. Почта - та, на которую заведён кабинет (можно выдать и до регистрации)</div>
+        <div class="err" id="gerr"></div>
+        <div class="hint ok" id="gok"></div>
+      </div>
+    </section>
+  </div>
+</div>
+<script>
+(function(){
+  const API='https://karusel-api.aivan-loginov.workers.dev';
+  const $=id=>document.getElementById(id);
+  const esc=s=>String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+  const rub=n=>(Number(n)||0).toLocaleString('ru-RU')+' ₽';
+  const d=ms=>ms?new Date(ms).toLocaleDateString('ru-RU',{day:'numeric',month:'short',year:'2-digit'}):'-';
+  const ST={paying:'платит',cancelled:'отменил, доступ идёт',gift:'подарок',paid:'оплачено',expired:'срок вышел',none:'без доступа'};
+  let KEY='', rows=[], openReq=[], filter='all', tab='users';
+  // ключ приходит один раз ссылкой ...#k=ключ: запоминаем на устройстве и убираем из адреса
+  function keyFromHash(){ try{ const m=location.hash.match(/k=([A-Za-z0-9_-]{16,})/); if(m){ localStorage.setItem('kb_admin',m[1]); history.replaceState(null,'',location.pathname); return true; } }catch(e){} return false; }
+  keyFromHash();
+  try{ KEY=localStorage.getItem('kb_admin')||''; }catch(e){}
+  window.addEventListener('hashchange',()=>{ if(keyFromHash()){ KEY=localStorage.getItem('kb_admin')||''; start(); } });
+
+  async function api(path,opts={}){
+    const r=await fetch(API+path,Object.assign({},opts,{cache:'no-store',headers:Object.assign({'X-Admin-Key':KEY},opts.headers||{})}));
+    const t=await r.text(); let j=null; try{ j=JSON.parse(t); }catch(e){}
+    return {status:r.status,j,t};
+  }
+  function err(id,m){ const e=$(id); e.textContent=m||''; e.style.display=m?'block':'none'; }
+
+  async function load(){
+    err('apperr',''); $('loaded').textContent='загружаю…';
+    let cursor='', got=[], n=0;
+    try{
+      do{
+        const r=await api('/api/admin/overview'+(cursor?'?cursor='+encodeURIComponent(cursor):''));
+        if(r.status===403){ localStorage.removeItem('kb_admin'); KEY=''; return showLogin('Ключ не подошёл'); }
+        if(r.status!==200) throw new Error(r.t||('ошибка '+r.status));
+        got=got.concat(r.j.rows); cursor=r.j.next; n++;
+        $('loaded').textContent='загружаю… '+got.length;
+      }while(cursor&&n<200);
+      const rr=await api('/api/admin/ref'); openReq=(rr.status===200&&rr.j&&rr.j.open)||[];
+    }catch(e){ err('apperr','Не получилось загрузить: '+e.message); }
+    rows=got;
+    $('loaded').textContent='обновлено '+new Date().toLocaleTimeString('ru-RU',{hour:'2-digit',minute:'2-digit'});
+    render();
+  }
+
+  const vis=()=>rows.filter(r=>$('showtest').checked||!r.test);
+  function render(){ renderCards(); renderUsers(); renderPays(); renderRef(); }
+
+  function renderCards(){
+    const R=vis(), now=Date.now(), month=new Date().toISOString().slice(0,7);
+    const prev=new Date(new Date().getFullYear(),new Date().getMonth()-1,15).toISOString().slice(0,7);
+    const pays=R.flatMap(r=>r.pays);
+    const sumM=m=>pays.filter(p=>new Date(p.at).toISOString().slice(0,7)===m).reduce((a,p)=>a+p.sum,0);
+    const cnt=s=>R.filter(r=>r.status===s).length;
+    const cells=[
+      [R.filter(r=>r.cabinet).length,'кабинетов'],
+      [R.filter(r=>['paying','cancelled','gift','paid'].includes(r.status)).length,'с доступом сейчас',1],
+      [cnt('paying'),'платят, автопродление'],
+      [cnt('cancelled'),'отменили, доступ идёт'],
+      [cnt('gift'),'подарков'],
+      [R.filter(r=>r.lastActive>now-7*864e5).length,'активны за 7 дней'],
+      [rub(sumM(month)),'выручка за месяц',1],
+      [rub(sumM(prev)),'за прошлый месяц'],
+      [rub(pays.reduce((a,p)=>a+p.sum,0)),'выручка всего'],
+      [rub(openReq.reduce((a,x)=>a+x.toPay,0)),'ждут выплату по рефералке',openReq.length?1:0]
+    ];
+    $('cards').innerHTML=cells.map(c=>'<div class="card'+(c[2]?' gold':'')+'"><b>'+c[0]+'</b><span>'+c[1]+'</span></div>').join('');
+  }
+
+  function renderUsers(){
+    const R=vis();
+    const counts={all:R.length}; R.forEach(r=>counts[r.status]=(counts[r.status]||0)+1);
+    $('filters').innerHTML=[['all','все'],['paying','платят'],['cancelled','отменили'],['gift','подарок'],['expired','срок вышел'],['none','без доступа']]
+      .map(f=>'<button class="chip'+(filter===f[0]?' on':'')+'" data-f="'+f[0]+'">'+f[1]+' '+(counts[f[0]]||0)+'</button>').join('');
+    const q=$('q').value.trim().toLowerCase();
+    const list=R.filter(r=>(filter==='all'||r.status===filter)&&(!q||r.email.includes(q))).sort((a,b)=>b.lastActive-a.lastActive);
+    $('users').innerHTML=list.map(r=>{
+      const when=r.status==='paying'&&r.next?'списание '+d(Date.parse(r.next+'T12:00:00')):(r.forever?'без срока':(r.until?'до '+d(r.until):''));
+      return '<div class="row" data-e="'+esc(r.email)+'"><div class="h"><span class="em">'+esc(r.email)+'</span><span class="badge b-'+r.status+'">'+ST[r.status]+(when?' · '+when:'')+'</span></div>'
+        +'<div class="meta"><span>'+(r.cabinet?'кабинет с '+d(r.created):'оплата без кабинета')+'</span><span>активность '+d(r.lastActive)+'</span><span>фото '+r.photos+'</span>'
+        +(r.paid?'<span>оплачено '+rub(r.paid)+' ('+r.pays.length+')</span>':'')+(r.refBy?'<span>пригласил '+esc(r.refBy)+'</span>':'')+(r.invited?'<span>привёл '+r.invited+'</span>':'')+'</div>'
+        +'<div class="more">'
+        +(r.pays.length?'<div><b>Оплаты:</b> '+r.pays.slice().sort((a,b)=>b.at-a.at).map(p=>d(p.at)+' '+rub(p.sum)).join(', ')+'</div>':'<div>Оплат не было</div>')
+        +(r.gift?'<div style="margin-top:4px"><b>Подарок:</b> '+(r.gift.forever?'навсегда':'до '+d(r.gift.until))+(r.gift.note?' · '+esc(r.gift.note):'')+'</div>':'')
+        +(r.ref.accrued||r.invited?'<div style="margin-top:4px"><b>Рефералка:</b> привёл '+r.invited+', начислено '+rub(r.ref.accrued)+', выплачено '+rub(r.ref.paid)+', ждёт выплаты '+rub(r.ref.pending)+'</div>':'')
+        +'<div class="acts"><button class="btn sm" data-g="30">+30 дней</button><button class="btn ghost sm" data-g="forever">навсегда</button>'+(r.gift?'<button class="btn ghost sm" data-g="revoke">забрать подарок</button>':'')+'</div>'
+        +'</div></div>';
+    }).join('')||'<div class="hint">Никого не нашлось</div>';
+  }
+
+  function renderPays(){
+    const R=vis();
+    const pays=R.flatMap(r=>r.pays.map(p=>Object.assign({email:r.email},p))).sort((a,b)=>b.at-a.at);
+    const by={}; pays.forEach(p=>{ const m=new Date(p.at).toISOString().slice(0,7); by[m]=by[m]||{n:0,s:0,who:new Set()}; by[m].n++; by[m].s+=p.sum; by[m].who.add(p.email); });
+    const ms=Object.keys(by).sort().reverse();
+    $('months').innerHTML='<tr><th>Месяц</th><th class="num">Оплат</th><th class="num">Людей</th><th class="num">Сумма</th></tr>'
+      +(ms.map(m=>'<tr><td>'+new Date(m+'-15').toLocaleDateString('ru-RU',{month:'long',year:'numeric'})+'</td><td class="num">'+by[m].n+'</td><td class="num">'+by[m].who.size+'</td><td class="num">'+rub(by[m].s)+'</td></tr>').join('')||'<tr><td colspan="4" class="hint">Оплат пока нет</td></tr>');
+    $('paylist').innerHTML='<tr><th>Дата</th><th>Почта</th><th class="num">Сумма</th></tr>'
+      +(pays.map(p=>'<tr><td>'+d(p.at)+'</td><td>'+esc(p.email)+'</td><td class="num">'+rub(p.sum)+'</td></tr>').join('')||'<tr><td colspan="3" class="hint">Оплат пока нет</td></tr>');
+  }
+
+  function renderRef(){
+    $('refopen').innerHTML=openReq.length?openReq.map(x=>'<div class="row"><div class="h"><span class="em">'+esc(x.email)+'</span><b style="color:var(--gold)">'+rub(x.toPay)+'</b></div>'
+      +'<div class="meta"><span>куда: '+esc(x.dest)+'</span><span>запрос '+d(x.requestedAt)+'</span></div>'
+      +'<div class="acts" style="margin-top:8px"><button class="btn sm" data-paid="'+esc(x.email)+'" data-amt="'+x.toPay+'">Перевёл '+rub(x.toPay)+'</button></div></div>').join(''):'<div class="hint">Запросов на выплату нет</div>';
+    const R=vis().filter(r=>r.invited||r.ref.accrued).sort((a,b)=>b.ref.accrued-a.ref.accrued);
+    $('reftable').innerHTML='<tr><th>Кто</th><th class="num">Привёл</th><th class="num">Оплат</th><th class="num">Начислено</th><th class="num">Выплачено</th><th class="num">Ждут 14 дн</th></tr>'
+      +(R.map(r=>'<tr><td>'+esc(r.email)+'</td><td class="num">'+r.invited+'</td><td class="num">'+r.ref.payments+'</td><td class="num">'+rub(r.ref.accrued)+'</td><td class="num">'+rub(r.ref.paid)+'</td><td class="num">'+rub(r.ref.hold)+'</td></tr>').join('')||'<tr><td colspan="6" class="hint">Пока никто никого не привёл</td></tr>');
+  }
+
+  async function grant(email,what,note){
+    const body=what==='revoke'?{email,revoke:true}:(what==='forever'?{email,forever:true,note}:{email,days:Number(what),note});
+    const r=await api('/api/admin/grant',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
+    if(r.status!==200) throw new Error(r.t||('ошибка '+r.status));
+    return r.t;
+  }
+
+  $('users').addEventListener('click',async e=>{
+    const row=e.target.closest('.row'); if(!row) return;
+    const g=e.target.closest('[data-g]');
+    if(!g){ if(e.target.closest('.h')) row.classList.toggle('open'); return; }
+    const email=row.dataset.e, what=g.dataset.g;
+    const label=what==='revoke'?'Забрать подарок у '+email+'?':(what==='forever'?'Выдать '+email+' доступ навсегда?':'Выдать '+email+' доступ на '+what+' дней?');
+    if(!confirm(label)) return;
+    try{ await grant(email,what,'из админки'); await load(); }catch(ex){ alert('Не получилось: '+ex.message); }
+  });
+  $('refopen').addEventListener('click',async e=>{
+    const b=e.target.closest('[data-paid]'); if(!b) return;
+    const note=prompt('Перевёл '+rub(b.dataset.amt)+' на '+b.dataset.paid+'. Заметка (дата, банк):','СБП '+new Date().toLocaleDateString('ru-RU'));
+    if(note===null) return;
+    const r=await api('/api/admin/ref-paid',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({email:b.dataset.paid,amount:Number(b.dataset.amt),note})});
+    if(r.status!==200) return alert('Не получилось: '+r.t);
+    await load();
+  });
+  $('filters').addEventListener('click',e=>{ const f=e.target.closest('[data-f]'); if(!f) return; filter=f.dataset.f; renderUsers(); });
+  $('q').addEventListener('input',renderUsers);
+  $('showtest').addEventListener('change',render);
+  $('tabs').addEventListener('click',e=>{ const b=e.target.closest('[data-t]'); if(!b) return; tab=b.dataset.t;
+    document.querySelectorAll('#tabs button').forEach(x=>x.classList.toggle('on',x===b));
+    document.querySelectorAll('section[data-s]').forEach(s=>s.hidden=s.dataset.s!==tab); });
+  $('gdo').onclick=async()=>{ err('gerr',''); $('gok').textContent='';
+    const email=$('gemail').value.trim().toLowerCase(); if(!/^\S+@\S+\.\S+$/.test(email)) return err('gerr','Проверь почту');
+    try{ $('gok').textContent=await grant(email,$('gdays').value,$('gnote').value.trim()); load(); }catch(ex){ err('gerr',ex.message); } };
+  $('gundo').onclick=async()=>{ err('gerr',''); $('gok').textContent='';
+    const email=$('gemail').value.trim().toLowerCase(); if(!/^\S+@\S+\.\S+$/.test(email)) return err('gerr','Проверь почту');
+    try{ $('gok').textContent=await grant(email,'revoke'); load(); }catch(ex){ err('gerr',ex.message); } };
+  $('reload').onclick=load;
+  $('logout').onclick=()=>{ try{ localStorage.removeItem('kb_admin'); }catch(e){} KEY=''; showLogin(''); };
+  $('keysave').onclick=()=>{ const k=$('keyin').value.trim(); if(!k) return; KEY=k; try{ localStorage.setItem('kb_admin',k); }catch(e){} start(); };
+
+  function showLogin(msg){ $('app').hidden=true; $('login').hidden=false; err('loginerr',msg); }
+  function start(){ if(!KEY) return showLogin(''); $('login').hidden=true; $('app').hidden=false; load(); }
+  start();
+})();
+</script>
+</body>
+</html>
