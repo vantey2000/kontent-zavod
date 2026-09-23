@@ -244,7 +244,13 @@
   .substat{font-size:12px;color:var(--muted);line-height:1.45;margin:-10px 0 16px}
   .substat b{color:var(--ink);font-weight:600}
   .substat button{background:none;border:0;color:var(--muted);font-family:inherit;font-size:12px;text-decoration:underline;cursor:pointer;padding:0;margin-left:6px}
-  #moreov{z-index:300}
+  #moreov,#refov{z-index:300}
+  .refstats{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:16px 0 4px}
+  .refstats div{border:1px solid var(--line);border-radius:10px;padding:10px 12px}
+  .refstats b{display:block;font-size:18px;color:var(--ink);font-weight:800}
+  .refstats span{font-size:11.5px;color:var(--muted)}
+  .refstats .gold b{color:var(--accent)}
+  .reflast{margin-top:14px;font-size:12.5px;color:var(--muted);line-height:1.6}
   .mgroup{margin-top:18px}
   .mgroup h3{margin-top:0}
   .mcard{display:block;text-decoration:none;border:1px solid var(--line);border-radius:12px;padding:12px 14px;margin-top:8px;background:rgba(255,255,255,.02)}
@@ -329,7 +335,8 @@
     <div class="substat" id="substat"></div>
     <button class="helpbtn" id="cabbtn" style="margin-bottom:10px">Личный кабинет</button>
     <button class="helpbtn" id="helpbtn" style="margin-bottom:10px">Как пользоваться - инструкция</button>
-    <button class="helpbtn" id="morebtn">Гайды и курсы Ивана</button>
+    <button class="helpbtn" id="morebtn" style="margin-bottom:10px">Гайды и курсы Ивана</button>
+    <button class="helpbtn" id="refbtn">Пригласи друга - получай 500 ₽</button>
 
     <div class="field">
       <label>Фон (твоё фото)</label>
@@ -636,12 +643,36 @@
   </div>
 </div>
 
+<div class="helpov" id="refov">
+  <div class="helpbox">
+    <button class="helpclose" id="refclose" aria-label="Закрыть">✕</button>
+    <h2>Пригласи друга</h2>
+    <p>Поделись своей ссылкой. Друг заводит кабинет по ней и оформляет подписку - тебе <b class="refpay">500 ₽</b> с каждой его оплаты: с первой и с каждого следующего месяца, пока он пользуется конструктором</p>
+    <div class="field" style="margin-top:16px">
+      <label>Твоя ссылка</label>
+      <input type="text" id="reflink" readonly>
+    </div>
+    <div class="gbtns"><button class="btn" id="refcopy">Скопировать</button><button class="btn ghost" id="refshare">Поделиться</button></div>
+    <div class="refstats" id="refstats"></div>
+    <h3>Вывести деньги</h3>
+    <p class="hint" id="refhold">Начисление можно вывести через 14 дней после оплаты друга, от 500 ₽. Иван переводит по СБП и отмечает выплату здесь</p>
+    <div class="field" style="margin-top:12px">
+      <label>Куда перевести</label>
+      <input type="text" id="refdest" placeholder="Телефон для СБП и банк: +7 900 000-00-00, Т-Банк">
+    </div>
+    <button class="btn gwide" id="refout">Запросить выплату</button>
+    <div class="gerr" id="referr"></div>
+    <div id="reflast"></div>
+    <p class="hint" style="margin-top:14px"><a href="ref.html" target="_blank" style="color:var(--accent)">Правила программы</a></p>
+  </div>
+</div>
+
 <script>
 /* Оболочка конструктора на ivan-loginov.ru/karusel/: вход, оплата, загрузка кода конструктора.
    Код конструктора в репо сайта не лежит - его отдаёт karusel-api (/api/app) только кабинету с подпиской.
    Он исполняется и сразу убирается из страницы: «Сохранить страницу» не даёт рабочей копии */
 (function(){
-  const API='https://karusel-api.aivan-loginov.workers.dev', BUILD='d7926c0514';
+  const API='https://karusel-api.aivan-loginov.workers.dev', BUILD='f55ac15de2';
   const SITE='https://ivan-loginov.ru';
   const COURSES=[
     {t:'Контент-завод за выходные', d:'Мини-курс: за одни выходные - первая пачка рилсов и каруселей у тебя в аккаунте. С телефона, без съёмок, монтажа и дизайнера', u:'/'},
@@ -659,6 +690,12 @@
   const params=new URLSearchParams(location.search);
   let token='', me=null, waitT=null, payUrl='';
   try{ token=localStorage.getItem('kab_token')||''; }catch(e){}
+  // пришёл по ссылке друга: код помним 60 дней, из адреса убираем
+  if(/^[A-Za-z0-9]{6,12}$/.test(params.get('ref')||'')){
+    try{ localStorage.setItem('kb_ref',JSON.stringify({c:params.get('ref').toLowerCase(),at:Date.now()})); }catch(e){}
+    params.delete('ref'); const q=params.toString(); history.replaceState(null,'',location.pathname+(q?'?'+q:''));
+  }
+  function refCode(){ try{ const r=JSON.parse(localStorage.getItem('kb_ref')||'null'); if(r&&r.c&&Date.now()-r.at<60*864e5) return r.c; }catch(e){} return ''; }
 
   function show(v){
     document.body.classList.add('gated');
@@ -705,7 +742,8 @@
     payUrl=''; $('gpaybtn').href='#'; syncPayBtn(); err('gpayerr','');
     show('pay');
     // ссылку собирает сервер: почта кабинета + подпись кассы
-    call('/api/paylink').then(r=>{
+    const rc=refCode();
+    call('/api/paylink'+(rc?'?ref='+encodeURIComponent(rc):'')).then(r=>{
       if(r.status===200&&r.j.url){ payUrl=r.j.url; $('gpaybtn').href=payUrl; }
       else err('gpayerr',(r.j&&r.j.error)||'Оплата подключается - загляни чуть позже или напиши Ивану');
       syncPayBtn();
@@ -784,12 +822,51 @@
     if(pw.length<8) return err('gautherr','Пароль не короче 8 знаков');
     if(mode==='register'&&!$('gpd').checked) return err('gautherr','Чтобы создать кабинет, отметь согласие на обработку персональных данных');
     $('glogin').disabled=$('greg').disabled=true;
-    const r=await call('/api/'+mode,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({email,password:pw})});
+    const r=await call('/api/'+mode,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(mode==='register'?{email,password:pw,ref:refCode()||undefined}:{email,password:pw})});
     $('glogin').disabled=$('greg').disabled=false;
     if(r.status!==200||!r.j.token) return err('gautherr',(r.j&&r.j.error)||'Не получилось - попробуй ещё раз');
     $('gpass').value='';
     saveAuth(r.j.token,r.j.email);
     boot();
+  }
+
+  /* ---------- рефералка ---------- */
+  const rub=n=>(Number(n)||0).toLocaleString('ru-RU')+' ₽';
+  const esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+  let refLink='';
+  async function openRef(){
+    $('refov').classList.add('open'); err('referr','');
+    $('refstats').innerHTML='<div><b>…</b><span>загружаю</span></div>';
+    const r=await call('/api/ref');
+    if(r.status!==200){ err('referr',(r.j&&r.j.error)||'Не получилось загрузить - попробуй ещё раз'); return; }
+    const i=r.j; refLink=i.link||'';
+    $('reflink').value=refLink||'Ссылка появится, когда открыт доступ к конструктору';
+    document.querySelectorAll('.refpay').forEach(x=>x.textContent=rub(i.pay));
+    $('refhold').textContent='Начисление можно вывести через '+i.holdDays+' дней после оплаты друга, от '+rub(i.min)+'. Иван переводит по СБП и отмечает выплату здесь';
+    const cell=(v,t,c)=>'<div'+(c?' class="gold"':'')+'><b>'+v+'</b><span>'+t+'</span></div>';
+    $('refstats').innerHTML=cell(i.invited,'пришли по ссылке')+cell(i.payments,'оплат друзей')+cell(rub(i.accrued),'начислено')
+      +cell(rub(i.withdrawable),'можно вывести',1)+cell(rub(i.hold),'ждут 14 дней')+cell(rub(i.pending),'в обработке')+cell(rub(i.paid),'выплачено');
+    $('refout').textContent=i.withdrawable>=i.min?'Запросить выплату '+rub(i.withdrawable):'Запросить выплату';
+    $('refout').classList.toggle('off',!(i.withdrawable>=i.min));
+    $('reflast').innerHTML=(i.last||[]).length?'<div class="reflast">'+i.last.map(x=>fmtDate(x.at)+' · '+esc(x.from)+' · +'+rub(x.sum)).join('<br>')+'</div>':'';
+  }
+  async function refPayout(){
+    err('referr','');
+    const r=await call('/api/ref/payout',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({dest:$('refdest').value})});
+    if(r.status!==200) return err('referr',(r.j&&r.j.error)||'Не получилось - попробуй ещё раз');
+    $('refdest').value=''; alert('Запрос на '+rub(r.j.amount)+' отправлен. Иван переведёт и отметит выплату здесь'); openRef();
+  }
+  function refCopy(){
+    if(!refLink) return;
+    const done=()=>{ $('refcopy').textContent='Скопировано ✓'; setTimeout(()=>$('refcopy').textContent='Скопировать',1800); };
+    if(navigator.clipboard) navigator.clipboard.writeText(refLink).then(done,()=>{ $('reflink').select(); document.execCommand('copy'); done(); });
+    else { $('reflink').select(); document.execCommand('copy'); done(); }
+  }
+  function refShare(){
+    if(!refLink) return;
+    const text='Конструктор каруселей: вставляешь текст поста и своё фото - слайды для Instagram собираются сами';
+    if(navigator.share) navigator.share({title:'Конструктор каруселей',text,url:refLink}).catch(()=>{});
+    else refCopy();
   }
 
   function renderMore(){
@@ -810,6 +887,10 @@
   $('gmorebtn').onclick=openMore; $('gmoretop').onclick=openMore;
   const mb=$('morebtn'); if(mb) mb.onclick=openMore;
   $('moreclose').onclick=()=>$('moreov').classList.remove('open');
+  const rb=$('refbtn'); if(rb) rb.onclick=openRef;
+  $('refclose').onclick=()=>$('refov').classList.remove('open');
+  $('refov').addEventListener('click',e=>{ if(e.target===$('refov')) $('refov').classList.remove('open'); });
+  $('refcopy').onclick=refCopy; $('refshare').onclick=refShare; $('refout').onclick=refPayout;
   $('moreov').addEventListener('click',e=>{ if(e.target===$('moreov')) $('moreov').classList.remove('open'); });
   // тема устройства действует и на экранах входа
   try{ if(localStorage.getItem('karusel_theme')==='light') document.body.classList.add('light'); }catch(e){}
