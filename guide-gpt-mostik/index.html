@@ -1,0 +1,226 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Свой GPT для концовок постов: мостик в тему и кодовое слово</title>
+<meta name="description" content="Пошаговая инструкция: как создать в ChatGPT свой GPT, который дописывает к посту мостик в тему и призыв с кодовым словом. Два готовых промпта и чек-лист">
+<link rel="canonical" href="https://ivan-loginov.ru/guide-gpt-mostik/">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Свой GPT для концовок постов: мостик в тему и кодовое слово">
+<meta property="og:description" content="Пошаговая инструкция: как создать в ChatGPT свой GPT, который дописывает к посту мостик в тему и призыв с кодовым словом. Два готовых промпта и чек-лист">
+<meta property="og:url" content="https://ivan-loginov.ru/guide-gpt-mostik/">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Unbounded:wght@600;700;800&family=Manrope:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;700&display=swap">
+<script type="application/ld+json">
+{"@context": "https://schema.org", "@type": "Article", "headline": "Свой GPT для концовок постов: мостик в тему и кодовое слово", "inLanguage": "ru", "author": {"@type": "Person", "name": "Иван Логинов", "url": "https://ivan-loginov.ru/"}, "mainEntityOfPage": "https://ivan-loginov.ru/guide-gpt-mostik/", "datePublished": "2026-09-24", "description": "Пошаговая инструкция: как создать в ChatGPT свой GPT, который дописывает к посту мостик в тему и призыв с кодовым словом. Два готовых промпта и чек-лист"}
+</script>
+<style>
+:root{
+  --bg:#FAF6EF; --bg2:#F3ECE0; --card:#FFFFFF;
+  --ink:#1C1815; --muted:#5E544A; --line:#E4DACB;
+  --navy2:#2A231D; --navy3:#161210;
+  --accent:#BE4A24; --accent-h:#A83F1E; --accent-l:#DA5E30;
+  --acc-100:#EFD9CF; --acc-50:#F8ECE5;
+  --gold:#C98A3C; --gold-l:#DBB36A; --gold-ink:#8F6224;
+  --cream:#E8DFD2; --cream2:#CBC1B2; --cream3:#9E9184;
+  --code-bg:#F3ECE0; --code-ink:#8F3A1C;
+  --fd:'Unbounded',system-ui,sans-serif; --fb:'Manrope',system-ui,sans-serif; --fm:'JetBrains Mono',ui-monospace,monospace;
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--fb);font-size:17px;line-height:1.66;-webkit-font-smoothing:antialiased}
+a{color:var(--accent);text-decoration:underline;text-decoration-thickness:1px;text-underline-offset:3px;word-break:break-word}
+.nav{position:sticky;top:env(safe-area-inset-top,0px);z-index:100;background:color-mix(in srgb,var(--bg) 88%,transparent);-webkit-backdrop-filter:blur(12px);backdrop-filter:blur(12px);border-bottom:1px solid var(--line)}
+.nav-in{max-width:1160px;margin:0 auto;padding:13px 24px;display:flex;align-items:center;justify-content:space-between;gap:16px}
+.nav-brand{text-decoration:none;color:var(--ink);font-family:var(--fd);font-weight:700;font-size:15px;display:flex;align-items:center;gap:10px}
+.nav-brand .dot{width:8px;height:8px;border-radius:50%;background:var(--accent);box-shadow:0 0 0 3px rgba(190,74,36,.18);flex:none}
+.nav-tag{font-family:var(--fm);font-weight:600;font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--gold-ink)}
+.wrap{max-width:760px;margin-inline:auto;padding-inline:20px}
+.hero{padding-block:56px 10px}
+.eyebrow{display:inline-flex;align-items:center;gap:9px;font-family:var(--fm);font-weight:600;font-size:.72rem;letter-spacing:.1em;text-transform:uppercase;color:var(--accent);background:var(--acc-50);border:1px solid var(--acc-100);padding:8px 15px;border-radius:100px}
+.eyebrow .dot{width:7px;height:7px;border-radius:50%;background:var(--gold);box-shadow:0 0 0 3px rgba(201,138,60,.25);flex:none}
+h1{font-family:var(--fd);font-size:clamp(1.55rem,4.4vw,2.5rem);line-height:1.14;letter-spacing:-.01em;font-weight:800;text-wrap:balance;margin:18px 0 20px}
+h1 .acc{color:var(--accent)}
+.lead{font-size:17px;color:var(--muted);font-weight:500}
+article{padding-block:6px 48px}
+h2{font-family:var(--fd);font-size:clamp(1.25rem,3vw,1.7rem);line-height:1.18;font-weight:700;margin:56px 0 16px;text-wrap:balance;scroll-margin-top:84px}
+h3{font-family:var(--fd);font-size:clamp(1rem,2.2vw,1.2rem);line-height:1.22;font-weight:700;margin:36px 0 12px;text-wrap:balance}
+article p{color:var(--muted);font-weight:500;margin:0 0 18px}
+article p strong,article li strong{color:var(--ink)}
+article ul,article ol{margin:0 0 18px;padding-left:22px;color:var(--muted);font-weight:500}
+article li{margin-bottom:8px}
+code{font-family:var(--fm);font-size:.86em;background:var(--code-bg);color:var(--code-ink);padding:2px 6px;border-radius:6px}
+.steps{list-style:none;counter-reset:st;padding-left:0 !important}
+.steps li{counter-increment:st;position:relative;padding:0 0 14px 56px;min-height:40px}
+.steps li::before{content:counter(st);position:absolute;left:0;top:-2px;width:40px;height:40px;border-radius:12px;background:var(--acc-50);border:1px solid var(--acc-100);display:grid;place-items:center;color:var(--accent);font-family:var(--fd);font-weight:700;font-size:15px}
+.scheme pre{margin:8px 0 22px;padding:18px 20px;background:var(--card);border:1px solid var(--line);border-left:3px solid var(--accent);border-radius:14px;font-family:var(--fm);font-size:13.5px;line-height:1.6;color:var(--ink);white-space:pre-wrap;word-break:break-word;overflow-x:auto}
+.copy-wrap{background:var(--navy3);border:1px solid var(--navy2);border-radius:14px;overflow:hidden;margin:14px 0 26px;box-shadow:0 22px 50px -24px rgba(22,18,16,.55)}
+.copy-bar{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:9px 9px 9px 15px;border-bottom:1px solid rgba(232,223,210,.12);background:var(--navy2)}
+.copy-bar span{font-family:var(--fm);font-size:10px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--gold-l)}
+.copybtn{font-family:var(--fb);font-size:13px;font-weight:800;color:#fff;background:var(--accent);border:0;border-radius:10px;padding:8px 16px;cursor:pointer;box-shadow:0 2px 0 var(--accent-h);flex:none}
+.copybtn:hover{background:var(--accent-l)}
+.copybtn:focus-visible{outline:2px solid var(--gold-l);outline-offset:2px}
+.copy-wrap pre{margin:0;padding:16px 18px;font-family:var(--fm);font-size:13px;line-height:1.62;color:var(--cream);white-space:pre-wrap;word-break:break-word;overflow-x:auto}
+.copy-wrap.soft pre{font-family:var(--fb);font-size:15px;font-weight:500}
+.tbl{overflow-x:auto;margin:8px 0 22px}
+table{border-collapse:collapse;width:100%;font-size:15px}
+th,td{text-align:left;padding:10px 12px;border-bottom:1px solid var(--line);vertical-align:top}
+th{font-family:var(--fm);font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--gold-ink);font-weight:700}
+td{color:var(--muted);font-weight:500}
+td:first-child{color:var(--ink);font-weight:700;width:42%}
+.check{list-style:none;padding-left:0 !important}
+.check li{margin:0 0 10px}
+.check label{display:flex;gap:12px;align-items:flex-start;background:var(--card);border:1px solid var(--line);border-radius:12px;padding:12px 14px;cursor:pointer}
+.check input{width:20px;height:20px;margin:2px 0 0;accent-color:var(--accent);flex:none}
+.check input:checked + span{text-decoration:line-through;opacity:.6}
+.footer{border-top:1px solid var(--line);padding-block:28px 40px;color:var(--cream3);font-size:.85rem;font-weight:500}
+.footer b{font-family:var(--fd);color:var(--ink);font-size:.9rem}
+
+.steps .sub{margin:10px 0 4px;padding-left:18px;list-style:disc}
+.steps .sub li{counter-increment:none;padding:0 0 6px;min-height:0}
+.steps .sub li::before{content:none}
+@media (max-width:640px){ .hero{padding-block:40px 8px} .nav-tag{display:none} .steps li{padding-left:50px} .steps li::before{width:34px;height:34px;font-size:13px;border-radius:10px} }
+@media (prefers-reduced-motion: no-preference){ .copybtn{transition:background-color .15s} }
+</style>
+</head>
+<body>
+<nav class="nav"><div class="nav-in"><a class="nav-brand" href="/"><span class="dot"></span>Иван Логинов</a><span class="nav-tag">Гайд для учеников</span></div></nav>
+<main class="wrap">
+<header class="hero"><span class="eyebrow"><span class="dot"></span>Инструкция для Ольги</span>
+<h1>Свой GPT для концовок постов: <span class="acc">мостик в тему</span> и кодовое слово</h1></header>
+<article>
+<p class="lead">Ольга, это инструкция по зуму 24 сентября, тот самый GPT, про который говорили. Ты кидаешь ему пост, он дописывает концовку: мостик в тему этого поста и призыв написать кодовое слово. Каждый раз разную. Настраиваешь один раз, дальше концовка к посту делается за секунды</p>
+<h2>Зачем это</h2>
+<p>Когда под каждым постом стоит один и тот же призыв, Instagram начинает резать показы. Иван проверял это на своём аккаунте: «У меня охваты сразу в два раза падали» - из-за одинакового призыва. А дальше: «когда вот динамический call to action сделал и разные кодовые слова сделал, то конверсия сразу опять хорошая стала»</p>
+<p>Решение из трёх частей:</p>
+<ul><li><strong>Мостик в тему поста.</strong> Одно-два предложения, которые связывают тему этого поста с тем, что человек получит за слово. Пост про соль в носках, про Дурова, про поджелудочную - к любой теме мостик пишется свой. Ты сомневалась, как связать соль в носках с проработкой. Иван: «Мы любую тему, и соль в носках, абсолютно легко переведём в тему проработки каких-то страхов»</li><li><strong>20 разных призывов.</strong> Твои нынешние призывы плюс их вариации</li><li><strong>4 кодовых слова.</strong> Чередуются от поста к посту</li></ul>
+<p>Иван посчитал: «20 разных call to action, 4 разных кодовых слова, это уже 80 комбинаций». Плюс мостик под каждый пост свой, выходят сотни вариантов, и повторов Instagram не видит</p>
+<p>Руками столько вариантов не удержать, поэтому нужен GPT. Это ассистент внутри ChatGPT, который всегда работает по одной инструкции. Иван сравнил его с проектом в Claude: один раз прописала инструкцию, сохранила, дальше просто кидаешь пост и получаешь концовку. Промпт каждый раз вставлять не нужно</p>
+<h2>Как это будет работать</h2>
+<div class="scheme"><pre>Готовый пост (карусель или рилс)
+        ↓
+Кидаешь текст в свой GPT
+        ↓
+GPT выдаёт: концовку для подписи + текст последнего слайда + какое слово поставил
+        ↓
+Концовка уходит в подпись, текст слайда - последним слайдом карусели
+        ↓
+Человек пишет кодовое слово в комментариях
+        ↓
+ChatPlace сам присылает ему проработку в личку</pre></div>
+<h2>Что подготовить заранее</h2>
+<p>Три вещи. Без них GPT не заработает как надо</p>
+<p><strong>1. Четыре кодовых слова.</strong> Иван: «Рекомендую сделать 4 кодовых слова, и он каждый раз будет менять одно из четырёх». Все четыре ведут к одному и тому же подарку, разные они только для того, чтобы призывы не повторялись</p>
+<p>Правила для слов:</p>
+<ul><li>каждое слово сначала заводишь в ChatPlace и проверяешь, что на него приходит ответ. Только потом ставишь в GPT. Иначе человек напишет слово, а ему ничего не придёт</li><li>одно короткое слово, кириллицей, без дефисов и опечаток</li><li>слово связано с тем, что человек получит (например ТЕХНИКА или ПРОРАБОТКА), чтобы было понятно, за что он пишет</li><li>все четыре разные, ни одно не совпадает с чужими словами в твоём ChatPlace</li></ul>
+<p><strong>2. Твои нынешние призывы.</strong> На зуме ты называла такие: «забери технику, которая заменяет один поход к психологу», «забери технику проработки», «подпишись, в профиле есть техника проработки». Здесь они записаны с голоса, так что сверь их с точными формулировками, которые Настя ставит в карусели, и добавь остальные</p>
+<p><strong>3. Одна фраза о том, что человек получает за слово.</strong> Например: «бесплатная техника проработки, которая заменяет один поход к психологу». Эта фраза пойдёт в оба промпта ниже</p>
+<h2>Шаг 1. Собрать банк из 20 призывов</h2>
+<p>Иван делал так же: «у меня был один call to action, я сделал из них 20 вариаций». Нейросеть накидает варианты, какие-то ты уберёшь, какие-то попросишь переписать</p>
+<p><strong>Промпт 1. Банк призывов.</strong> Кому: делаешь один раз перед созданием GPT. Открываешь обычный новый чат в ChatGPT, вставляешь целиком, подставляешь своё в квадратных скобках</p>
+<div class="copy-wrap"><div class="copy-bar"><span>промпт для ChatGPT</span><button class="copybtn" type="button" onclick="copyPre(this)">Скопировать</button></div><pre>Я веду Instagram психолога Алексея Кроитера. В конце каждого поста я ставлю призыв написать кодовое слово в комментариях. За слово человеку автоматически приходит в личку [что он получает, например: бесплатная техника проработки, которая заменяет один поход к психологу].
+
+Мои призывы сейчас:
+1. Забери технику, которая заменяет один поход к психологу
+2. Забери технику проработки
+3. Подпишись, в профиле есть техника проработки
+[добавь свои, если есть ещё]
+
+Если один и тот же призыв стоит под каждым постом, Instagram режет показы. Мне нужно 20 разных призывов с тем же смыслом.
+
+Правила:
+- Смысл и обещание как в моих призывах. Не добавляй новых обещаний, цифр, сроков и того, чего в подарке нет.
+- Каждый призыв - одно-два коротких предложения, до 150 знаков.
+- Заходы разные: через то, что человек получит; через то, что его мучает; через вопрос; через «вместо того чтобы»; через простоту.
+- Кодовое слово внутрь не вставляй, его подставит мой GPT.
+- Простые слова, как говорят обычные люди. Без слов «контент», «лидмагнит», «воронка» и без штампов вроде «трансформация», «ключ к себе», «погрузись».
+- Обращение на «ты».
+
+Сначала покажи 25 вариантов пронумерованным списком. Я скажу, какие убрать и что поправить. Когда я напишу «готово», выдай итоговые 20 одним сообщением с заголовком «БАНК ПРИЗЫВОВ», пронумерованным списком, без пояснений. Я вставлю его в инструкцию своего GPT.</pre></div>
+<p>Что сделать с результатом: скопируй список «БАНК ПРИЗЫВОВ» и сохрани в заметки. Он понадобится в шаге 3</p>
+<h2>Шаг 2. Создать GPT</h2>
+<p>Иван показывал это на экране. Путь такой:</p>
+<ol class="steps"><li>Открой ChatGPT на компьютере (chatgpt.com) и зайди в аккаунт с оплаченной подпиской, она у тебя есть</li><li>В левой панели найди значок-кубик <strong>GPT</strong> («Обзор GPT», по-английски Explore GPTs)</li><li>Справа вверху нажми <strong>+ Создать</strong> (Create)</li><li>Откроется конструктор с двумя вкладками. Переключись на вторую, <strong>Configure</strong> (в русском интерфейсе «Настроить» или «Конфигурация»). Первая вкладка, где GPT задаёт вопросы в чате, не нужна</li><li>Заполни поля:<ul class="sub"><li><strong>Название</strong> (Name): Концовки с кодовым словом</li><li><strong>Описание</strong> (Description): Дописывает к посту мостик в тему и призыв с кодовым словом</li><li><strong>Инструкции</strong> (Instructions): сюда вставляешь текст из шага 3</li><li><strong>Начало разговора</strong> (Conversation starters): «Сделай концовку к посту:», «Ещё вариант», «Добавь призывы»</li><li><strong>Знания</strong> (Knowledge): ничего не загружай, всё нужное будет в инструкции</li><li><strong>Возможности</strong> (Capabilities): галочки с поиска в интернете и генерации картинок можно снять, для этой задачи они не нужны</li></ul></li><li>Если есть поле выбора модели, ставь быструю (<strong>Instant</strong>). Иван: «для твоей задачи она несложная, можно вообще инстантом пользоваться»</li><li>Нажми <strong>Создать</strong> (Create) справа вверху. В вопросе про доступ выбери <strong>Только я</strong></li><li>GPT появится в левой панели. Закрепи его там, чтобы каждый раз открывать одним нажатием</li></ol>
+<p>Поля в интерфейсе могут называться чуть иначе, если ChatGPT у тебя на английском: смотри на английские названия в скобках</p>
+<h2>Шаг 3. Вставить инструкцию</h2>
+<p>Это главный текст. По нему GPT будет работать всегда. Перед вставкой замени в нём три вещи в квадратных скобках: что получает человек, четыре кодовых слова и банк призывов из шага 1. Остальное не трогай</p>
+<p><strong>Промпт 2. Инструкция для GPT.</strong> Кому: вставляешь один раз в поле «Инструкции» при создании GPT. Если потом поменяются слова или призывы, правишь только этот текст</p>
+<div class="copy-wrap"><div class="copy-bar"><span>промпт для ChatGPT</span><button class="copybtn" type="button" onclick="copyPre(this)">Скопировать</button></div><pre>Ты мой ассистент для концовок постов. Я веду Instagram психолога Алексея Кроитера. Я присылаю тебе готовый текст поста (карусель или подпись к рилсу) на любую тему: здоровье, отношения, деньги, известные люди, лайфхаки. Ты дописываешь к нему концовку: мостик в тему поста и призыв написать кодовое слово в комментариях. Сам пост не переписываешь, не исправляешь и не комментируешь.
+
+ЧТО ЧЕЛОВЕК ПОЛУЧАЕТ ЗА КОДОВОЕ СЛОВО
+[что он получает, например: бесплатная техника проработки, которая заменяет один поход к психологу]. Приходит автоматически в личные сообщения. Все четыре слова ведут к одному и тому же подарку.
+
+КОДОВЫЕ СЛОВА (ставь только их, ровно в таком написании, заглавными буквами)
+1. [СЛОВО 1]
+2. [СЛОВО 2]
+3. [СЛОВО 3]
+4. [СЛОВО 4]
+
+БАНК ПРИЗЫВОВ (каждый раз бери один и пересказывай своими словами под мостик, смысл и обещание не меняй)
+[вставь сюда список «БАНК ПРИЗЫВОВ» из 20 пунктов]
+
+КАК УСТРОЕНА КОНЦОВКА
+Две части подряд:
+1. Мостик. Одно-два предложения. Цепляется за тему или заголовок ЭТОГО поста и переводит на психологическую сторону: страх, тревога, обида, вина, стыд, усталость, привычка терпеть, внутренний запрет, отношения с собой и близкими. Мостик должен звучать как продолжение поста, а не как реклама после него.
+2. Призыв. Один призыв из банка, пересказанный так, чтобы он продолжал мостик, плюс «Напиши слово ... в комментариях» с одним из кодовых слов и что человек получит.
+
+ПРИМЕР ЛОГИКИ МОСТИКА (не копируй дословно)
+Пост про соль в носках от простуды. Мостик: «Солью в носках многие спасаются от простуды. А от тревоги, из-за которой не спится по ночам, соль не поможет». Дальше призыв из банка и кодовое слово.
+
+ПРАВИЛА
+- Каждая концовка новая. Не повторяй формулировки из своих прошлых ответов в этом чате: меняй призыв из банка, кодовое слово и начало мостика.
+- Кодовые слова чередуй. У двух постов подряд слова разные. В первом посте чата выбирай слово, которое лучше ложится на тему поста.
+- Кодовое слово пиши точно как в списке, заглавными, всегда с оборотом «в комментариях».
+- Мостик не выдумывает фактов, цифр, историй и имён, которых нет в посте.
+- Не обещай вылечить болезнь и не пиши, что психология заменяет врача или лекарства. Связь с темой здоровья только через состояние человека: напряжение, стресс, эмоции, привычки.
+- Простые слова, как говорят обычные люди. Без слов «контент», «лидмагнит», «воронка», «CTA». Без штампов: «трансформация», «ключ к себе», «погрузись», «важно понимать», «не просто... а». Обращение на «ты».
+- Только обычный дефис, никаких длинных тире.
+- Концовка для подписи: 2-4 предложения, до 350 знаков.
+
+ЧТО ВЫДАЁШЬ НА КАЖДЫЙ ПОСТ
+Строго в таком виде, без вступлений и пояснений:
+
+ПОДПИСЬ
+(мостик и призыв, готовые встать в конец текста под постом)
+
+ПОСЛЕДНИЙ СЛАЙД
+(та же мысль короче: 2-3 короткие строки, до 200 знаков, кодовое слово заглавными)
+
+СЛОВО: (какое кодовое слово поставил)
+
+Если я прислала несколько постов сразу, сделай то же самое для каждого, под номерами, и у соседних постов слова разные.
+
+КОМАНДЫ
+«ещё» - другой вариант концовки к последнему посту: другой призыв из банка, другое слово, другой мостик.
+«короче» - та же концовка, но вдвое короче.
+«добавь призывы» - предложи 10 новых призывов в стиле банка, я выберу и сама добавлю их в инструкцию.</pre></div>
+<p>Когда вставила и заменила скобки, проверь глазами, что в тексте не осталось ни одной квадратной скобки. Потом жми «Создать» (или «Обновить», если GPT уже создан)</p>
+<h2>Шаг 4. Проверить на трёх постах</h2>
+<p>Прежде чем ставить концовки в ленту, прогони через GPT три разных поста в одном чате: например про здоровье, про известного человека и про отношения. Смотри на пять вещей:</p>
+<ol class="steps"><li>Мостик цепляется именно за тему поста, а не общий для всех</li><li>Кодовое слово из твоего списка, заглавными, рядом стоит «в комментариях»</li><li>У трёх постов три разных слова и три разных призыва</li><li>Нет обещаний вылечить и нет выдуманных фактов</li><li>Звучит как Алексей, а не как реклама</li></ol>
+<p>Если что-то не так, смотри таблицу ниже</p>
+<h2>Как пользоваться каждый день</h2>
+<ul><li><strong>Один день = один чат.</strong> Все посты дня кидай в один чат: так GPT видит, какие слова и призывы уже были, и не повторяется. На следующий день начинай новый чат</li><li><strong>Концовка идёт в два места.</strong> Подпись под постом и последний слайд карусели. Ты спрашивала, оставлять призыв только в описании или делать мостик последним слайдом. Иван: «А я ещё и последним слайдом делаю. По сути ничего не меняется, но дополнительный шанс, что кто-то слайдик увидит». Для Насти это просто ещё один слайд в конце</li><li><strong>Не понравилось - пиши «ещё».</strong> GPT даст другой вариант к тому же посту</li><li><strong>Такой же GPT на любую повторяющуюся задачу.</strong> Иван: «Какая-то есть у тебя повторяющаяся задача, которую ты делаешь много-много раз. Ты можешь взять, написать для него инструкцию и всё закрепить. И потом просто одним щелчком нажать»</li></ul>
+<h2>Если что-то не так</h2>
+<div class="tbl"><table><thead><tr><th>Что видишь</th><th>Что сделать</th></tr></thead><tbody><tr><td>GPT второй раз подряд ставит одно и то же слово</td><td>Напиши в чат: «слово повторилось, поставь другое из списка». Если повторяется часто, начни новый чат</td></tr><tr><td>Мостик притянут за уши</td><td>Напиши «ещё». Если так со всеми постами, добавь в инструкцию 2-3 примера мостиков, которые тебе нравятся</td></tr><tr><td>GPT переписал сам пост</td><td>Напиши «пост не трогай, только концовка»</td></tr><tr><td>Концовка слишком длинная</td><td>Команда «короче»</td></tr><tr><td>Поменяла кодовые слова в ChatPlace</td><td>Открой GPT, нажми на его название вверху, «Изменить GPT» (Edit GPT), вкладка Configure, поправь список слов, нажми «Обновить» (Update)</td></tr><tr><td>Призывы приелись</td><td>Команда «добавь призывы», выбери новые и допиши их в банк в инструкции</td></tr></tbody></table></div>
+<h2>Ещё с зума, коротко</h2>
+<p>Это не про сам GPT, но про кодовые слова, и Иван ответил на это на том же созвоне:</p>
+<ul><li><strong>Без обязательной подписки в ChatPlace.</strong> Условие «сначала подпишись, потом получишь» режет конверсию и раздражает. Иван замерял у себя: «когда убрал вот это подписаться, конверсия вообще не упала». Кому надо, подпишутся и так</li><li><strong>Одна ссылка в шапке профиля.</strong> Лишние ссылки в описании убирать</li><li><strong>Не больше 1000 кодовых слов в сутки.</strong> Иван: «надо держать лимит не выше тысячи слов кодовых в сутки. Может прилететь ограничение»</li><li><strong>Слайдов не жалей.</strong> Иван: «У меня обратное наблюдение: чем больше слайдов, тем больше удержания». Если тему можно разложить на 8-10 слайдов, не ужимай в 4-5. Предел Instagram - 20</li><li><strong>Слово, за которое режут показы.</strong> Иван советует не звёздочку, а заменить одну букву на латинскую, например русскую «с» на английскую «c»</li></ul>
+<h2>Чек-лист</h2>
+<ul class="check"><li><label><input type="checkbox" id="chk0"> <span>Четыре кодовых слова заведены в ChatPlace, на каждое приходит проработка</span></label></li><li><label><input type="checkbox" id="chk1"> <span>Обязательная подписка в ChatPlace выключена</span></label></li><li><label><input type="checkbox" id="chk2"> <span>Банк из 20 призывов собран Промптом 1 и сохранён</span></label></li><li><label><input type="checkbox" id="chk3"> <span>GPT создан, в инструкции заменены все квадратные скобки</span></label></li><li><label><input type="checkbox" id="chk4"> <span>Выбрана быстрая модель, GPT закреплён в левой панели</span></label></li><li><label><input type="checkbox" id="chk5"> <span>Прогнаны три тестовых поста, слова и призывы разные</span></label></li><li><label><input type="checkbox" id="chk6"> <span>Настя знает, что концовка теперь идёт и в подпись, и последним слайдом</span></label></li></ul>
+<p>Вопросы по ходу пиши Ивану. Его слова в конце зума: «Вместе доработаем, скорректируем»</p>
+</article>
+</main>
+<footer class="footer"><div class="wrap"><p style="margin:0 0 8px"><b>Гайд для учеников</b> · Иван Логинов · по разбору с зума 24 сентября 2026</p><p style="margin:0">ChatGPT, ChatPlace и Instagram - сторонние сервисы со своими условиями использования</p></div></footer>
+<script>
+function copyPre(btn){
+  var pre=btn.closest('.copy-wrap').querySelector('pre');
+  var t=pre.innerText;
+  var done=function(){btn.textContent='Скопировано';setTimeout(function(){btn.textContent='Скопировать'},1600)};
+  if(navigator.clipboard&&navigator.clipboard.writeText){navigator.clipboard.writeText(t).then(done,function(){fallback()})}else{fallback()}
+  function fallback(){var r=document.createRange();r.selectNodeContents(pre);var s=window.getSelection();s.removeAllRanges();s.addRange(r);try{document.execCommand('copy');done()}catch(e){}s.removeAllRanges()}
+}
+</script>
+</body>
+</html>
