@@ -13,7 +13,9 @@ export function fresh() {
     tests: [],           // [{ key, wpm, comprehension, effective, textId }]
     done: [],            // дни с завершённой тренировкой, ключи ГГГГ-ММ-ДД
     freeReads: {},       // { ключ дня: сколько бесплатных читалок }
-    plan: null,          // { tier, demo, at, until }
+    auth: null,          // { token, email, pw } - вход в оплаченный доступ (сервер skorochtenie-api), pw = пароль задан
+    acc: null,           // последний ответ сервера о доступе: { paid, until, plan, renews, stopped, next, gift, forever }
+    pending: null,       // заказ, ушедший в кассу: { order, k, plan, at } - по нему телефон забирает доступ после оплаты
     bookmark: { t: 0, w: 0 },
     schulteBest: null,   // лучшее время таблицы 5x5 до v2, переносится в best.schulte
     readerLog: {},       // { ключ дня: скорость читалки }
@@ -32,8 +34,8 @@ const num = v => (typeof v === 'number' && Number.isFinite(v) ? v : null);
 function normalize(s) {
   const f = fresh();
   if (!s || typeof s !== 'object' || s.v !== 1) return f;
-  const plan = obj(s.plan);
   const bookmark = obj(s.bookmark);
+  const auth = obj(s.auth), acc = obj(s.acc), pending = obj(s.pending);
   return {
     ...f,
     startKey: dayKey(s.startKey),
@@ -41,7 +43,9 @@ function normalize(s) {
     tests: Array.isArray(s.tests) ? s.tests.filter(t => obj(t) && dayKey(t.key) && num(t.wpm) !== null) : [],
     done: Array.isArray(s.done) ? s.done.filter(dayKey) : [],
     freeReads: obj(s.freeReads) || {},
-    plan: plan && num(plan.until) !== null ? plan : null,
+    auth: auth && typeof auth.token === 'string' && typeof auth.email === 'string' ? { token: auth.token, email: auth.email, pw: !!auth.pw } : null,
+    acc: acc && (acc.forever === true || num(acc.until) !== null) ? acc : null,
+    pending: pending && typeof pending.order === 'string' && /^sk[\w-]{6,40}$/.test(pending.order) && typeof pending.k === 'string' && num(pending.at) !== null ? pending : null,
     bookmark: bookmark && num(bookmark.t) !== null && num(bookmark.w) !== null ? bookmark : f.bookmark,
     schulteBest: num(s.schulteBest),
     readerLog: obj(s.readerLog) || {},

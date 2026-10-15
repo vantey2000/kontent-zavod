@@ -28,8 +28,8 @@ function frame(body, ctx, kind, total) {
   let round = 0;
   return {
     stage, opts, res, doneB, levelL,
-    next() { round++; roundL.textContent = `Раунд ${Math.min(round, total)} из ${total}`; barI.style.width = `${((round - 1) / total) * 100}%`; return round <= total; },
-    finish(text) { barI.style.width = '100%'; stage.textContent = ''; opts.textContent = ''; res.textContent = text; doneB.hidden = false; doneB.focus(); },
+    next() { round++; roundL.textContent = `Раунд ${Math.min(round, total)} из ${total}`; barI.style.transform = `scaleX(${(round - 1) / total})`; return round <= total; },
+    finish(text) { barI.style.transform = 'scaleX(1)'; stage.textContent = ''; opts.textContent = ''; res.textContent = text; doneB.hidden = false; doneB.focus(); },
   };
 }
 
@@ -51,6 +51,14 @@ export function sight(body, ctx) {
   const dot = el('span', 'dot'); f.stage.append(dot);
   const L = el('span', 'side'); const R = el('span', 'side'); f.stage.append(L, R);
   const setLevel = () => { f.levelL.textContent = `ширина ${Math.round(d.sightOffset(level) * 2 * 100)}%`; };
+  // Середина слова на доле ширины от точки, но слово не наезжает на точку (зазор 14 px) и не уходит за край
+  function place(elm, side, off) {
+    const W = f.stage.clientWidth, w = elm.offsetWidth, G = 14;
+    if (!W) { elm.style.left = `calc(50% + ${side * off * 100}%)`; return; }
+    let cx = W / 2 + side * off * W;
+    cx = side > 0 ? Math.min(Math.max(cx, W / 2 + G + w / 2), W - 4 - w / 2) : Math.max(Math.min(cx, W / 2 - G - w / 2), 4 + w / 2);
+    elm.style.left = `${cx}px`;
+  }
 
   function round() {
     if (!f.next()) return f.finish(`Лучшая ширина за раунд ${Math.round(d.sightOffset(best) * 2 * 100)}% экрана`);
@@ -58,7 +66,7 @@ export function sight(body, ctx) {
     const r = d.sightRound(ctx.words, ctx.random);
     const off = d.sightOffset(level);
     L.textContent = r.left; R.textContent = r.right;
-    L.style.left = `calc(50% - ${off * 100}%)`; R.style.left = `calc(50% + ${off * 100}%)`;
+    place(L, -1, off); place(R, 1, off);
     L.classList.add('on'); R.classList.add('on');
     f.opts.textContent = '';
     timer = setTimeout(() => {

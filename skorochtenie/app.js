@@ -4,9 +4,10 @@ import * as dr from './drills.js';
 import { DRILL_UI } from './drills-ui.js';
 import { TESTS, LIBRARY } from './content.js';
 import * as store from './store.js';
+import * as m from './motion.js';
 
 const $ = id => document.getElementById(id);
-const SCREENS = ['start', 'read', 'quiz', 'result', 'pay', 'home', 'ex', 'lib', 'own', 'done'];
+const SCREENS = ['start', 'read', 'quiz', 'result', 'pay', 'wait', 'acct', 'login', 'home', 'ex', 'lib', 'own', 'done'];
 const ANCHOR = 0.38;          // опорная буква на 38% ширины, как засечка в ролике
 const WORD_PX = 46;
 
@@ -35,12 +36,52 @@ const fmtSec = n => String(n).replace('.', ',');
 // ---------- общие помощники ----------
 
 let stopActive = () => {};
-function show(name) {
+let ready = false, showSeq = 0;   // первый экран рисуется сразу, без перехода: переходы включаются после первого кадра
+requestAnimationFrame(() => { ready = true; });
+function show(name, { instant = false } = {}) {
+  // старый экран гасим сразу: если отложить вместе с переходом, остановка заденет уже запущенный новый
   stopActive();
   stopActive = () => {};
-  for (const s of SCREENS) $('s-' + s).hidden = s !== name;
-  window.scrollTo(0, 0);
+  stopDemo();
+  const id = ++showSeq;
+  const swap = () => {
+    if (id !== showSeq) return;   // пока переход ждал кадра, показали другой экран: устаревшая смена не применяется
+    for (const s of SCREENS) $('s-' + s).hidden = s !== name;
+    window.scrollTo(0, 0);
+  };
+  const done = ready && !instant ? m.transition(swap) : (swap(), Promise.resolve());
+  if (name === 'start') startDemo();
+  return done;   // выполняется, когда экран уже показан: фокус и замеры ставить после него
 }
+
+// Опорная буква слова встаёт на засечку сцены; длинное слово ужимается, чтобы влезть по обе стороны
+function placeWord(word, stage, tok, px) {
+  word.style.fontSize = `${px}px`;
+  const o = orpInto(word, tok);
+  const W = stage.clientWidth;
+  if (!W) return false;   // сцена ещё скрыта (переход не дорисован): позицию поставит следующее слово
+  const ax = W * ANCHOR;
+  let center = o.offsetLeft + o.offsetWidth / 2;
+  const width = word.offsetWidth;
+  const k = Math.min(1, (ax - 12) / Math.max(1, center), (W - ax - 12) / Math.max(1, width - center));
+  if (k < 1) { word.style.fontSize = `${Math.floor(px * k)}px`; center = o.offsetLeft + o.offsetWidth / 2; }
+  word.style.left = `${ax - center}px`;
+  return true;
+}
+
+// Старт: демо-слово меняется само, красная буква стоит на месте - механика видна до нажатия
+const DEMO = ['читаешь', 'быстрее', 'понимаешь', 'темп', 'слово', 'смысл'];
+let demoTimer = null;
+function startDemo() {
+  const stage = $('demo'), word = $('demo-word');
+  let k = 0, tries = 0;
+  const px = parseFloat(getComputedStyle(stage).fontSize) || 58;
+  const first = () => { if (!placeWord(word, stage, DEMO[0], px) && ++tries < 10) setTimeout(first, 60); };
+  requestAnimationFrame(first);
+  if (m.reduced()) return;
+  demoTimer = setInterval(() => { k = (k + 1) % DEMO.length; placeWord(word, stage, DEMO[k], px); }, 900);
+}
+function stopDemo() { clearInterval(demoTimer); demoTimer = null; }
 
 function orpInto(el, tok) {
   el.textContent = '';
@@ -63,6 +104,8 @@ function el(tag, cls, text) {
 document.title = `${c.CONFIG.appName} · тест скорости чтения`;
 document.querySelectorAll('[data-name]').forEach(n => orpInto(n, c.CONFIG.appName));
 document.querySelectorAll('[data-home]').forEach(b => b.addEventListener('click', goHome));
+// Safari на iOS включает :active (сжатие кнопок) только при обработчике touchstart на странице
+document.addEventListener('touchstart', () => {}, { passive: true });
 
 // ---------- тест ----------
 
@@ -77,7 +120,7 @@ function startTest() {
   const box = $('read-text');
   box.textContent = '';
   t.text.split(/\n\s*\n/).forEach(p => box.append(el('p', null, p)));
-  show('read');
+  show('read', { instant: true });   // текст теста появляется мгновенно: секундомер идёт ровно с показа
   run = { test: t, words: c.countWords(t.text), started: performance.now(), seconds: 0, correct: 0, idx: 0 };
 }
 
@@ -85,7 +128,7 @@ function showQuestion() {
   const q = run.test.questions[run.idx];
   const n = run.test.questions.length;
   $('quiz-count').textContent = `Вопрос ${run.idx + 1} из ${n}`;
-  $('quiz-bar').style.width = `${(run.idx / n) * 100}%`;
+  $('quiz-bar').style.transform = `scaleX(${run.idx / n})`;
   $('quiz-q').textContent = q.text;
   const box = $('quiz-opts');
   box.textContent = '';
@@ -103,6 +146,7 @@ function showQuestion() {
 function finishTest() {
   const r = c.scoreTest({ words: run.words, seconds: run.seconds, correct: run.correct, total: run.test.questions.length });
   const invalid = r.tooFast || r.tooSlow;
+  let reveal = null;
   $('result-ok').hidden = invalid;
   $('result-fast').hidden = !invalid;
   if (invalid) {
@@ -119,11 +163,16 @@ function finishTest() {
     else if (r.wpm > state.baseWpm) state.baseWpm = r.wpm;   // повторный тест быстрее: читалка подтягивается, медленнее - не откатываем
     persist();
     track('test');
-    $('r-wpm').textContent = r.wpm;
     $('r-level').textContent = `Уровень: ${r.level.label}`;
     $('r-delta').textContent = prev ? `${r.wpm >= prev.wpm ? '+' : ''}${r.wpm - prev.wpm} к прошлому тесту` : '';
-    $('r-comp').textContent = `${Math.round(r.comprehension * 100)}%`;
-    $('r-eff').textContent = r.effective;
+    // цифры набегают, кольцо понимания заполняется, уровень проявляется после (CSS .later); первый результат - праздник
+    reveal = () => {
+      m.countUp($('r-wpm'), r.wpm);
+      m.countUp($('r-comp'), Math.round(r.comprehension * 100), { ms: m.DUR.ring, format: v => `${Math.round(v)}%` });
+      m.ring($('r-ring'), r.comprehension);
+      m.countUp($('r-eff'), r.effective);
+      if (first) m.confetti();
+    };
     $('r-avg').textContent = r.wpm > c.CONFIG.avgAdultWpm
       ? `Обычно взрослый читает про себя около ${c.CONFIG.avgAdultWpm} слов в минуту. Ты уже быстрее`
       : `Обычно взрослый читает про себя около ${c.CONFIG.avgAdultWpm} слов в минуту`;
@@ -133,6 +182,7 @@ function finishTest() {
     $('b-result-next').textContent = acc().paid ? 'К тренировке' : 'Начать программу';
   }
   show('result');
+  if (reveal) reveal();
 }
 
 $('b-start').addEventListener('click', startTest);
@@ -145,17 +195,45 @@ $('b-read-done').addEventListener('click', () => {
 $('b-result-next').addEventListener('click', () => (acc().paid ? goHome() : showPay('result')));
 
 // ---------- подписка ----------
+// Оплата: сервер заводит заказ и даёт ссылку кассы, почту и карту человек вводит на форме кассы. Телефон хранит
+// номер заказа с секретом и после возврата забирает по нему доступ (сервер .business/scripts/skorochtenie-api)
 
 let payTier = 'year';
 let payBack = 'home';
 
+async function api(path, { method = 'GET', body, auth = true } = {}) {
+  const headers = {};
+  if (body) headers['Content-Type'] = 'application/json';
+  if (auth && state.auth) headers.Authorization = 'Bearer ' + state.auth.token;
+  try {
+    const r = await fetch(c.CONFIG.apiUrl + path, { method, headers, body: body ? JSON.stringify(body) : undefined });
+    return { status: r.status, data: await r.json().catch(() => ({})) };
+  } catch {
+    return { status: 0, data: { error: 'Нет связи с сервером. Проверь интернет и попробуй ещё раз' } };
+  }
+}
+
+function showErr(id, msg) {
+  $(id).textContent = msg || '';
+  $(id).hidden = !msg;
+}
+
+function payTerms() {
+  const { priceYear, priceMonth } = c.CONFIG;
+  $('pay-terms').textContent = payTier === 'year' ? `${c.formatRub(priceYear)} раз в год` : `${c.formatRub(priceMonth)} раз в месяц`;
+}
+
 function showPay(back) {
+  if (acc().paid) return showAcct();
   payBack = back;
   const { priceYear, priceMonth, refundDays } = c.CONFIG;
   $('pay-year').textContent = c.formatRub(priceYear);
   $('pay-month').textContent = c.formatRub(priceMonth);
   $('pay-year-month').textContent = `≈ ${c.formatRub(Math.round(priceYear / 12))} в месяц`;
   $('pay-refund').textContent = `Если не подойдёт, вернём деньги в течение ${refundDays} дней`;
+  payTerms();
+  showErr('pay-err', '');
+  $('pay-consent').classList.remove('need');
   track('pay');
   show('pay');
 }
@@ -163,15 +241,134 @@ function showPay(back) {
 document.querySelectorAll('.plan').forEach(p => p.addEventListener('click', () => {
   payTier = p.dataset.tier;
   document.querySelectorAll('.plan').forEach(x => x.setAttribute('aria-checked', String(x === p)));
+  payTerms();
 }));
-$('b-pay').addEventListener('click', () => {
-  state.plan = c.grantDemo(payTier, Date.now());
-  persist();
+$('pay-ok').addEventListener('change', () => { if ($('pay-ok').checked) { $('pay-consent').classList.remove('need'); showErr('pay-err', ''); } });
+$('b-pay').addEventListener('click', async () => {
+  if (!$('pay-ok').checked) {
+    $('pay-consent').classList.add('need');
+    showErr('pay-err', 'Отметь согласие с офертой и автопродлением');
+    return;
+  }
+  const b = $('b-pay');
+  b.disabled = true;
+  b.textContent = 'Готовим оплату…';
+  showErr('pay-err', '');
   track(payTier === 'year' ? 'year' : 'month');
-  goHome();
+  const r = await api('/api/paylink', { method: 'POST', body: { plan: payTier } });
+  if (r.status === 200 && r.data.url) {
+    state.pending = { order: r.data.order, k: r.data.k, plan: payTier, at: Date.now() };
+    persist();
+    location.href = r.data.url;
+    return;   // кнопка остаётся «Готовим оплату…» до ухода на кассу
+  }
+  b.disabled = false;
+  b.textContent = 'Открыть доступ';
+  showErr('pay-err', r.data.error || 'Касса не ответила. Попробуй ещё раз через минуту');
 });
 $('b-free').addEventListener('click', () => { track('free'); goHome(); });
 $('b-pay-back').addEventListener('click', () => (payBack === 'result' && run ? show('result') : goHome()));
+
+// доступ пришёл с сервера: запоминаем вход и кэш доступа
+function applyAccess(d) {
+  if (d.token) state.auth = { token: d.token, email: d.email, pw: !!d.password };
+  else if (state.auth && typeof d.password === 'boolean') state.auth.pw = d.password;
+  if (d.access) state.acc = d.access;
+  persist();
+}
+
+// Забрать доступ по заказу. Ответ: 'ok' | 'wait' | 'gone' | 'net'
+async function claim() {
+  const p = state.pending;
+  if (!p) return 'gone';
+  const r = await api('/api/claim', { method: 'POST', body: { order: p.order, k: p.k }, auth: false });
+  if (r.status === 200) { state.pending = null; applyAccess(r.data); return 'ok'; }
+  if (r.status === 202) return 'wait';
+  if (r.status === 0 || r.status >= 500) return 'net';
+  state.pending = null;   // заказа нет или устарел (3 дня): не спрашиваем вечно
+  persist();
+  return 'gone';
+}
+
+async function waitForPayment() {
+  $('wait-title').textContent = 'Проверяем оплату';
+  $('wait-text').textContent = 'Касса подтверждает платёж, обычно это меньше минуты. Не закрывай страницу';
+  $('b-wait-home').hidden = true;
+  show('wait');
+  const until = Date.now() + c.CONFIG.claimWaitMs;
+  for (;;) {
+    const res = await claim();
+    if (res === 'ok') return showAcct(true);
+    if (res === 'gone') return homeOrStart();
+    if (Date.now() > until) break;
+    await new Promise(r => setTimeout(r, 3000));
+  }
+  $('wait-title').textContent = 'Касса ещё не подтвердила';
+  $('wait-text').textContent = 'Если деньги списались, доступ откроется сам при следующем входе в приложение, обычно в течение нескольких минут. Не открылся за час - напиши в поддержку';
+  $('b-wait-home').hidden = false;
+}
+// пришёл по ссылке доступа на новом телефоне без пройденного теста - сначала тест, от него растёт читалка
+const homeOrStart = () => (state.tests.length ? goHome() : show('start'));
+$('b-wait-home').addEventListener('click', homeOrStart);
+
+function showAcct(fresh = false) {
+  const a = acc();
+  $('acct-title').textContent = fresh ? 'Доступ открыт' : 'Подписка';
+  $('acct-line').textContent = c.accessLine(a, fmtDate);
+  $('acct-email').textContent = state.auth ? `Почта: ${state.auth.email}` : '';
+  const pw = !!(state.auth && state.auth.pw);
+  $('acct-pw-box').hidden = pw || !state.auth;
+  $('acct-pw-done').hidden = !pw;
+  $('acct-pw').value = '';
+  showErr('acct-pw-err', '');
+  showErr('acct-err', '');
+  $('b-acct-cancel').hidden = !a.renews;
+  $('b-acct-home').textContent = state.tests.length ? 'К тренировке' : 'Пройти тест';
+  show('acct');
+}
+$('b-acct-back').addEventListener('click', homeOrStart);
+$('b-acct-home').addEventListener('click', homeOrStart);
+$('b-acct-pw').addEventListener('click', async () => {
+  const pw = $('acct-pw').value;
+  if (pw.length < 8) { showErr('acct-pw-err', 'Нужно не меньше 8 знаков'); $('acct-pw').focus(); return; }
+  $('b-acct-pw').disabled = true;
+  const r = await api('/api/password', { method: 'POST', body: { password: pw } });
+  $('b-acct-pw').disabled = false;
+  if (r.status !== 200) return showErr('acct-pw-err', r.data.error || 'Не сохранилось. Попробуй ещё раз');
+  state.auth.pw = true;
+  persist();
+  showAcct();
+});
+$('b-acct-cancel').addEventListener('click', async () => {
+  const a = acc();
+  if (!confirm(`Отключить автопродление? Доступ останется до ${fmtDate(a.until)}, дальше списаний не будет`)) return;
+  $('b-acct-cancel').disabled = true;
+  const r = await api('/api/sub/cancel', { method: 'POST' });
+  $('b-acct-cancel').disabled = false;
+  if (r.data.access) applyAccess({ access: r.data.access });
+  if (r.status !== 200) return showErr('acct-err', r.data.error || 'Не получилось. Напиши в поддержку');
+  showAcct();
+});
+
+function showLogin() {
+  showErr('login-err', '');
+  show('login').then(() => $('login-email').focus());   // при переходе экран показывается кадром позже
+}
+$('b-login-open').addEventListener('click', showLogin);
+$('b-login-back').addEventListener('click', () => showPay(payBack));
+$('login-form').addEventListener('submit', async e => {
+  e.preventDefault();
+  const email = $('login-email').value.trim(), password = $('login-pw').value;
+  if (!email || !password) return showErr('login-err', 'Введи почту и пароль');
+  $('b-login').disabled = true;
+  const r = await api('/api/login', { method: 'POST', body: { email, password }, auth: false });
+  $('b-login').disabled = false;
+  if (r.status !== 200) return showErr('login-err', r.data.error || 'Не получилось войти');
+  applyAccess(r.data);
+  $('login-pw').value = '';
+  if (acc().paid) showAcct(); else showPay('home');
+});
+for (const id of ['acct-support', 'login-support']) $(id).href = c.CONFIG.supportUrl;
 
 // ---------- главная ----------
 
@@ -180,7 +377,9 @@ function goHome() {
   show('home');
 }
 
+let shownStreak = null;   // серия, которую человек видел в прошлый раз: новое число набегает от неё
 function renderHome() {
+  const entering = $('s-home').hidden;   // каскад и рисование графика только при входе на экран, не при фоновом обновлении
   const a = acc();
   const key = today();
   const pd = day();
@@ -191,19 +390,21 @@ function renderHome() {
   $('h-mode').textContent = a.paid
     ? (pd.done ? 'Программа пройдена, тренировки продолжаются' : `День ${pd.day} из ${c.CONFIG.programDays}`)
     : `Бесплатный режим · день ${pd.day}`;
-  const payBtn = $('b-home-pay');
-  payBtn.textContent = a.paid ? `Демо до ${fmtDate(a.until)}` : 'Открыть доступ';
-  payBtn.disabled = a.paid;
-  $('h-streak').textContent = st;
+  $('b-home-pay').textContent = a.paid ? (a.forever ? 'Доступ без срока' : `Доступ до ${fmtDate(a.until)}`) : 'Открыть доступ';
+  m.countUp($('h-streak'), st, { from: shownStreak ?? st, ms: 400 });
+  shownStreak = st;
   $('h-streak-l').textContent = `${c.pluralDays(st).replace(/^\d+ /, '')} подряд`;
 
   const segs = $('h-segs');
   segs.textContent = '';
+  segs.classList.toggle('enter', entering);
   for (let i = 6; i >= 0; i--) {
     const s = el('i');
     if (state.done.includes(c.addDays(key, -i))) s.className = 'on';
+    s.style.setProperty('--i', String((6 - i) * 60));
     segs.append(s);
   }
+  $('h-prog').style.setProperty('--p', String(pd.done ? 1 : pd.day / c.CONFIG.programDays));
 
   const steps = c.dailySteps(pd.day, a.paid);
   const list = $('h-steps');
@@ -218,7 +419,9 @@ function renderHome() {
   });
   if (!a.paid) {
     const row = el('div', 'step');
-    row.append(el('span', 'n', '🔒'));
+    const n = el('span', 'n');
+    n.append(el('i', 'lock'));
+    row.append(n);
     const t = el('div', 't');
     t.append(el('div', null, 'Разминка и текстовая тренировка'), el('div', 'muted small', 'полная тренировка дня, 10 минут, 13 упражнений по программе'));
     row.append(t);
@@ -240,7 +443,7 @@ function renderHome() {
 
   const last = state.tests[state.tests.length - 1];
   $('h-speed').textContent = last ? `тест ${last.wpm} → читалка сегодня ${speedToday()}` : '';
-  renderChart($('h-chart'));
+  renderChart($('h-chart'), entering);
 
   const rt = c.retestStatus(state.tests, key);
   const B = state.best;
@@ -251,7 +454,7 @@ function renderHome() {
     { k: 'schulte-letters', ic: 'аб', nm: 'Шульте буквами', ds: sec(B['schulte-letters']) ? `лучшее время ${sec(B['schulte-letters'])}` : 'буквы по алфавиту' },
     { k: 'schulte-6', ic: '36', nm: 'Шульте 6x6', ds: sec(B['schulte-6']) ? `лучшее время ${sec(B['schulte-6'])}` : '36 чисел' },
     { k: 'sight', ic: '◁ ▷', nm: 'Растяжка взгляда', ds: B.sight ? `ширина ${Math.round(dr.sightOffset(B.sight) * 200)}%` : 'шире охват' },
-    { k: 'flash', ic: '⚡', nm: 'Вспышка', ds: B.flash ? `выдержка ${B.flash} мс` : 'схватить группу' },
+    { k: 'flash', ic: '✶', nm: 'Вспышка', ds: B.flash ? `выдержка ${B.flash} мс` : 'схватить группу' },
     { k: 'memory', ic: '№', nm: 'Запомни число', ds: B.memory ? `${B.memory} цифр` : 'рабочая память' },
     { k: 'search', ic: '◎', nm: 'Поиск буквы', ds: sec(B.search) ? `лучшее время ${sec(B.search)}` : 'сканировать, не читать' },
     { k: 'blocks', ic: '≡', nm: 'Блоки', ds: 'по 2-3 слова' },
@@ -261,15 +464,17 @@ function renderHome() {
     { k: 'flipped', ic: '∀', nm: 'Перевёрнутый текст', ds: B.flipped ? `${fmtSec(B.flipped)} с на 100 слов` : 'вверх ногами' },
     { k: 'lib', ic: '¶', nm: 'Библиотека', ds: `Чехов и Тургенев, ${LIBRARY.length} текстов` },
     { k: 'own', ic: '✎', nm: 'Свой текст', ds: 'статьи, книги, письма' },
-    { k: 'test', ic: '⏱', nm: 'Тест скорости', ds: rt.available ? 'можно пройти сейчас' : `повторный через ${c.pluralDays(rt.inDays)}`, free: true, wide: true },
+    { k: 'test', ic: '◷', nm: 'Тест скорости', ds: rt.available ? 'можно пройти сейчас' : `повторный через ${c.pluralDays(rt.inDays)}`, free: true, wide: true },
   ];
   const box = $('h-tiles');
   box.textContent = '';
-  for (const t of tiles) {
+  box.classList.toggle('enter', entering);
+  for (const [n, t] of tiles.entries()) {
     const locked = (!t.free && !a.paid) || (t.k === 'reader' && !a.paid && !freeLeft);
     const b = el('button', 'tile' + (locked ? ' locked' : ''));
     b.dataset.tile = t.k;
     if (t.wide) b.style.gridColumn = '1 / -1';
+    b.style.setProperty('--i', String(Math.min(n, 10) * 35));
     b.append(el('span', 'ic', t.ic), el('span', 'nm', t.nm), el('span', 'ds', t.ds));
     b.addEventListener('click', () => openTile(t.k, locked, rt));
     box.append(b);
@@ -278,7 +483,7 @@ function renderHome() {
 }
 
 // График: линия читалки по дням тренировок и точки тестов, ось X = дни программы
-function renderChart(box) {
+function renderChart(box, animate = false) {
   box.textContent = '';
   const start = state.startKey;
   const reader = Object.entries(state.readerLog || {})
@@ -296,7 +501,7 @@ function renderChart(box) {
   const sy = y => T + (1 - y / maxY) * (H - T - B);
   const svg = document.createElementNS(NS, 'svg');
   svg.setAttribute('viewBox', `0 0 ${W} ${H}`);
-  svg.setAttribute('class', 'chart');
+  svg.setAttribute('class', animate ? 'chart enter' : 'chart');
   svg.setAttribute('role', 'img');
   svg.setAttribute('aria-label', 'Скорость по дням программы');
   const add = (tag, attrs, text) => {
@@ -307,23 +512,27 @@ function renderChart(box) {
     return n;
   };
   for (const v of [0, maxY / 2, maxY]) {
-    add('line', { x1: L, x2: W - R, y1: sy(v), y2: sy(v), stroke: '#26262a', 'stroke-width': 1 });
-    add('text', { x: L - 6, y: sy(v) + 4, 'text-anchor': 'end', 'font-size': 10, fill: '#9a9696' }, Math.round(v));
+    add('line', { x1: L, x2: W - R, y1: sy(v), y2: sy(v), stroke: '#2a2724', 'stroke-width': 1 });
+    add('text', { x: L - 6, y: sy(v) + 4, 'text-anchor': 'end', 'font-size': 10, fill: '#a39b8c' }, Math.round(v));
   }
-  add('text', { x: L, y: H - 6, 'font-size': 10, fill: '#9a9696' }, 'день 1');
-  add('text', { x: W - R, y: H - 6, 'text-anchor': 'end', 'font-size': 10, fill: '#9a9696' }, `день ${maxX + 1}`);
-  if (reader.length > 1) add('polyline', { points: reader.map(p => `${sx(p.x)},${sy(p.y)}`).join(' '), fill: 'none', stroke: '#ed4345', 'stroke-width': 2.5, 'stroke-linejoin': 'round' });
-  reader.forEach(p => add('circle', { cx: sx(p.x), cy: sy(p.y), r: 3, fill: '#ed4345' }));
-  tests.forEach(p => add('circle', { cx: sx(p.x), cy: sy(p.y), r: 4.5, fill: '#f4f2f2', stroke: '#050505', 'stroke-width': 1.5 }));
+  add('text', { x: L, y: H - 6, 'font-size': 10, fill: '#a39b8c' }, 'день 1');
+  add('text', { x: W - R, y: H - 6, 'text-anchor': 'end', 'font-size': 10, fill: '#a39b8c' }, `день ${maxX + 1}`);
+  if (reader.length > 1) {
+    const pts = reader.map(p => [sx(p.x), sy(p.y)]);
+    const line = add('polyline', { points: pts.map(q => q.join(',')).join(' '), fill: 'none', stroke: '#ed4345', 'stroke-width': 2.5, 'stroke-linejoin': 'round', 'stroke-linecap': 'round' });
+    // линия рисуется слева направо; длину считаем сами, на скрытом экране браузер её не даёт
+    if (animate) m.drawPath(line, { ms: 900, len: pts.slice(1).reduce((sum, q, k) => sum + Math.hypot(q[0] - pts[k][0], q[1] - pts[k][1]), 0) });
+  }
+  reader.forEach(p => add('circle', { cx: sx(p.x), cy: sy(p.y), r: 3, fill: '#ed4345', class: 'pt' }));
+  tests.forEach(p => add('circle', { cx: sx(p.x), cy: sy(p.y), r: 4.5, fill: '#f2ead8', stroke: '#070606', 'stroke-width': 1.5, class: 'pt' }));
   box.append(svg);
-  const legend = el('p', 'muted small');
-  legend.append(el('span', null, '● '), 'читалка, слов/мин   ');
-  legend.firstChild.style.color = '#ed4345';
-  legend.append('○ тесты');
+  const legend = el('p', 'muted small legend');
+  const key = (color, ring, text) => { const s = el('span'); const i = el('i'); i.style.background = color; if (ring) i.style.boxShadow = 'inset 0 0 0 1.5px #070606'; s.append(i, text); return s; };
+  legend.append(key('#ed4345', false, 'читалка, слов/мин'), key('#f2ead8', true, 'тесты'));
   box.append(legend);
 }
 
-$('b-home-pay').addEventListener('click', () => showPay('home'));
+$('b-home-pay').addEventListener('click', () => (acc().paid ? showAcct() : showPay('home')));
 $('b-train').addEventListener('click', startTraining);
 
 function openTile(k, locked, rt) {
@@ -367,7 +576,8 @@ function runStep() {
 
 function finishDay() {
   const key = today();
-  if (!state.done.includes(key)) state.done.push(key);
+  const fresh = !state.done.includes(key);   // повтор тренировки в тот же день вехой не считается
+  if (fresh) state.done.push(key);
   state.readerLog[key] = speedToday();
   if (!acc().paid) useFreeRead();   // бесплатный режим: читалка дня потрачена только когда пройдена до конца
   persist();
@@ -375,6 +585,11 @@ function finishDay() {
   const st = c.streak(state.done, key);
   $('done-streak').textContent = `${c.pluralDays(st)} подряд. Возвращайся завтра, чтобы не прервать серию`;
   show('done');
+  // кольцо и галочка рисуются штрихом; конфетти только на вехах серии 7, 14 и 30
+  const chk = $('done-check');
+  m.drawPath(chk.querySelector('circle'), { len: 2 * Math.PI * 44, ms: 450 });
+  m.drawPath(chk.querySelector('.tick'), { len: 54, ms: 350, delay: 300 });
+  if (fresh && c.isMilestone(st)) m.confetti();
 }
 
 // ---------- упражнения ----------
@@ -508,16 +723,7 @@ function timed(body, { mode, tokens, wpm, onDone }) {
   setLabel();
   range.addEventListener('input', () => { speed = Number(range.value); setLabel(); });
 
-  function place(tok) {
-    word.style.fontSize = `${WORD_PX}px`;
-    const o = orpInto(word, tok);
-    const W = stage.clientWidth, ax = W * ANCHOR;
-    let center = o.offsetLeft + o.offsetWidth / 2;
-    const width = word.offsetWidth;
-    const k = Math.min(1, (ax - 12) / Math.max(1, center), (W - ax - 12) / Math.max(1, width - center));
-    if (k < 1) { word.style.fontSize = `${Math.floor(WORD_PX * k)}px`; center = o.offsetLeft + o.offsetWidth / 2; }
-    word.style.left = `${ax - center}px`;
-  }
+  const place = tok => placeWord(word, stage, tok, WORD_PX);
 
   function fitChunk(text) {
     chunkEl.style.fontSize = '';
@@ -556,7 +762,7 @@ function timed(body, { mode, tokens, wpm, onDone }) {
     const u = units[i];
     showUnit(u);
     i++;
-    barI.style.width = `${(i / units.length) * 100}%`;
+    barI.style.transform = `scaleX(${i / units.length})`;
     const ms = u.reduce((s, t) => s + c.wordDelayMs(t, speed), 0);
     timer = setTimeout(tick, ms);
   }
@@ -573,6 +779,7 @@ function timed(body, { mode, tokens, wpm, onDone }) {
   function setPaused(p) {
     paused = p;
     pauseB.textContent = p ? 'Продолжить' : 'Пауза';
+    if (stage) stage.classList.toggle('paused', p);   // на паузе засечки пульсируют
     if (!p && !timer && !finished) tick();
     if (p && timer) { clearTimeout(timer); timer = null; }
   }
@@ -622,7 +829,10 @@ function schulte(body, opts) {
 
   function tap(b, v) {
     if (!c.schulteTap(order[next], v)) {
+      b.classList.remove('bad');
+      void b.offsetWidth;   // повторная ошибка по той же клетке тоже вздрагивает
       b.classList.add('bad');
+      if (navigator.vibrate) navigator.vibrate(30);   // Android; на iOS вибрации из браузера нет
       setTimeout(() => b.classList.remove('bad'), 250);
       return;
     }
@@ -672,5 +882,26 @@ $('b-own').addEventListener('click', () => {
 // ---------- старт ----------
 
 if (state.tests.length) goHome(); else show('start');
+
+// Доступ сверяется с сервером в фоне, после первого экрана. Вернулся с кассы (?paid=1) или пришёл по ссылке
+// доступа (?claim=) - ждём подтверждения на экране ожидания. Адрес чистим, метку площадки после # не трогаем
+(async function syncAccess() {
+  const q = new URLSearchParams(location.search);
+  const link = c.parseClaim(location.search);
+  const back = q.has('paid');
+  if (link) { state.pending = { ...link, plan: 'link', at: Date.now() }; persist(); }
+  if (link || back) { try { history.replaceState(null, '', location.pathname + location.hash); } catch {} }
+  if (state.pending) {
+    if (Date.now() - state.pending.at > 3 * 864e5) { state.pending = null; persist(); }
+    else if (link || back) return waitForPayment();
+    else if (await claim() === 'ok') return showAcct(true);
+  }
+  if (!state.auth) return;
+  const r = await api('/api/me');
+  if (r.status === 401) { state.auth = null; state.acc = null; persist(); }
+  else if (r.status === 200) applyAccess(r.data);
+  else return;
+  if (!$('s-home').hidden) renderHome();
+})();
 // «Открыл» уходит после полной загрузки, уже с нарисованным первым экраном: учёт в фоне, не на пути человека
 if (document.readyState === 'complete') track('open'); else addEventListener('load', () => track('open'), { once: true });

@@ -14,6 +14,9 @@ export const CONFIG = {
   maxHonestWpm: 1500,                  // быстрее = текст пролистан, результат не сохраняем
   minHonestWpm: 40,                    // медленнее = тест прерывался (вкладка лежала открытой), тоже не сохраняем
   eventsUrl: 'https://skorochtenie-events.aivan-loginov.workers.dev/e',   // счётчик воронки, сигнал уходит в фоне
+  apiUrl: 'https://skorochtenie-api.aivan-loginov.workers.dev',           // оплата и доступ (.business/scripts/skorochtenie-api)
+  supportUrl: 'https://t.me/loginoff_ai',
+  claimWaitMs: 90_000,                 // сколько ждать подтверждения кассы после возврата с оплаты, дальше доступ откроется при следующем входе
 };
 
 // Метка площадки из адреса после «#»: ivan-loginov.ru/skorochtenie/#ig → 'ig'. Контракт пути клиента:
@@ -150,15 +153,35 @@ export function streak(doneKeys, todayKey) {
   return n;
 }
 
-export function grantDemo(tier, now) {
-  const days = tier === 'year' ? 365 : 30;
-  return { tier, demo: true, at: now, until: now + days * 864e5 };
+// Вехи серии с праздником (конфетти). Редко, чтобы награда не обесценилась
+export const MILESTONES = [7, 14, 30];
+export const isMilestone = n => MILESTONES.includes(n);
+
+// Доступ - по ответу сервера оплаты (кэш в state.acc). Демо-доступ первых дней (state.plan) больше не открывает платное
+const NO_ACCESS = { paid: false, until: null, tier: null, renews: false, stopped: false, next: null, gift: false, forever: false };
+export function access(state, now) {
+  const a = state && state.acc;
+  if (!a || !(a.forever || (a.until && a.until > now))) return { ...NO_ACCESS };
+  return { paid: true, until: a.forever ? null : a.until, tier: a.plan || null, renews: !!a.renews, stopped: !!a.stopped,
+    next: a.next || null, gift: !!a.gift, forever: !!a.forever };
 }
 
-export function access(state, now) {
-  const p = state && state.plan;
-  if (p && p.until > now) return { paid: true, demo: !!p.demo, until: p.until, tier: p.tier };
-  return { paid: false, demo: false, until: null, tier: null };
+// Ссылка доступа от поддержки: ?claim=<заказ>.<секрет>. Мусор = null
+export function parseClaim(search) {
+  const v = new URLSearchParams(String(search ?? '')).get('claim') || '';
+  const m = /^(sk[\w-]{6,40})\.([\w-]{16,64})$/.exec(v);
+  return m ? { order: m[1], k: m[2] } : null;
+}
+
+// Что писать про подписку: тариф, срок, следующее списание или отмену
+export function accessLine(a, fmt) {
+  if (!a.paid) return 'Доступа нет';
+  if (a.forever) return 'Доступ без срока';
+  const tier = a.tier === 'year' ? 'Год' : a.tier === 'month' ? 'Месяц' : 'Доступ';
+  if (a.gift) return `Подарочный доступ до ${fmt(a.until)}`;
+  if (a.renews) return `${tier} · доступ до ${fmt(a.until)}${a.next ? `, следующее списание ${a.next.split('-').reverse().join('.')}` : ''}`;
+  if (a.stopped) return `${tier} · автопродление отключено, доступ до ${fmt(a.until)}`;
+  return `${tier} · доступ до ${fmt(a.until)}`;
 }
 
 export const canFreeRead = (freeReads, key) => ((freeReads || {})[key] || 0) < CONFIG.freeReadsPerDay;
