@@ -107,6 +107,25 @@ document.querySelectorAll('[data-home]').forEach(b => b.addEventListener('click'
 // Safari на iOS включает :active (сжатие кнопок) только при обработчике touchstart на странице
 document.addEventListener('touchstart', () => {}, { passive: true });
 
+// Тема: ночная по умолчанию или дневная. Выбор хранится отдельно от прогресса (ключ temp.theme): встроенный скрипт
+// в head ставит её до первой отрисовки, без мигания. Переключатель «Сменить тему» на первом экране, главной и в упражнениях
+const isDay = () => document.documentElement.dataset.mode === 'day';
+function paintThemeButtons() {
+  const day = isDay();
+  document.querySelectorAll('[data-mode-set]').forEach(b => b.setAttribute('aria-pressed', String((b.dataset.modeSet === 'day') === day)));
+}
+function setTheme(day) {
+  m.transition(() => {
+    const root = document.documentElement;
+    if (day) root.dataset.mode = 'day'; else delete root.dataset.mode;
+    $('meta-theme').content = getComputedStyle(root).getPropertyValue('--bg').trim();   // цвет полосы браузера
+    paintThemeButtons();
+  }, 'theme');
+  try { localStorage.setItem('temp.theme', day ? 'day' : 'night'); } catch {}
+}
+document.querySelectorAll('[data-mode-set]').forEach(b => b.addEventListener('click', () => { const day = b.dataset.modeSet === 'day'; if (day !== isDay()) setTheme(day); }));
+paintThemeButtons();
+
 // ---------- тест ----------
 
 let run = null;
@@ -512,23 +531,24 @@ function renderChart(box, animate = false) {
     return n;
   };
   for (const v of [0, maxY / 2, maxY]) {
-    add('line', { x1: L, x2: W - R, y1: sy(v), y2: sy(v), stroke: '#2a2724', 'stroke-width': 1 });
-    add('text', { x: L - 6, y: sy(v) + 4, 'text-anchor': 'end', 'font-size': 10, fill: '#a39b8c' }, Math.round(v));
+    add('line', { x1: L, x2: W - R, y1: sy(v), y2: sy(v), class: 'grid', 'stroke-width': 1 });
+    add('text', { x: L - 6, y: sy(v) + 4, 'text-anchor': 'end', 'font-size': 10 }, Math.round(v));
   }
-  add('text', { x: L, y: H - 6, 'font-size': 10, fill: '#a39b8c' }, 'день 1');
-  add('text', { x: W - R, y: H - 6, 'text-anchor': 'end', 'font-size': 10, fill: '#a39b8c' }, `день ${maxX + 1}`);
+  add('text', { x: L, y: H - 6, 'font-size': 10 }, 'день 1');
+  add('text', { x: W - R, y: H - 6, 'text-anchor': 'end', 'font-size': 10 }, `день ${maxX + 1}`);
   if (reader.length > 1) {
     const pts = reader.map(p => [sx(p.x), sy(p.y)]);
-    const line = add('polyline', { points: pts.map(q => q.join(',')).join(' '), fill: 'none', stroke: '#ed4345', 'stroke-width': 2.5, 'stroke-linejoin': 'round', 'stroke-linecap': 'round' });
+    const line = add('polyline', { points: pts.map(q => q.join(',')).join(' '), fill: 'none', class: 'line', 'stroke-width': 2.5, 'stroke-linejoin': 'round', 'stroke-linecap': 'round' });
     // линия рисуется слева направо; длину считаем сами, на скрытом экране браузер её не даёт
     if (animate) m.drawPath(line, { ms: 900, len: pts.slice(1).reduce((sum, q, k) => sum + Math.hypot(q[0] - pts[k][0], q[1] - pts[k][1]), 0) });
   }
-  reader.forEach(p => add('circle', { cx: sx(p.x), cy: sy(p.y), r: 3, fill: '#ed4345', class: 'pt' }));
-  tests.forEach(p => add('circle', { cx: sx(p.x), cy: sy(p.y), r: 4.5, fill: '#f2ead8', stroke: '#070606', 'stroke-width': 1.5, class: 'pt' }));
+  // цвета линий и точек задают классы из токенов темы (index.html, .chart)
+  reader.forEach(p => add('circle', { cx: sx(p.x), cy: sy(p.y), r: 3, class: 'pt pt-r' }));
+  tests.forEach(p => add('circle', { cx: sx(p.x), cy: sy(p.y), r: 4.5, 'stroke-width': 1.5, class: 'pt pt-t' }));
   box.append(svg);
   const legend = el('p', 'muted small legend');
-  const key = (color, ring, text) => { const s = el('span'); const i = el('i'); i.style.background = color; if (ring) i.style.boxShadow = 'inset 0 0 0 1.5px #070606'; s.append(i, text); return s; };
-  legend.append(key('#ed4345', false, 'читалка, слов/мин'), key('#f2ead8', true, 'тесты'));
+  const key = (cls, text) => { const s = el('span'); s.append(el('i', cls), text); return s; };
+  legend.append(key('k-r', 'читалка, слов/мин'), key('k-t', 'тесты'));
   box.append(legend);
 }
 

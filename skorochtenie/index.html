@@ -3,7 +3,8 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<meta name="theme-color" content="#070606">
+<meta name="theme-color" content="#070606" id="meta-theme">
+<script>/* тема до первой отрисовки, без запросов */try{if(localStorage.getItem("temp.theme")==="day"){document.documentElement.dataset.mode="day";document.getElementById("meta-theme").content="#f5f2eb"}}catch(e){}</script>
 <title>Темп · тест скорости чтения</title>
 <meta name="description" content="Узнай, с какой скоростью ты читаешь. Тест за минуту, без регистрации">
 <style>
@@ -21,6 +22,13 @@
     --ease-out: cubic-bezier(0.23, 1, 0.32, 1); --ease-in-out: cubic-bezier(0.77, 0, 0.175, 1);
     color-scheme: dark;
   }
+  /* дневная тема «бумага и чернила»: те же роли, светлый лист, тёмный текст, красный темнее для контраста */
+  :root[data-mode="day"] {
+    --bg: #f5f2eb; --panel: #fffdf7; --panel2: #ebe5d8; --rule: #ddd5c4; --line: #c4b9a5;
+    --fg: #1b1815; --muted: #5f574b; --dim: #a39a8a;
+    --red: #c22a33; --red-dim: #f6dcd8; --red-soft: #8c1b23; --ok: #2b7a45; --ink: #fbf8f1;
+    color-scheme: light;
+  }
   * { box-sizing: border-box; }
   html, body { margin: 0; background: var(--bg); color: var(--fg); font: 16px/1.5 var(--sans); font-variant-numeric: lining-nums; -webkit-text-size-adjust: 100%; -webkit-tap-highlight-color: transparent; }
   body { min-height: 100dvh; }
@@ -32,6 +40,18 @@
   .logo .o { color: var(--red); }
   .link { background: none; border: 0; padding: 8px 0; color: var(--red); cursor: pointer; font-weight: 600; }
   .back { background: none; border: 0; padding: 8px 0; color: var(--muted); cursor: pointer; }
+  .top-r { display: flex; align-items: center; gap: 14px; min-width: 0; }
+  /* переключатель темы: подпись и две кнопки, выбранная залита; какая выбрана, решает CSS по html[data-mode] ещё до JS */
+  .tswitch { display: flex; align-items: center; gap: 8px; flex: none; }
+  .ts-cap { font-size: 12px; color: var(--muted); white-space: nowrap; }
+  .ts-seg { display: inline-flex; padding: 2px; border-radius: 99px; box-shadow: inset 0 0 0 1px var(--line); }
+  .ts-seg button { border: 0; background: none; color: var(--muted); font: 600 13px/1 var(--sans); padding: 10px 12px; border-radius: 99px; cursor: pointer; white-space: nowrap; transition: transform var(--dur-press) var(--ease-out); }
+  .ts-seg button:active { transform: scale(.95); }
+  .ts-seg button:focus-visible { outline: 2px solid var(--red); outline-offset: 1px; }
+  :root:not([data-mode="day"]) .ts-seg [data-mode-set="night"], :root[data-mode="day"] .ts-seg [data-mode-set="day"] { background: var(--fg); color: var(--ink); }
+  .tswitch.compact .ts-cap { display: none; }
+  .theme-row .tswitch { width: 100%; justify-content: space-between; }   /* на главной своя строка: подпись слева, кнопки справа */
+  .hero-start .top { margin-bottom: 14px; }
   /* засечка: короткий красный штрих, как метки рамки в ролике */
   .eyebrow { display: inline-flex; align-items: center; gap: 10px; font-size: 12px; letter-spacing: .14em; text-transform: uppercase; color: var(--muted); }
   .eyebrow::before { content: ""; width: 3px; height: 14px; background: var(--red); }
@@ -79,7 +99,7 @@
   .consent a, .small a { color: var(--fg); }
   .consent.need { color: var(--fg); }
   .consent.need input { outline: 2px solid var(--red); outline-offset: 2px; }
-  .err { color: #ffb3b4; font-size: 14px; }
+  .err { color: var(--red-soft); font-size: 14px; }
   .field { display: block; width: 100%; background: var(--panel); color: var(--fg); border: 1px solid var(--rule); border-radius: 14px; padding: 14px 16px; font: 16px/1.4 var(--sans); }
   .field:focus { outline: 2px solid var(--fg); outline-offset: 1px; }
   .segs { display: grid; grid-template-columns: repeat(7, 1fr); gap: 6px; }
@@ -106,6 +126,13 @@
   .tile.locked { background: var(--bg); }
   .tile.locked .ic { color: var(--muted); }
   .chart { width: 100%; height: 130px; display: block; }
+  .chart .grid { stroke: var(--rule); }
+  .chart text { fill: var(--muted); font-family: var(--sans); }
+  .chart .line { stroke: var(--red); }
+  .chart .pt-r { fill: var(--red); }
+  .chart .pt-t { fill: var(--fg); stroke: var(--bg); }
+  .legend .k-r { background: var(--red); }
+  .legend .k-t { background: var(--fg); box-shadow: inset 0 0 0 1.5px var(--bg); }
   .legend { display: flex; gap: 14px; }
   .legend i { display: inline-block; width: 8px; height: 8px; border-radius: 50%; margin-right: 6px; vertical-align: 1px; }
   /* сцена читалки: рамка и засечки как в ролике */
@@ -135,7 +162,7 @@
   .grid5 { display: grid; grid-template-columns: repeat(5, 1fr); gap: 6px; }
   .cell { aspect-ratio: 1; border: 0; border-radius: 10px; background: var(--panel); box-shadow: inset 0 0 0 1px var(--rule); font: 400 25px/1 var(--display); cursor: pointer; font-variant-numeric: lining-nums tabular-nums; transition: transform var(--dur-press) var(--ease-out), opacity var(--dur-enter) var(--ease-out); }
   .cell.ok { opacity: .28; transform: scale(.92); }
-  .cell.bad { background: var(--red); color: var(--fg); animation: shake 250ms var(--ease-out); }
+  .cell.bad { background: var(--red); color: var(--ink); animation: shake 250ms var(--ease-out); }
   .libitem { display: flex; justify-content: space-between; gap: 12px; width: 100%; text-align: left; background: var(--panel); border: 0; box-shadow: inset 0 0 0 1px var(--rule); border-radius: 14px; padding: 14px 16px; cursor: pointer; }
   .libitem b { font: 400 19px/1.25 var(--display); }
   textarea { width: 100%; min-height: 220px; background: var(--panel); color: var(--fg); border: 1px solid var(--rule); border-radius: 14px; padding: 14px; font: 16px/1.5 var(--serif); }
@@ -206,9 +233,12 @@
   @keyframes fade { from { opacity: 0; } }
   @keyframes vt-out { to { opacity: 0; transform: translateY(-6px); } }
   @keyframes vt-in { from { opacity: 0; transform: translateY(10px); } }
+  @keyframes vt-fade { to { opacity: 0; } }
   /* переход экранов (View Transitions): уходящий гаснет быстро, входящий проявляется */
   ::view-transition-old(root) { animation: vt-out 140ms var(--ease-out) both; }
   ::view-transition-new(root) { animation: vt-in var(--dur-screen) var(--ease-out) both; }
+  :root[data-vt="theme"]::view-transition-old(root) { animation: vt-fade 260ms var(--ease-out) both; }
+  :root[data-vt="theme"]::view-transition-new(root) { animation: none; }
   @media (prefers-reduced-motion: reduce) {
     *, *::before, *::after { transition: none !important; animation: none !important; }
     ::view-transition-group(*), ::view-transition-old(*), ::view-transition-new(*) { animation: none !important; }
@@ -220,7 +250,7 @@
 
   <!-- 1. Старт: из ролика сразу сюда, без регистрации -->
   <section id="s-start" class="hero-start">
-    <div class="top"><div class="logo" data-name></div></div>
+    <div class="top"><div class="logo" data-name></div><div class="tswitch" role="group" aria-label="Сменить тему"><span class="ts-cap">Сменить тему</span><span class="ts-seg"><button type="button" data-mode-set="night">Тёмная</button><button type="button" data-mode-set="day">Светлая</button></span></div></div>
     <div>
       <span class="eyebrow">Тест за 1 минуту</span>
       <h1>Узнай, с какой скоростью ты <em>читаешь</em></h1>
@@ -356,7 +386,8 @@
 
   <!-- 6. Главная: тренировка дня -->
   <section id="s-home" hidden>
-    <div class="top"><div class="logo" data-name></div><button class="link" id="b-home-pay"></button></div>
+    <div class="top"><div class="logo" data-name></div><div class="top-r"><button class="link" id="b-home-pay"></button></div></div>
+    <div class="theme-row" style="margin-top: 8px"><div class="tswitch" role="group" aria-label="Сменить тему"><span class="ts-cap">Сменить тему</span><span class="ts-seg"><button type="button" data-mode-set="night">Тёмная</button><button type="button" data-mode-set="day">Светлая</button></span></div></div>
     <div class="stack" style="margin-top: 10px">
       <div class="homehead">
         <div><p class="muted small" id="h-mode"></p><h2 id="h-title">Тренировка дня</h2></div>
@@ -380,7 +411,7 @@
 
   <!-- 7. Упражнение -->
   <section id="s-ex" hidden>
-    <div class="top"><button class="back" id="b-ex-back">← Назад</button><span class="muted small" id="ex-step"></span></div>
+    <div class="top"><button class="back" id="b-ex-back">← Назад</button><div class="top-r"><span class="muted small" id="ex-step"></span><div class="tswitch compact" role="group" aria-label="Сменить тему"><span class="ts-cap">Сменить тему</span><span class="ts-seg"><button type="button" data-mode-set="night">Тёмная</button><button type="button" data-mode-set="day">Светлая</button></span></div></div></div>
     <h2 id="ex-title" style="margin-top: 6px"></h2>
     <p class="muted small" id="ex-hint" style="margin: 4px 0 6px"></p>
     <div id="ex-body"></div>

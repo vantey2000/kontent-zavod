@@ -71,7 +71,8 @@ export function confetti({ count = 80, ms = DUR.confetti } = {}) {
   if (!ctx) return false;
   ctx.scale(dpr, dpr);
   document.body.append(cv);
-  const colors = ['#ed4345', '#f2ead8', '#ffb3b4', '#c9b98f'];
+  const css = getComputedStyle(document.documentElement);   // цвета из токенов темы: в дневной ночные пропали бы на светлом
+  const colors = ['--red', '--fg', '--red-soft', '--muted'].map(v => css.getPropertyValue(v).trim() || '#ed4345');
   const parts = Array.from({ length: count }, () => ({
     x: W / 2 + (Math.random() - 0.5) * W * 0.3, y: H * 0.3,
     vx: (Math.random() - 0.5) * 9, vy: -Math.random() * 9 - 4,
@@ -98,12 +99,16 @@ export function confetti({ count = 80, ms = DUR.confetti } = {}) {
 }
 
 // Переход экранов: View Transitions, где есть (Safari iOS 18+, Chrome 111+), иначе просто смена.
-// Обещание выполняется, когда новый экран уже в DOM: после него можно ставить фокус и мерить размеры
-export function transition(update) {
+// Обещание выполняется, когда новый экран уже в DOM: после него можно ставить фокус и мерить размеры.
+// kind = имя перехода в html[data-vt] на время анимации (смена темы растворяется, а не сдвигается)
+export function transition(update, kind = null) {
   if (reduced() || typeof document.startViewTransition !== 'function') { update(); return Promise.resolve(); }
+  const root = document.documentElement;
   try {
+    if (kind) root.dataset.vt = kind;
     const vt = document.startViewTransition(update);
-    vt.ready.catch(() => {}); vt.finished.catch(() => {});   // переход, перебитый следующим, отменяется: без ошибки в консоли
+    vt.ready.catch(() => {});   // переход, перебитый следующим, отменяется: без ошибки в консоли
+    vt.finished.catch(() => {}).then(() => { if (kind && root.dataset.vt === kind) delete root.dataset.vt; });
     return vt.updateCallbackDone.catch(() => {});
-  } catch (e) { update(); return Promise.resolve(); }
+  } catch (e) { delete root.dataset.vt; update(); return Promise.resolve(); }
 }
