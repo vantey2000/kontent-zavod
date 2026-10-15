@@ -1,0 +1,286 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#050505">
+<title>Темп · тест скорости чтения</title>
+<meta name="description" content="Узнай, с какой скоростью ты читаешь. Тест за минуту, без регистрации">
+<style>
+  :root {
+    --bg: #050505; --panel: #111113; --panel2: #18181b; --rule: #26262a;
+    --fg: #f4f2f2; --muted: #9a9696; --dim: #5d5a5a;
+    --red: #ed4345; --red-dim: #3a1415; --ok: #3fbf6a;
+    --serif: Georgia, "Times New Roman", "Noto Serif", serif;
+    --sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    color-scheme: dark;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; background: var(--bg); color: var(--fg); font: 16px/1.5 var(--sans); -webkit-text-size-adjust: 100%; }
+  body { min-height: 100dvh; }
+  button { font: inherit; color: inherit; }
+  .app { max-width: 480px; margin: 0 auto; padding-inline: 16px; padding-block: max(16px, env(safe-area-inset-top)) max(24px, env(safe-area-inset-bottom)); }
+  [hidden] { display: none !important; }   /* атрибут hidden сильнее display у кнопок и сеток */
+  .top { display: flex; align-items: center; justify-content: space-between; gap: 12px; min-height: 40px; }
+  .logo { font: 700 22px/1 var(--serif); letter-spacing: .01em; }
+  .logo .o { color: var(--red); }
+  .link { background: none; border: 0; padding: 8px 0; color: var(--red); cursor: pointer; font-weight: 600; }
+  .back { background: none; border: 0; padding: 8px 0; color: var(--muted); cursor: pointer; }
+  .eyebrow { display: inline-block; font-size: 12px; letter-spacing: .1em; text-transform: uppercase; color: var(--red); border: 1px solid var(--red-dim); padding: 4px 10px; border-radius: 99px; }
+  h1 { font: 400 clamp(32px, 9vw, 42px)/1.12 var(--serif); margin: 18px 0 14px; text-wrap: balance; }
+  h1 em { font-style: normal; color: var(--red); }
+  h2 { font: 700 22px/1.25 var(--serif); margin: 0; }
+  p { margin: 0; }
+  .muted { color: var(--muted); }
+  .small { font-size: 13px; }
+  .stack { display: grid; gap: 14px; }
+  .btn { display: block; width: 100%; border: 0; border-radius: 14px; padding: 16px 18px; background: var(--red); color: #fff; font-weight: 700; font-size: 17px; cursor: pointer; }
+  .btn.ghost { background: var(--panel2); color: var(--fg); }
+  .btn:disabled { opacity: .45; cursor: default; }
+  .btn:focus-visible, .opt:focus-visible, .tile:focus-visible, .link:focus-visible, .back:focus-visible, .cell:focus-visible { outline: 2px solid var(--fg); outline-offset: 2px; }
+  .card { background: var(--panel); border-radius: 18px; padding: 16px; }
+  .hero-start { min-height: calc(100dvh - 120px); display: flex; flex-direction: column; justify-content: center; gap: 0; }
+  .hero-word { font: 400 64px/1 var(--serif); text-align: center; margin: 28px 0 32px; }
+  .hero-word b { color: var(--red); font-weight: 400; }
+  .read-text { font: 19px/1.65 var(--serif); }
+  .read-text p + p { margin-top: 1em; }
+  .sticky { position: sticky; bottom: 0; padding-block: 12px max(12px, env(safe-area-inset-bottom)); background: linear-gradient(transparent, var(--bg) 30%); }
+  .progress { height: 4px; background: var(--rule); border-radius: 4px; overflow: hidden; }
+  .progress i { display: block; height: 100%; width: 0; background: var(--red); transition: width .2s; }
+  .opt { display: block; width: 100%; text-align: left; background: var(--panel); border: 1px solid var(--rule); border-radius: 14px; padding: 16px; cursor: pointer; }
+  .opt:active { border-color: var(--red); }
+  .big { font: 700 64px/1 var(--sans); font-variant-numeric: tabular-nums; }
+  .unit { color: var(--muted); }
+  .pill { display: inline-block; font-size: 13px; padding: 4px 10px; border-radius: 99px; background: var(--red-dim); color: #ffb3b4; }
+  .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .stat .v { font: 700 26px/1.1 var(--sans); font-variant-numeric: tabular-nums; }
+  .stat .k { font-size: 13px; color: var(--muted); }
+  .plans { display: grid; gap: 10px; }
+  .plan { display: flex; align-items: center; justify-content: space-between; gap: 10px; background: var(--panel); border: 2px solid var(--rule); border-radius: 16px; padding: 14px 16px; cursor: pointer; text-align: left; width: 100%; }
+  .plan[aria-checked="true"] { border-color: var(--red); }
+  .plan .p { font: 700 20px/1 var(--sans); white-space: nowrap; }
+  .ticks { list-style: none; padding: 0; margin: 0; display: grid; gap: 10px; }
+  .ticks li { display: flex; gap: 10px; align-items: flex-start; }
+  .ticks li::before { content: ""; flex: 0 0 18px; height: 18px; margin-top: 3px; border-radius: 50%; background: var(--red); box-shadow: inset 0 0 0 5px var(--red-dim); }
+  .demo-note { border: 1px dashed var(--dim); border-radius: 12px; padding: 10px 12px; color: var(--muted); font-size: 13px; }
+  .segs { display: grid; grid-template-columns: repeat(7, 1fr); gap: 6px; }
+  .segs i { height: 5px; border-radius: 3px; background: var(--rule); }
+  .segs i.on { background: var(--red); }
+  .step { display: flex; align-items: center; gap: 12px; padding: 10px 0; }
+  .step + .step { border-top: 1px solid var(--rule); }
+  .step .n { flex: 0 0 28px; height: 28px; border-radius: 50%; display: grid; place-items: center; background: var(--panel2); font-size: 14px; font-weight: 700; }
+  .step.done .n { background: var(--ok); color: #031; }
+  .step .t { flex: 1; min-width: 0; }
+  .tiles { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .tile { position: relative; text-align: left; background: var(--panel); border: 0; border-radius: 16px; padding: 14px; cursor: pointer; min-height: 104px; display: flex; flex-direction: column; gap: 4px; }
+  .tile .ic { font: 400 26px/1 var(--serif); color: var(--red); height: 30px; }
+  .tile .nm { font-weight: 700; }
+  .tile .ds { font-size: 12px; color: var(--muted); }
+  .tile.locked .nm::after { content: " 🔒"; font-size: 12px; }
+  .chart { width: 100%; height: 130px; display: block; }
+  /* сцена читалки: рамка и засечки как в ролике */
+  .stage { position: relative; height: 210px; margin: 8px -16px; border-top: 6px solid var(--rule); border-bottom: 6px solid var(--rule); overflow: hidden; }
+  .stage::before, .stage::after { content: ""; position: absolute; left: var(--anchor, 38%); width: 6px; margin-left: -3px; height: 44px; background: var(--rule); }
+  .stage::before { top: 0; } .stage::after { bottom: 0; }
+  .word { position: absolute; top: 50%; left: 0; white-space: nowrap; font: 400 46px/1 var(--serif); transform: translate(0, -50%); }
+  .word .o { color: var(--red); }
+  .chunk { position: absolute; inset: 0; display: grid; place-items: center; font: 400 38px/1.15 var(--serif); text-align: center; padding: 0 16px; }
+  .controls { display: grid; gap: 12px; }
+  .range { display: grid; gap: 6px; }
+  .range input { width: 100%; accent-color: var(--red); }
+  .row { display: flex; gap: 10px; }
+  .row > * { flex: 1; }
+  .pointer-text { position: relative; font: 20px/1.7 var(--serif); max-height: 52vh; overflow-y: auto; padding-right: 4px; }
+  .pointer-text span { transition: color .08s; color: var(--dim); }
+  .pointer-text span.on { color: var(--fg); background: var(--red-dim); border-radius: 4px; box-shadow: 0 2px 0 var(--red); }
+  .pointer-text span.read { color: var(--muted); }
+  .sch-info { display: flex; justify-content: space-between; gap: 12px; white-space: nowrap; }
+  .grid5 { display: grid; grid-template-columns: repeat(5, 1fr); gap: 6px; }
+  .cell { aspect-ratio: 1; border: 0; border-radius: 10px; background: var(--panel); font: 700 22px/1 var(--sans); cursor: pointer; font-variant-numeric: tabular-nums; }
+  .cell.ok { background: var(--panel2); color: var(--dim); }
+  .cell.bad { background: var(--red); color: #fff; }
+  .libitem { display: flex; justify-content: space-between; gap: 12px; width: 100%; text-align: left; background: var(--panel); border: 0; border-radius: 14px; padding: 14px 16px; cursor: pointer; }
+  textarea { width: 100%; min-height: 220px; background: var(--panel); color: var(--fg); border: 1px solid var(--rule); border-radius: 14px; padding: 14px; font: 16px/1.5 var(--serif); }
+  .check { width: 84px; height: 84px; border-radius: 50%; background: var(--ok); display: grid; place-items: center; margin: 24px auto 8px; color: #031; font-size: 44px; font-weight: 700; }
+  .center { text-align: center; }
+  /* новые упражнения */
+  .drill-stage { position: relative; height: 150px; display: grid; place-items: center; margin: 8px 0; overflow: hidden; }
+  .drill-stage .dot { width: 10px; height: 10px; border-radius: 50%; background: var(--red); }
+  .drill-stage .side { position: absolute; top: 50%; transform: translate(-50%, -50%); font: 400 26px/1 var(--serif); opacity: 0; white-space: nowrap; }
+  .drill-stage .side.on { opacity: 1; }
+  .drill-stage .chunk { position: static; opacity: 0; }
+  .drill-stage .chunk.on { opacity: 1; }
+  .drill-opts { display: grid; gap: 10px; }
+  .drill-opt.right { border-color: var(--ok); }
+  .drill-opt.wrong { border-color: var(--red); }
+  .drill-res { min-height: 20px; margin: 10px 0; }
+  .num { text-align: center; min-height: 70px; font-size: 40px; letter-spacing: .08em; opacity: 1; }
+  .num.right { color: var(--ok); }
+  .num.wrong { color: var(--red); }
+  .keypad { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+  .key { border: 0; border-radius: 12px; padding: 14px; background: var(--panel); color: var(--fg); font: 700 22px/1 var(--sans); cursor: pointer; }
+  .key.ok { background: var(--red); color: #fff; }
+  .flipped-text { transform: rotate(180deg); max-height: 52vh; overflow-y: auto; padding: 4px; }
+  .search-text span { cursor: pointer; color: var(--fg); }
+  .search-text span.hit { background: var(--red-dim); color: #ffb3b4; border-radius: 4px; }
+  .search-text span.miss { color: var(--red); }
+  .letter { color: var(--red); font-size: 1.3em; }
+  .grid6 { display: grid; grid-template-columns: repeat(6, 1fr); gap: 5px; }
+  .grid6 .cell { font-size: 17px; border-radius: 8px; }
+  .lines .line { padding: 3px 6px; color: var(--dim); border-radius: 6px; }
+  .lines .line.on { color: var(--fg); background: var(--red-dim); }
+  .lines .line.read { color: var(--muted); }
+  .lines.column .line { text-align: center; }
+  .hop .line span { transition: color .08s; }
+  .hop .line span.on { color: var(--fg); background: var(--red-dim); border-radius: 4px; box-shadow: 0 2px 0 var(--red); }
+  .hop .line span.read { color: var(--muted); }
+  @media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+</style>
+</head>
+<body>
+<main class="app" id="app">
+
+  <!-- 1. Старт: из ролика сразу сюда, без регистрации -->
+  <section id="s-start" class="hero-start">
+    <div class="top"><div class="logo" data-name></div></div>
+    <div>
+      <span class="eyebrow">Тест за 1 минуту</span>
+      <h1>Узнай, с какой скоростью ты <em>читаешь</em></h1>
+      <p class="muted">Прочитай короткий текст в своём обычном темпе и ответь на 4 вопроса. Узнаешь скорость, понимание и свой уровень</p>
+      <div class="hero-word" aria-hidden="true">чи<b>т</b>аешь</div>
+      <div class="stack">
+        <button class="btn" id="b-start">Пройти тест</button>
+        <p class="muted small center">Бесплатно. Без регистрации</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- 2. Текст теста -->
+  <section id="s-read" hidden>
+    <div class="top"><div class="logo" data-name></div><span class="muted small" id="read-count"></span></div>
+    <h2 id="read-title" style="margin: 14px 0 12px"></h2>
+    <div class="read-text" id="read-text"></div>
+    <div class="sticky"><button class="btn" id="b-read-done">Прочитал</button></div>
+  </section>
+
+  <!-- 3. Вопросы -->
+  <section id="s-quiz" hidden>
+    <div class="top"><div class="logo" data-name></div><span class="muted small" id="quiz-count"></span></div>
+    <div class="progress" style="margin: 10px 0 22px"><i id="quiz-bar"></i></div>
+    <h2 id="quiz-q" style="margin-bottom: 18px"></h2>
+    <div class="stack" id="quiz-opts"></div>
+  </section>
+
+  <!-- 4. Результат -->
+  <section id="s-result" hidden>
+    <div class="top"><div class="logo" data-name></div></div>
+    <div class="stack" id="result-ok" style="margin-top: 16px">
+      <p class="muted">Твоя скорость чтения</p>
+      <div><span class="big" id="r-wpm"></span> <span class="unit">слов в минуту</span></div>
+      <div><span class="pill" id="r-level"></span> <span class="muted small" id="r-delta"></span></div>
+      <div class="grid2">
+        <div class="card stat"><div class="v" id="r-comp"></div><div class="k">понимание текста</div></div>
+        <div class="card stat"><div class="v" id="r-eff"></div><div class="k">эффективная скорость, слов в минуту с учётом понимания</div></div>
+      </div>
+      <p class="muted small" id="r-avg"></p>
+      <div class="card stack">
+        <p><b>Цель на 30 дней</b></p>
+        <p class="muted"><span id="r-start-l">Читалка начнёт с</span> <b id="r-start" style="color: var(--fg)"></b> и к 30-му дню дойдёт до <b id="r-goal" style="color: var(--fg)"></b> слов в минуту. Это темп тренировки, а не обещание результата: результат покажет повторный тест через 7 дней</p>
+      </div>
+      <button class="btn" id="b-result-next">Начать программу</button>
+    </div>
+    <div class="stack" id="result-fast" hidden style="margin-top: 24px">
+      <h2 id="rf-title">Похоже, текст пролистан</h2>
+      <p class="muted" id="rf-text">Получилось быстрее 1500 слов в минуту. Так читать с пониманием не выходит ни у кого, поэтому результат не сохраняем. Прочитай новый текст в своём обычном темпе</p>
+      <button class="btn" id="b-retry">Пройти ещё раз</button>
+    </div>
+  </section>
+
+  <!-- 5. Подписка -->
+  <section id="s-pay" hidden>
+    <div class="top"><button class="back" id="b-pay-back">← Назад</button><div class="logo" data-name></div></div>
+    <h1 style="font-size: 34px">Программа <em>«Скорочтение»</em> на 30 дней</h1>
+    <ul class="ticks" style="margin-bottom: 18px">
+      <li>Тренировка дня 10 минут, скорость читалки растёт от твоего теста</li>
+      <li>13 тренировок: Шульте трёх видов, растяжка взгляда, вспышка, запомни число, поиск буквы, читалка, блоки, указка, колонка, указка по точкам, перевёрнутый текст</li>
+      <li>Библиотека классики и читалка для любого своего текста</li>
+      <li>Повторный тест раз в 7 дней и график роста</li>
+    </ul>
+    <div class="plans" role="radiogroup" aria-label="Тариф">
+      <button class="plan" role="radio" aria-checked="true" data-tier="year">
+        <span><b>Год</b><br><span class="muted small" id="pay-year-month"></span></span>
+        <span class="p" id="pay-year"></span>
+      </button>
+      <button class="plan" role="radio" aria-checked="false" data-tier="month">
+        <span><b>Месяц</b><br><span class="muted small">можно отменить в любой момент</span></span>
+        <span class="p" id="pay-month"></span>
+      </button>
+    </div>
+    <div class="stack" style="margin-top: 16px">
+      <button class="btn" id="b-pay">Открыть доступ</button>
+      <p class="muted small center" id="pay-refund"></p>
+      <p class="demo-note">Демо-версия: оплата ещё не подключена. Кнопка откроет доступ бесплатно, деньги не списываются</p>
+      <button class="link" id="b-free" style="justify-self: center">Продолжить бесплатно</button>
+    </div>
+  </section>
+
+  <!-- 6. Главная: тренировка дня -->
+  <section id="s-home" hidden>
+    <div class="top"><div class="logo" data-name></div><button class="link" id="b-home-pay"></button></div>
+    <div class="stack" style="margin-top: 10px">
+      <div style="display: flex; justify-content: space-between; align-items: end; gap: 12px">
+        <div><p class="muted small" id="h-mode"></p><h2 id="h-title">Тренировка дня</h2></div>
+        <div style="text-align: right"><div class="big" style="font-size: 34px" id="h-streak">0</div><div class="muted small" id="h-streak-l">дней подряд</div></div>
+      </div>
+      <div class="segs" id="h-segs" aria-hidden="true"></div>
+      <div class="card">
+        <div id="h-steps"></div>
+        <button class="btn" id="b-train" style="margin-top: 12px"></button>
+        <p class="muted small center" id="h-train-note" style="margin-top: 8px"></p>
+      </div>
+      <div class="card stack">
+        <div style="display: flex; justify-content: space-between; gap: 10px"><b>Скорость</b><span class="muted small" id="h-speed"></span></div>
+        <div id="h-chart"></div>
+      </div>
+      <h2 style="font-size: 18px; margin-top: 6px">Упражнения</h2>
+      <div class="tiles" id="h-tiles"></div>
+      <p class="muted small" id="h-storage" hidden>Браузер не даёт сохранить прогресс (приватный режим?). Тренироваться можно, но после перезагрузки прогресс пропадёт</p>
+    </div>
+  </section>
+
+  <!-- 7. Упражнение -->
+  <section id="s-ex" hidden>
+    <div class="top"><button class="back" id="b-ex-back">← Назад</button><span class="muted small" id="ex-step"></span></div>
+    <h2 id="ex-title" style="margin-top: 6px"></h2>
+    <p class="muted small" id="ex-hint" style="margin: 4px 0 6px"></p>
+    <div id="ex-body"></div>
+  </section>
+
+  <!-- 8. Библиотека -->
+  <section id="s-lib" hidden>
+    <div class="top"><button class="back" data-home>← Назад</button><div class="logo" data-name></div></div>
+    <h2 style="margin: 10px 0 14px">Библиотека</h2>
+    <div class="stack" id="lib-list"></div>
+  </section>
+
+  <!-- 9. Свой текст -->
+  <section id="s-own" hidden>
+    <div class="top"><button class="back" data-home>← Назад</button><div class="logo" data-name></div></div>
+    <h2 style="margin: 10px 0 6px">Свой текст</h2>
+    <p class="muted small" style="margin-bottom: 10px">Вставь статью, письмо или главу книги, и читалка покажет её слово за словом</p>
+    <label for="own-text" class="muted small">Текст</label>
+    <textarea id="own-text" placeholder="Вставь текст сюда"></textarea>
+    <button class="btn" id="b-own" style="margin-top: 12px">Читать</button>
+  </section>
+
+  <!-- 10. Тренировка сделана -->
+  <section id="s-done" hidden>
+    <div class="check" aria-hidden="true">✓</div>
+    <h2 class="center">Тренировка сделана</h2>
+    <p class="muted center" id="done-streak" style="margin: 8px 0 24px"></p>
+    <button class="btn" data-home>На главную</button>
+  </section>
+</main>
+<script type="module" src="app.js"></script>
+</body>
+</html>
