@@ -13,7 +13,15 @@ export const CONFIG = {
   avgAdultWpm: 200,                    // «обычно взрослый читает про себя около 200», как в ролике
   maxHonestWpm: 1500,                  // быстрее = текст пролистан, результат не сохраняем
   minHonestWpm: 40,                    // медленнее = тест прерывался (вкладка лежала открытой), тоже не сохраняем
+  eventsUrl: 'https://skorochtenie-events.aivan-loginov.workers.dev/e',   // счётчик воронки, сигнал уходит в фоне
 };
+
+// Метка площадки из адреса после «#»: ivan-loginov.ru/skorochtenie/#ig → 'ig'. Контракт пути клиента:
+// учёт меткой после решётки, без переадресаций и прокладок. Нет метки или мусор = null
+export function sourceFromHash(hash) {
+  const m = /^#?([a-z0-9-]{1,16})$/i.exec(String(hash ?? '').trim());
+  return m ? m[1].toLowerCase() : null;
+}
 
 const LETTER = /[\p{L}\p{N}]/u;
 const hasLetter = t => LETTER.test(t);

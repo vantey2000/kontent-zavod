@@ -18,6 +18,8 @@ export function fresh() {
     schulteBest: null,   // лучшее время таблицы 5x5 до v2, переносится в best.schulte
     readerLog: {},       // { ключ дня: скорость читалки }
     testSeq: 0,          // сколько тестов начато, для ротации текстов
+    src: null,           // метка площадки первого прихода (из адреса после «#»), для таблицы воронки
+    sent: [],            // события воронки, уже отправленные с этого телефона (каждое один раз)
     best: {},            // лучшие результаты по упражнениям: { schulte: с, sight: уровень, flash: мс, memory: цифр, search: с, flipped: с на 100 слов }
   };
 }
@@ -45,6 +47,8 @@ function normalize(s) {
     readerLog: obj(s.readerLog) || {},
     testSeq: num(s.testSeq) || 0,
     best: bestOf(s),
+    src: typeof s.src === 'string' && /^[a-z0-9-]{1,16}$/.test(s.src) ? s.src : null,
+    sent: Array.isArray(s.sent) ? s.sent.filter(x => typeof x === 'string').slice(0, 20) : [],
   };
 }
 

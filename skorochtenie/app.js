@@ -13,6 +13,18 @@ const WORD_PX = 46;
 let state = store.load();
 const today = () => c.dateKey(new Date());
 const persist = () => store.save(state);
+
+// Учёт воронки. Источник = первое касание, запоминается навсегда. Каждое событие уходит с этого
+// телефона один раз, поэтому счётчик считает людей, а не загрузки. Страница сигнала не ждёт
+const src = c.sourceFromHash(location.hash);
+if (src && !state.src) { state.src = src; persist(); }
+function track(e) {
+  if (!Array.isArray(state.sent)) state.sent = [];
+  if (state.sent.includes(e)) return;
+  state.sent.push(e);
+  persist();
+  try { navigator.sendBeacon(c.CONFIG.eventsUrl, `e=${e}&s=${state.src || 'direct'}`); } catch {}
+}
 const acc = () => c.access(state, Date.now());
 const day = () => c.programDay(state.startKey, today());
 const speedToday = () => c.readerSpeed(state.baseWpm || c.CONFIG.avgAdultWpm, day().day);
@@ -106,6 +118,7 @@ function finishTest() {
     if (first) { state.startKey = key; state.baseWpm = r.wpm; }
     else if (r.wpm > state.baseWpm) state.baseWpm = r.wpm;   // повторный тест быстрее: читалка подтягивается, медленнее - не откатываем
     persist();
+    track('test');
     $('r-wpm').textContent = r.wpm;
     $('r-level').textContent = `Уровень: ${r.level.label}`;
     $('r-delta').textContent = prev ? `${r.wpm >= prev.wpm ? '+' : ''}${r.wpm - prev.wpm} к прошлому тесту` : '';
@@ -143,6 +156,7 @@ function showPay(back) {
   $('pay-month').textContent = c.formatRub(priceMonth);
   $('pay-year-month').textContent = `≈ ${c.formatRub(Math.round(priceYear / 12))} в месяц`;
   $('pay-refund').textContent = `Если не подойдёт, вернём деньги в течение ${refundDays} дней`;
+  track('pay');
   show('pay');
 }
 
@@ -153,9 +167,10 @@ document.querySelectorAll('.plan').forEach(p => p.addEventListener('click', () =
 $('b-pay').addEventListener('click', () => {
   state.plan = c.grantDemo(payTier, Date.now());
   persist();
+  track(payTier === 'year' ? 'year' : 'month');
   goHome();
 });
-$('b-free').addEventListener('click', goHome);
+$('b-free').addEventListener('click', () => { track('free'); goHome(); });
 $('b-pay-back').addEventListener('click', () => (payBack === 'result' && run ? show('result') : goHome()));
 
 // ---------- главная ----------
@@ -312,7 +327,7 @@ $('b-home-pay').addEventListener('click', () => showPay('home'));
 $('b-train').addEventListener('click', startTraining);
 
 function openTile(k, locked, rt) {
-  if (locked) return showPay('home');
+  if (locked) { track('lock'); return showPay('home'); }
   if (k === 'test') return rt.available ? startTest() : null;
   if (k === 'lib') return showLib();
   if (k === 'own') return show('own');
@@ -657,3 +672,5 @@ $('b-own').addEventListener('click', () => {
 // ---------- старт ----------
 
 if (state.tests.length) goHome(); else show('start');
+// «Открыл» уходит после полной загрузки, уже с нарисованным первым экраном: учёт в фоне, не на пути человека
+if (document.readyState === 'complete') track('open'); else addEventListener('load', () => track('open'), { once: true });
