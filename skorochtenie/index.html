@@ -65,7 +65,7 @@
   .btn { display: block; width: 100%; border: 0; border-radius: 14px; padding: 16px 18px; background: var(--fg); color: var(--ink); font-weight: 700; font-size: 17px; cursor: pointer; }
   .btn.ghost { background: var(--panel2); color: var(--fg); box-shadow: inset 0 0 0 1px var(--rule); }
   .btn:disabled { opacity: .45; cursor: default; }
-  .btn:focus-visible, .opt:focus-visible, .tile:focus-visible, .link:focus-visible, .back:focus-visible, .cell:focus-visible, .key:focus-visible, .plan:focus-visible, .libitem:focus-visible { outline: 2px solid var(--red); outline-offset: 2px; }
+  .btn:focus-visible, .opt:focus-visible, .tile:focus-visible, .mcard:focus-visible, .link:focus-visible, .back:focus-visible, .cell:focus-visible, .key:focus-visible, .plan:focus-visible, .libitem:focus-visible { outline: 2px solid var(--red); outline-offset: 2px; }
   .card { background: var(--panel); border-radius: 18px; padding: 16px; box-shadow: inset 0 0 0 1px var(--rule); }
   .hero-start { min-height: calc(100dvh - 120px); display: flex; flex-direction: column; justify-content: center; gap: 0; }
   /* демо-слово старта в рамке с засечками, как сцена читалки */
@@ -124,6 +124,14 @@
   .tile .nm { font-weight: 700; }
   .tile .ds { font-size: 12px; color: var(--muted); }
   .tile.locked { background: var(--bg); }
+  /* витрина «Курсы и гайды Ивана» внизу главной (16.10.2026, просьба Ивана: как в конструкторе каруселей) */
+  .more { display: grid; gap: 8px; margin-top: 12px; }
+  .more .eyebrow { margin-top: 10px; }
+  .mcard { display: grid; grid-template-columns: 1fr auto; align-items: center; column-gap: 12px; row-gap: 3px; text-decoration: none; color: var(--fg); background: var(--panel); box-shadow: inset 0 0 0 1px var(--rule); border-radius: 16px; padding: 14px; }
+  .mcard b { grid-column: 1; font-weight: 700; line-height: 1.35; }
+  .mcard span { grid-column: 1; font-size: 12.5px; line-height: 1.45; color: var(--muted); }
+  .mcard::after { content: "→"; grid-column: 2; grid-row: 1 / span 2; font: 400 22px/1 var(--display); color: var(--red); }
+  @media (hover: hover) { .mcard:hover { box-shadow: inset 0 0 0 1px var(--red); } }
   .tile.locked .ic { color: var(--muted); }
   .chart { width: 100%; height: 130px; display: block; }
   .chart .grid { stroke: var(--rule); }
@@ -220,8 +228,8 @@
   .later { animation: rise var(--dur-enter) var(--ease-out) backwards; animation-delay: calc(var(--i, 0) * 1ms); }
 
   /* движение: нажатие, каскад карточек, ключевые кадры */
-  .btn, .opt, .tile, .key, .libitem { transition: transform var(--dur-press) var(--ease-out); }
-  .btn:active:not(:disabled), .opt:active, .tile:active, .key:active, .libitem:active, .plan:active { transform: scale(.97); }
+  .btn, .opt, .tile, .key, .libitem, .mcard { transition: transform var(--dur-press) var(--ease-out); }
+  .btn:active:not(:disabled), .opt:active, .tile:active, .key:active, .libitem:active, .plan:active, .mcard:active { transform: scale(.97); }
   .tiles.enter > .tile { animation: rise var(--dur-enter) var(--ease-out) backwards; animation-delay: calc(var(--i, 0) * 1ms); }
   .chart.enter .pt { animation: fade 240ms var(--ease-out) 700ms backwards; }
   .confetti { position: fixed; inset: 0; width: 100%; height: 100%; pointer-events: none; z-index: 10; }
@@ -406,6 +414,16 @@
       <h2 style="font-size: 18px; margin-top: 6px">Упражнения</h2>
       <div class="tiles" id="h-tiles"></div>
       <p class="muted small" id="h-storage" hidden>Браузер не даёт сохранить прогресс (приватный режим?). Тренироваться можно, но после перезагрузки прогресс пропадёт</p>
+      <div class="more" id="h-more">
+        <h2 style="font-size: 18px">Курсы и гайды Ивана Логинова</h2>
+        <p class="muted small">От автора этого приложения. Всё живёт на сайте <span style="white-space: nowrap">ivan-loginov.ru</span></p>
+        <span class="eyebrow">Курсы</span>
+        <a class="mcard" href="https://ivan-loginov.ru/vzryv/"><b>Взрывные алгоритмы</b><span>Флагманский курс: ИИ контент-завод, который растит блог и приводит заявки. 6&nbsp;недель, набор с личным отбором</span></a>
+        <span class="eyebrow">Программы</span>
+        <a class="mcard" href="https://ivan-loginov.ru/karusel/"><b>Конструктор каруселей</b><span>Вставляешь текст поста и своё фото&nbsp;- слайды для Instagram собираются сами. 5&nbsp;каруселей бесплатно, без карты</span></a>
+        <span class="eyebrow">Бесплатные гайды</span>
+        <a class="mcard" href="https://ivan-loginov.ru/guide-raspakovka-claude/"><b>Распаковка в Claude</b><span>Три промпта: распаковка себя, экспертности и аудитории с банком из 30&nbsp;тем</span></a>
+      </div>
     </div>
   </section>
 
