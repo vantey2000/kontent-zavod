@@ -672,7 +672,7 @@
    Код конструктора в репо сайта не лежит - его отдаёт karusel-api (/api/app) только кабинету с подпиской.
    Он исполняется и сразу убирается из страницы: «Сохранить страницу» не даёт рабочей копии */
 (function(){
-  const API='https://karusel-api.aivan-loginov.workers.dev', BUILD='6bec006597';
+  const API='https://karusel-api.aivan-loginov.workers.dev', BUILD='1089534416';
   const SITE='https://ivan-loginov.ru';
   const COURSES=[
     {t:'Контент-завод за выходные', d:'Мини-курс: за одни выходные - первая пачка рилсов и каруселей у тебя в аккаунте. С телефона, без съёмок, монтажа и дизайнера', u:'/'},
@@ -690,6 +690,13 @@
   const params=new URLSearchParams(location.search);
   let token='', me=null, waitT=null;
   try{ token=localStorage.getItem('kab_token')||''; }catch(e){}
+  // переезд со старой ссылки vantey2000.github.io/karusel (15.10.2026): та страница передаёт сохранённый вход
+  // во фрагменте #kt=токен&ke=почта (фрагмент на сервер не уходит). Свой вход на сайте главнее, адрес чистим сразу
+  if(/(^|&)kt=/.test(location.hash.slice(1))){
+    const h=new URLSearchParams(location.hash.slice(1)), kt=h.get('kt')||'', ke=(h.get('ke')||'').trim().toLowerCase();
+    if(!token&&/^[\w.-]{20,600}$/.test(kt)&&/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(ke)) saveAuth(kt,ke);
+    history.replaceState(null,'',location.pathname+location.search);
+  }
   // пришёл по ссылке друга: код помним 60 дней, из адреса убираем
   if(/^[A-Za-z0-9]{6,12}$/.test(params.get('ref')||'')){
     try{ localStorage.setItem('kb_ref',JSON.stringify({c:params.get('ref').toLowerCase(),at:Date.now()})); }catch(e){}
