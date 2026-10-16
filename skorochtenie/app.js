@@ -219,7 +219,7 @@ $('b-result-next').addEventListener('click', () => (acc().paid ? goHome() : show
 
 let payTier = 'life';
 let payBack = 'home';
-let payUp = false;   // переход с месяца на «навсегда»: экран оплаты только с одним тарифом
+let payMode = 'all';   // all - оба тарифа, up - переход с месяца на «навсегда», buy - пришёл по ссылке покупки
 
 async function api(path, { method = 'GET', body, auth = true } = {}) {
   const headers = {};
@@ -253,19 +253,21 @@ function selectTier(tier) {
   payTerms();
 }
 
-// up = переход с месяца на «навсегда» из раздела подписки: месячный тариф скрыт, назад - в подписку
-function showPay(back, up = false) {
+// mode: all - оба тарифа; up - переход с месяца на «навсегда» из раздела подписки (месяц скрыт, назад - в подписку);
+// buy - пришёл по ссылке покупки #kupit (только «навсегда», вход для оплативших виден, назад - на старт)
+function showPay(back, mode = 'all') {
+  const up = mode === 'up', one = mode !== 'all';
   if (acc().paid && !up) return showAcct();
   payBack = back;
-  payUp = up;
+  payMode = mode;
   const { priceLife, priceMonth, refundDays } = c.CONFIG;
   $('pay-life').textContent = c.formatRub(priceLife);
   $('pay-month').textContent = c.formatRub(priceMonth);
-  $('plan-month').hidden = up;
-  $('b-free').hidden = up;
+  $('plan-month').hidden = one;
+  $('b-free').hidden = one;
   $('b-login-open').hidden = up;
   $('pay-refund').textContent = `Если не подойдёт, вернём деньги в течение ${refundDays} дней`;
-  if (up) { $('pay-ok').checked = false; selectTier('life'); } else payTerms();
+  if (one) { $('pay-ok').checked = false; selectTier('life'); } else payTerms();
   showErr('pay-err', '');
   $('pay-consent').classList.remove('need');
   track('pay');
@@ -297,7 +299,7 @@ $('b-pay').addEventListener('click', async () => {
   showErr('pay-err', r.data.error || 'Касса не ответила. Попробуй ещё раз через минуту');
 });
 $('b-free').addEventListener('click', () => { track('free'); goHome(); });
-$('b-pay-back').addEventListener('click', () => (payBack === 'acct' ? showAcct() : payBack === 'result' && run ? show('result') : goHome()));
+$('b-pay-back').addEventListener('click', () => (payBack === 'acct' ? showAcct() : payBack === 'result' && run ? show('result') : payBack === 'start' ? homeOrStart() : goHome()));
 
 // доступ пришёл с сервера: запоминаем вход и кэш доступа
 function applyAccess(d) {
@@ -359,7 +361,7 @@ function showAcct(fresh = false) {
   show('acct');
 }
 $('b-acct-back').addEventListener('click', homeOrStart);
-$('b-acct-up').addEventListener('click', () => showPay('acct', true));
+$('b-acct-up').addEventListener('click', () => showPay('acct', 'up'));
 $('b-acct-home').addEventListener('click', homeOrStart);
 $('b-acct-pw').addEventListener('click', async () => {
   const pw = $('acct-pw').value;
@@ -388,7 +390,7 @@ function showLogin() {
   show('login').then(() => $('login-email').focus());   // при переходе экран показывается кадром позже
 }
 $('b-login-open').addEventListener('click', showLogin);
-$('b-login-back').addEventListener('click', () => showPay(payBack));
+$('b-login-back').addEventListener('click', () => showPay(payBack, payMode));
 $('login-form').addEventListener('submit', async e => {
   e.preventDefault();
   const email = $('login-email').value.trim(), password = $('login-pw').value;
@@ -915,7 +917,9 @@ $('b-own').addEventListener('click', () => {
 
 // ---------- старт ----------
 
-if (state.tests.length) goHome(); else show('start');
+// по ссылке покупки сразу оплата «навсегда» (уже купившему - раздел доступа), иначе главная или первый экран
+if (c.wantsBuy(location.hash, location.search)) showPay('start', 'buy');
+else if (state.tests.length) goHome(); else show('start');
 
 // Доступ сверяется с сервером в фоне, после первого экрана. Вернулся с кассы (?paid=1) или пришёл по ссылке
 // доступа (?claim=) - ждём подтверждения на экране ожидания. Адрес чистим, метку площадки после # не трогаем

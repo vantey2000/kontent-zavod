@@ -26,6 +26,14 @@ export function sourceFromHash(hash) {
   return m ? m[1].toLowerCase() : null;
 }
 
+// Ссылка покупки, которую Иван отправляет человеку: ivan-loginov.ru/skorochtenie/#kupit сразу открывает оплату
+// «навсегда». С меткой площадки - #kupit-tg. ?kupit - запасной вид, если прокладка мессенджера срежет «#».
+// Метка kupit идёт в учёт воронки отдельной площадкой: видно, сколько пришло именно по ссылке покупки
+export function wantsBuy(hash, search) {
+  const s = sourceFromHash(hash);
+  return (!!s && /^kupit(-|$)/.test(s)) || new URLSearchParams(String(search ?? '')).has('kupit');
+}
+
 const LETTER = /[\p{L}\p{N}]/u;
 const hasLetter = t => LETTER.test(t);
 
