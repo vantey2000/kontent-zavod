@@ -102,6 +102,11 @@
   .err { color: var(--red-soft); font-size: 14px; }
   .field { display: block; width: 100%; background: var(--panel); color: var(--fg); border: 1px solid var(--rule); border-radius: 14px; padding: 14px 16px; font: 16px/1.4 var(--sans); }
   .field:focus { outline: 2px solid var(--fg); outline-offset: 1px; }
+  /* пароль показывается словами «Показать / Скрыть» внутри поля: на телефоне иначе опечатку не проверить */
+  .pw { position: relative; }
+  .pw .field { padding-right: 104px; }
+  .pw-show { position: absolute; right: 4px; top: 50%; transform: translateY(-50%); min-height: 44px; padding: 0 12px; background: none; border: 0; border-radius: 10px; color: var(--muted); font: 600 14px/1 var(--sans); cursor: pointer; }
+  .pw-show:focus-visible { outline: 2px solid var(--fg); outline-offset: -2px; }
   .segs { display: grid; grid-template-columns: repeat(7, 1fr); gap: 6px; }
   .segs i { height: 4px; border-radius: 2px; background: var(--rule); }
   .segs i.on { background: var(--red); }
@@ -366,7 +371,7 @@
       </div>
       <div class="card stack" id="acct-pw-box">
         <p id="acct-pw-text">Чтобы заниматься с другого телефона или браузера, придумай пароль. Входить будешь по почте и паролю</p>
-        <input class="field" id="acct-pw" type="password" autocomplete="new-password" minlength="8" placeholder="Пароль, от 8 знаков">
+        <div class="pw"><input class="field" id="acct-pw" type="password" autocomplete="new-password" minlength="8" placeholder="Пароль, от 8 знаков"><button type="button" class="pw-show" data-pw="acct-pw" aria-pressed="false" aria-label="Показать пароль">Показать</button></div>
         <button class="btn ghost" id="b-acct-pw">Сохранить пароль</button>
         <p class="err" id="acct-pw-err" role="alert" hidden></p>
       </div>
@@ -390,7 +395,7 @@
       <h1 style="font-size: 32px">Вход</h1>
       <p class="muted">Почта, на которую оформлена оплата, и пароль, который ты задал после оплаты</p>
       <input class="field" id="login-email" type="email" autocomplete="email" inputmode="email" placeholder="Почта" required>
-      <input class="field" id="login-pw" type="password" autocomplete="current-password" placeholder="Пароль" required>
+      <div class="pw"><input class="field" id="login-pw" type="password" autocomplete="current-password" placeholder="Пароль" required><button type="button" class="pw-show" data-pw="login-pw" aria-pressed="false" aria-label="Показать пароль">Показать</button></div>
       <button class="btn" id="b-login" type="submit">Войти</button>
       <p class="err" id="login-err" role="alert" hidden></p>
       <p class="muted small">Пароль не задавал или забыл? Открой приложение в том браузере, где оплачивал, или напиши в <a id="login-support" target="_blank" rel="noopener">поддержку</a>: пришлём ссылку для входа</p>

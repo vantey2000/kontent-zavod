@@ -352,6 +352,7 @@ function showAcct(fresh = false) {
   $('acct-pw-box').hidden = pw || !state.auth;
   $('acct-pw-done').hidden = !pw;
   $('acct-pw').value = '';
+  hidePw('acct-pw');
   showErr('acct-pw-err', '');
   showErr('acct-err', '');
   $('b-acct-cancel').hidden = !a.renews;
@@ -385,8 +386,26 @@ $('b-acct-cancel').addEventListener('click', async () => {
   showAcct();
 });
 
+// Пароль можно показать: кнопка словами «Показать / Скрыть» внутри поля (просьба покупательницы 16.10 -
+// при наборе видны только точки, опечатку не проверить). Курсор остаётся в поле, в конце текста
+function setPwShown(id, shown) {
+  const f = $(id), b = document.querySelector(`.pw-show[data-pw="${id}"]`);
+  f.type = shown ? 'text' : 'password';
+  b.textContent = shown ? 'Скрыть' : 'Показать';
+  b.setAttribute('aria-pressed', String(shown));
+  b.setAttribute('aria-label', shown ? 'Скрыть пароль' : 'Показать пароль');
+}
+function hidePw(id) { setPwShown(id, false); }
+document.querySelectorAll('.pw-show').forEach(b => b.addEventListener('click', () => {
+  const f = $(b.dataset.pw);
+  setPwShown(b.dataset.pw, f.type === 'password');
+  f.focus();
+  try { f.setSelectionRange(f.value.length, f.value.length); } catch {}
+}));
+
 function showLogin() {
   showErr('login-err', '');
+  hidePw('login-pw');
   show('login').then(() => $('login-email').focus());   // при переходе экран показывается кадром позже
 }
 $('b-login-open').addEventListener('click', showLogin);
