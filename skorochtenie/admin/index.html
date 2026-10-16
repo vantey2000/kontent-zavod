@@ -330,24 +330,26 @@
     const n = k => tot[k] || 0;
     const firsts = firstPays().filter(t => mskDay(t) >= from);
     firsts.forEach(t => { const k = mskDay(t); (byDay[k] = byDay[k] || {}).paid = (byDay[k].paid || 0) + 1; });
+    // пятый элемент - шаг, от которого считать процент, если это не прошлый: экран оплаты видят и без пробы
     const steps = [
       ['Открыли тест', n('open')],
       ['Дочитали и увидели результат', n('test')],
-      ['Увидели экран оплаты', n('pay')],
+      ['Взяли пробные сутки', n('trial'), 'полный доступ на 24 часа'],
+      ['Увидели экран оплаты', n('pay'), '', '', 1],
       ['Нажали «Открыть доступ»', n('month') + n('year'), 'месяц ' + n('month') + ' · навсегда ' + n('year')],   // в счётчике year = кнопка 2 990
       ['Оплатили (новые подписчики)', firsts.length, '', 'pay']
     ];
     const top = steps[0][1] || 1;
     $('steps').innerHTML = steps.map((s, i) => '<div class="step' + (s[3] ? ' ' + s[3] : '') + '"><div class="t"><span>' + s[0] + '</span><b>' + s[1] + '</b></div>'
       + '<div class="bar"><i style="width:' + Math.min(100, s[1] / top * 100).toFixed(1) + '%"></i></div>'
-      + '<div class="c">' + (i ? pct(s[1], steps[i - 1][1]) + ' от прошлого шага · ' + pct(s[1], steps[0][1]) + ' от открывших' : 'все, кто открыл') + (s[2] ? ' · ' + s[2] : '') + '</div></div>').join('');
-    $('side').innerHTML = '<span>Продолжили бесплатно: <b>' + n('free') + '</b></span><span>Упёрлись в замок: <b>' + n('lock') + '</b></span>';
+      + '<div class="c">' + (i ? (s[4] != null ? pct(s[1], steps[s[4]][1]) + ' от дочитавших' : pct(s[1], steps[i - 1][1]) + ' от прошлого шага') + ' · ' + pct(s[1], steps[0][1]) + ' от открывших' : 'все, кто открыл') + (s[2] ? ' · ' + s[2] : '') + '</div></div>').join('');
+    $('side').innerHTML = '<span>Продолжили бесплатно: <b>' + n('free') + '</b></span><span>Упёрлись в замок: <b>' + n('lock') + '</b></span><span>Вернулись после пробы: <b>' + n('tend') + '</b></span>';
 
     const srcs = Object.keys(bySrc).sort((a, b) => (bySrc[b].open || 0) - (bySrc[a].open || 0));
     const g = (o, k) => (o && o[k]) || 0;
-    $('bysrc').innerHTML = '<tr><th>Площадка</th><th class="n">Открыли</th><th class="n">Дочитали</th><th class="n">Оплата</th><th class="n">Тариф</th></tr>'
+    $('bysrc').innerHTML = '<tr><th>Площадка</th><th class="n">Открыли</th><th class="n">Дочитали</th><th class="n">Проба</th><th class="n">Тариф</th></tr>'
       + (srcs.map(s => { const o = bySrc[s], tar = g(o, 'month') + g(o, 'year');
-        return '<tr><td>' + esc(SRC[s] || s) + '</td><td class="n">' + g(o, 'open') + '</td><td class="n">' + g(o, 'test') + '</td><td class="n">' + g(o, 'pay') + '</td><td class="n">' + tar + '<small>' + pct(tar, g(o, 'open')) + '</small></td></tr>'; }).join('')
+        return '<tr><td>' + esc(SRC[s] || s) + '</td><td class="n">' + g(o, 'open') + '</td><td class="n">' + g(o, 'test') + '</td><td class="n">' + g(o, 'trial') + '</td><td class="n">' + tar + '<small>' + pct(tar, g(o, 'open')) + '</small></td></tr>'; }).join('')
         || '<tr><td colspan="5" class="hint">За этот срок событий нет</td></tr>');
     const days = Object.keys(byDay).sort().reverse();
     $('byday').innerHTML = '<tr><th>День</th><th class="n">Открыли</th><th class="n">Дочитали</th><th class="n">Тариф</th><th class="n">Оплатили</th></tr>'

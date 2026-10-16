@@ -65,6 +65,7 @@
   .btn { display: block; width: 100%; border: 0; border-radius: 14px; padding: 16px 18px; background: var(--fg); color: var(--ink); font-weight: 700; font-size: 17px; cursor: pointer; }
   .btn.ghost { background: var(--panel2); color: var(--fg); box-shadow: inset 0 0 0 1px var(--rule); }
   .btn:disabled { opacity: .45; cursor: default; }
+  .btn { text-wrap: balance; }   /* длинная надпись на узком телефоне делится на две ровные строки, а не «… на 24 / часа» */
   .btn:focus-visible, .opt:focus-visible, .tile:focus-visible, .mcard:focus-visible, .link:focus-visible, .back:focus-visible, .cell:focus-visible, .key:focus-visible, .plan:focus-visible, .libitem:focus-visible { outline: 2px solid var(--red); outline-offset: 2px; }
   .card { background: var(--panel); border-radius: 18px; padding: 16px; box-shadow: inset 0 0 0 1px var(--rule); }
   .hero-start { min-height: calc(100dvh - 120px); display: flex; flex-direction: column; justify-content: center; gap: 0; }
@@ -94,6 +95,12 @@
   .ticks { list-style: none; padding: 0; margin: 0; display: grid; gap: 10px; }
   .ticks li { display: flex; gap: 10px; align-items: flex-start; }
   .ticks li::before { content: ""; flex: 0 0 18px; height: 18px; margin-top: 3px; border-radius: 50%; background: var(--red); box-shadow: inset 0 0 0 5px var(--red-dim); }
+  /* зачем тренировать и пробные сутки: предложение обведено красной засечкой-рамкой, как выбранный тариф */
+  .why { margin-top: 10px; padding-top: 20px; border-top: 1px solid var(--line); }
+  .why h2 { font-size: 26px; }
+  .why .ticks li { line-height: 1.45; }
+  .offer, .trialcard { box-shadow: inset 0 0 0 2px var(--red); }
+  .tc-title { font: 400 24px/1.15 var(--display); font-variant-numeric: lining-nums; }
   .consent { display: flex; gap: 10px; align-items: flex-start; font-size: 13px; color: var(--muted); cursor: pointer; }
   .consent input { flex: none; width: 20px; height: 20px; margin: 1px 0 0; accent-color: var(--red); }
   .consent a, .small a { color: var(--fg); }
@@ -307,11 +314,28 @@
         <div class="card stat stat-eff"><div class="v" id="r-eff"></div><div class="k">эффективная скорость, слов в минуту с учётом понимания</div></div>
       </div>
       <p class="muted small" id="r-avg"></p>
-      <div class="card stack">
-        <p><b>Цель на 30 дней</b></p>
-        <p class="muted"><span id="r-start-l">Читалка начнёт с</span> <b id="r-start" style="color: var(--fg)"></b> и к 30-му дню дойдёт до <b id="r-goal" style="color: var(--fg)"></b> слов в минуту. Это темп тренировки, а не обещание результата: результат покажет повторный тест через 7 дней</p>
+      <!-- Зачем тренировать: после цифры, до предложения. Платным и на пробе не показываем -->
+      <div class="why stack" id="r-why">
+        <span class="eyebrow">Зачем тренировать скорость</span>
+        <h2>Читать быстрее значит успевать больше</h2>
+        <p>Мы читаем каждый день: переписку, рабочие документы, статьи, книги. За час ты сейчас прочитываешь примерно <b id="r-hour"></b> слов. Если поднять скорость на&nbsp;20% и не потерять понимание, тот же объём займёт 50&nbsp;минут вместо часа. При часе чтения в день это 5&nbsp;свободных часов в месяц</p>
+        <ul class="ticks">
+          <li><span><b>Шире взгляд.</b> Таблицы Шульте, растяжка и блоки учат схватывать группу слов целиком, а не вести глазами по каждому</span></li>
+          <li><span><b>Меньше возвратов назад.</b> В обычном чтении 10-15% движений глаз уходят на возвраты к уже прочитанному. Указка и колонка ведут взгляд вперёд</span></li>
+          <li><span><b>Внимание держится на тексте.</b> Читалка задаёт ровный темп, и мысль не успевает уйти в сторону посреди абзаца</span></li>
+          <li><span><b>Понимание под контролем.</b> Раз в 7&nbsp;дней повторный тест с вопросами, на графике видно, растёт ли скорость вместе с пониманием</span></li>
+        </ul>
+        <p class="muted">Волшебной кнопки здесь нет: это 10&nbsp;минут в день, как зарядка. Скорость растёт от регулярности, поэтому в программе тренировка дня и серия дней подряд</p>
       </div>
-      <button class="btn" id="b-result-next">Начать программу</button>
+      <div class="card stack offer" id="r-offer">
+        <span class="eyebrow" id="r-offer-eb">Программа на 30 дней</span>
+        <p class="muted"><span id="r-start-l">Читалка начнёт с</span> <b id="r-start" style="color: var(--fg)"></b> и к 30-му дню дойдёт до <b id="r-goal" style="color: var(--fg)"></b> слов в минуту. Это темп тренировки, а не обещание результата: результат покажет повторный тест через 7 дней</p>
+        <p id="r-trial"><b>Попробуй её целиком: 24 часа полного доступа бесплатно.</b> Тренировка дня на 10 минут, все 13 упражнений, библиотека классики и читалка для своего текста</p>
+        <p id="r-trial-over" hidden>Пробные сутки уже были, прогресс сохранён. Открой доступ, и тренировки продолжатся по программе</p>
+        <button class="btn" id="b-result-next">Открыть доступ на 24 часа</button>
+        <p class="muted small center" id="r-trial-note">Без карты и регистрации. Через сутки останется бесплатный режим, ничего не спишется</p>
+      </div>
+      <button class="link" id="b-result-plans" style="justify-self: center">Посмотреть тарифы</button>
     </div>
     <div class="stack" id="result-fast" hidden style="margin-top: 24px">
       <h2 id="rf-title">Похоже, текст пролистан</h2>
@@ -345,6 +369,7 @@
       <button class="btn" id="b-pay">Открыть доступ</button>
       <p class="err center" id="pay-err" role="alert" hidden></p>
       <p class="muted small center" id="pay-refund"></p>
+      <button class="btn ghost" id="b-trial-pay" hidden>Попробовать 24 часа бесплатно</button>
       <button class="link" id="b-free" style="justify-self: center">Продолжить бесплатно</button>
       <button class="link" id="b-login-open" style="justify-self: center; color: var(--muted); font-weight: 400">Уже оплатил? Войти</button>
     </div>
@@ -407,12 +432,19 @@
     <div class="top"><div class="logo" data-name></div><div class="top-r"><button class="link" id="b-home-pay"></button></div></div>
     <div class="theme-row" style="margin-top: 8px"><div class="tswitch" role="group" aria-label="Сменить тему"><span class="ts-cap">Сменить тему</span><span class="ts-seg"><button type="button" data-mode-set="night">Тёмная</button><button type="button" data-mode-set="day">Светлая</button></span></div></div>
     <div class="stack" style="margin-top: 10px">
+      <!-- Пробные сутки: предложение, отсчёт или «закончились». У оплативших скрыто -->
+      <div class="card stack trialcard" id="h-trial" hidden>
+        <span class="eyebrow" id="h-trial-eb"></span>
+        <p class="tc-title" id="h-trial-title"></p>
+        <p class="muted small" id="h-trial-text"></p>
+        <button class="btn" id="b-trial-home"></button>
+      </div>
       <div class="homehead">
         <div><p class="muted small" id="h-mode"></p><h2 id="h-title">Тренировка дня</h2></div>
         <div class="streak"><div class="big" id="h-streak">0</div><div class="muted small" id="h-streak-l">дней подряд</div><div class="segs" id="h-segs" aria-hidden="true"></div></div>
       </div>
       <div class="track" aria-hidden="true"><i id="h-prog"></i></div>
-      <div class="card">
+      <div class="card" id="h-card">
         <div id="h-steps"></div>
         <button class="btn" id="b-train" style="margin-top: 12px"></button>
         <p class="muted small center" id="h-train-note" style="margin-top: 8px"></p>
@@ -467,6 +499,10 @@
     <svg class="check" id="done-check" viewBox="0 0 96 96" aria-hidden="true"><circle cx="48" cy="48" r="44"/><path class="tick" d="M30 49 L43 62 L67 36"/></svg>
     <h2 class="center">Тренировка сделана</h2>
     <p class="muted center" id="done-streak" style="margin: 8px 0 24px"></p>
+    <div class="card stack trialcard" id="done-trial" hidden style="margin-bottom: 14px">
+      <p id="done-trial-text"></p>
+      <button class="btn ghost" id="b-done-keep">Оставить доступ</button>
+    </div>
     <button class="btn" data-home>На главную</button>
   </section>
 </main>

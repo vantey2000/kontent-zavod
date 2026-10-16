@@ -198,7 +198,7 @@ function finishTest() {
     $('r-start-l').textContent = first ? 'Читалка начнёт с' : 'Читалка сегодня идёт на';
     $('r-start').textContent = first ? c.readerSpeed(state.baseWpm, 1) : speedToday();
     $('r-goal').textContent = c.goalSpeed(state.baseWpm);
-    $('b-result-next').textContent = acc().paid ? 'К тренировке' : 'Начать программу';
+    paintResultOffer(r.wpm);
   }
   show('result');
   if (reveal) reveal();
@@ -211,7 +211,39 @@ $('b-read-done').addEventListener('click', () => {
   show('quiz');
   showQuestion();
 });
-$('b-result-next').addEventListener('click', () => (acc().paid ? goHome() : showPay('result')));
+$('b-result-next').addEventListener('click', () => {
+  if (acc().paid) return goHome();
+  if (c.trialState(state, Date.now()).status === 'none') return startTrial();
+  showPay('result');
+});
+$('b-result-plans').addEventListener('click', () => showPay('result'));
+
+// Под результатом: текст «зачем тренировать» и предложение. Пробы не было - сутки полного доступа,
+// проба уже была - оплата, доступ есть (купил или идёт проба) - сразу к тренировке, без уговоров
+function paintResultOffer(wpm) {
+  const offer = !acc().paid;
+  const fresh = offer && c.trialState(state, Date.now()).status === 'none';
+  $('r-hour').textContent = c.formatInt(c.wordsPerHour(wpm));
+  $('r-why').hidden = !offer;
+  $('r-offer').classList.toggle('offer', offer);
+  $('r-trial').hidden = !fresh;
+  $('r-trial-note').hidden = !fresh;
+  $('r-trial-over').hidden = !offer || fresh;
+  $('b-result-plans').hidden = !fresh;
+  $('b-result-next').textContent = !offer ? 'К тренировке' : fresh ? 'Открыть доступ на 24 часа' : 'Открыть доступ';
+}
+
+// ---------- пробные сутки ----------
+// Полный доступ на 24 часа с нажатия, без карты и регистрации, один раз на телефон. Учёт «trial» в фоне
+
+function startTrial() {
+  if (!acc().paid && c.trialState(state, Date.now()).status === 'none') {
+    state.trial = Date.now();
+    persist();
+    track('trial');
+  }
+  goHome();
+}
 
 // ---------- подписка ----------
 // Оплата: сервер заводит заказ и даёт ссылку кассы, почту и карту человек вводит на форме кассы. Телефон хранит
@@ -257,14 +289,16 @@ function selectTier(tier) {
 // buy - пришёл по ссылке покупки #kupit (только «навсегда», вход для оплативших виден, назад - на старт)
 function showPay(back, mode = 'all') {
   const up = mode === 'up', one = mode !== 'all';
-  if (acc().paid && !up) return showAcct();
+  const a = acc();
+  if (a.paid && !a.trial && !up) return showAcct();
   payBack = back;
   payMode = mode;
   const { priceLife, priceMonth, refundDays } = c.CONFIG;
   $('pay-life').textContent = c.formatRub(priceLife);
   $('pay-month').textContent = c.formatRub(priceMonth);
   $('plan-month').hidden = one;
-  $('b-free').hidden = one;
+  $('b-free').hidden = one || a.trial;   // на пробе бесплатный режим не нужен: «Назад» ведёт обратно
+  $('b-trial-pay').hidden = one || a.paid || c.trialState(state, Date.now()).status !== 'none';
   $('b-login-open').hidden = up;
   $('pay-refund').textContent = `Если не подойдёт, вернём деньги в течение ${refundDays} дней`;
   if (one) { $('pay-ok').checked = false; selectTier('life'); } else payTerms();
@@ -299,6 +333,7 @@ $('b-pay').addEventListener('click', async () => {
   showErr('pay-err', r.data.error || 'Касса не ответила. Попробуй ещё раз через минуту');
 });
 $('b-free').addEventListener('click', () => { track('free'); goHome(); });
+$('b-trial-pay').addEventListener('click', startTrial);
 $('b-pay-back').addEventListener('click', () => (payBack === 'acct' ? showAcct() : payBack === 'result' && run ? show('result') : payBack === 'start' ? homeOrStart() : goHome()));
 
 // доступ пришёл с сервера: запоминаем вход и кэш доступа
@@ -420,7 +455,7 @@ $('login-form').addEventListener('submit', async e => {
   if (r.status !== 200) return showErr('login-err', r.data.error || 'Не получилось войти');
   applyAccess(r.data);
   $('login-pw').value = '';
-  if (acc().paid) showAcct(); else showPay('home');
+  if (acc().paid && !acc().trial) showAcct(); else showPay('home');
 });
 for (const id of ['acct-support', 'login-support']) $(id).href = c.CONFIG.supportUrl;
 
@@ -441,10 +476,13 @@ function renderHome() {
   const doneToday = state.done.includes(key);
   const freeLeft = c.canFreeRead(state.freeReads, key);
 
-  $('h-mode').textContent = a.paid
-    ? (pd.done ? 'Программа пройдена, тренировки продолжаются' : `День ${pd.day} из ${c.CONFIG.programDays}`)
-    : `Бесплатный режим · день ${pd.day}`;
-  $('b-home-pay').textContent = a.paid ? (a.life ? 'Доступ навсегда' : a.forever ? 'Доступ без срока' : `Доступ до ${fmtDate(a.until)}`) : 'Открыть доступ';
+  $('h-mode').textContent = a.trial
+    ? `Полный доступ на сутки · день ${pd.day} из ${c.CONFIG.programDays}`
+    : a.paid
+      ? (pd.done ? 'Программа пройдена, тренировки продолжаются' : `День ${pd.day} из ${c.CONFIG.programDays}`)
+      : `Бесплатный режим · день ${pd.day}`;
+  $('b-home-pay').textContent = a.trial ? 'Тарифы' : a.paid ? (a.life ? 'Доступ навсегда' : a.forever ? 'Доступ без срока' : `Доступ до ${fmtDate(a.until)}`) : 'Открыть доступ';
+  paintTrialCard(a, pd, st);
   m.countUp($('h-streak'), st, { from: shownStreak ?? st, ms: 400 });
   shownStreak = st;
   $('h-streak-l').textContent = `${c.pluralDays(st).replace(/^\d+ /, '')} подряд`;
@@ -536,6 +574,45 @@ function renderHome() {
   $('h-storage').hidden = store.isPersistent();
 }
 
+// Карточка пробы на главной. Идёт проба - отсчёт сверху; пробы не было - предложение; кончилась - что сохранилось
+// и оплата. Без пробы и после неё карточка стоит под тренировкой дня: бесплатная читалка остаётся первой
+let homeTrial = false;   // главная нарисована с идущей пробой: отсчёт обновляется, конец пробы перерисует замки
+function paintTrialCard(a, pd, st) {
+  const box = $('h-trial'), b = $('b-trial-home');
+  const tr = c.trialState(state, Date.now());
+  homeTrial = a.trial;
+  box.hidden = a.paid && !a.trial;
+  if (box.hidden) return;
+  if (a.trial) document.querySelector('#s-home .homehead').before(box); else $('h-card').after(box);
+  const set = (eb, title, text, btn, ghost) => {
+    $('h-trial-eb').textContent = eb;
+    $('h-trial-title').textContent = title;
+    $('h-trial-text').textContent = text;
+    b.textContent = btn;
+    b.className = ghost ? 'btn ghost' : 'btn';
+  };
+  if (a.trial) set('Полный доступ на сутки', `Осталось ${c.leftText(tr.left)}`,
+    'Пройди тренировку дня и загляни во все 13 упражнений. Понравится - оставь доступ себе', 'Оставить доступ', true);
+  else if (tr.status === 'none') set('Бесплатно на 24 часа', 'Попробуй всю программу',
+    'Тренировка дня на 10 минут и все 13 упражнений без замков. Без карты и регистрации, через сутки вернётся бесплатный режим', 'Открыть доступ на 24 часа');
+  else {
+    track('tend');
+    const streakPart = st ? `, серия ${c.pluralDays(st)} подряд` : '';
+    set('Пробные сутки закончились', 'Прогресс сохранён',
+      `Читалка уже идёт на ${speedToday()} слов в минуту${streakPart}. ` + (pd.done ? 'Открой доступ, чтобы продолжить тренировки' : `Открой доступ, и программа продолжится: сегодня день ${pd.day} из ${c.CONFIG.programDays}`),
+      'Открыть доступ');
+  }
+}
+$('b-trial-home').addEventListener('click', () => (!acc().paid && c.trialState(state, Date.now()).status === 'none' ? startTrial() : showPay('home')));
+
+// Отсчёт пробы на открытой главной раз в 30 секунд; проба кончилась, пока главная открыта, - главная перерисуется с замками
+setInterval(() => {
+  if (!homeTrial || $('s-home').hidden) return;
+  const tr = c.trialState(state, Date.now());
+  if (tr.status === 'active') $('h-trial-title').textContent = `Осталось ${c.leftText(tr.left)}`;
+  else renderHome();
+}, 30_000);
+
 // График: линия читалки по дням тренировок и точки тестов, ось X = дни программы
 function renderChart(box, animate = false) {
   box.textContent = '';
@@ -587,7 +664,7 @@ function renderChart(box, animate = false) {
   box.append(legend);
 }
 
-$('b-home-pay').addEventListener('click', () => (acc().paid ? showAcct() : showPay('home')));
+$('b-home-pay').addEventListener('click', () => (acc().paid && !acc().trial ? showAcct() : showPay('home')));
 $('b-train').addEventListener('click', startTraining);
 
 function openTile(k, locked, rt) {
@@ -645,7 +722,12 @@ function finishDay() {
   m.drawPath(chk.querySelector('circle'), { len: 2 * Math.PI * 44, ms: 450 });
   m.drawPath(chk.querySelector('.tick'), { len: 54, ms: 350, delay: 300 });
   if (fresh && c.isMilestone(st)) m.confetti();
+  // на пробе после тренировки дня - самый честный момент предложить оставить доступ
+  const a = acc();
+  $('done-trial').hidden = !a.trial;
+  if (a.trial) $('done-trial-text').textContent = `Это был день ${day().day} из ${c.CONFIG.programDays}. Пробный доступ закончится через ${c.leftText(a.until - Date.now())}: оставь его, и завтра программа продолжится`;
 }
+$('b-done-keep').addEventListener('click', () => showPay('home'));
 
 // ---------- упражнения ----------
 

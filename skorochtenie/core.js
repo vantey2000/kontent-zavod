@@ -10,6 +10,7 @@ export const CONFIG = {
   programDays: 30,
   retestEveryDays: 7,
   freeReadsPerDay: 1,
+  trialHours: 24,                      // пробный полный доступ после теста: сутки с нажатия, без карты, один раз на телефон (решение Ивана 16.10.2026)
   avgAdultWpm: 200,                    // «обычно взрослый читает про себя около 200», как в ролике
   maxHonestWpm: 1500,                  // быстрее = текст пролистан, результат не сохраняем
   minHonestWpm: 40,                    // медленнее = тест прерывался (вкладка лежала открытой), тоже не сохраняем
@@ -165,13 +166,34 @@ export function streak(doneKeys, todayKey) {
 export const MILESTONES = [7, 14, 30];
 export const isMilestone = n => MILESTONES.includes(n);
 
-// Доступ - по ответу сервера оплаты (кэш в state.acc). Демо-доступ первых дней (state.plan) больше не открывает платное
-const NO_ACCESS = { paid: false, until: null, tier: null, renews: false, stopped: false, next: null, gift: false, forever: false, life: false };
+// Пробные сутки: state.trial = момент нажатия «Открыть полный доступ на 24 часа». Один раз на телефон:
+// кончились - статус over навсегда. Часы телефона, переведённые назад раньше начала пробы, её не продлевают
+export function trialState(state, now) {
+  const t = state && state.trial;
+  if (typeof t !== 'number' || !Number.isFinite(t)) return { status: 'none', until: null, left: 0 };
+  const until = t + CONFIG.trialHours * 36e5;
+  if (now >= until || now < t - 10 * 6e4) return { status: 'over', until, left: 0 };
+  return { status: 'active', until, left: until - now };
+}
+
+// Сколько осталось пробы, минуты вверх, как у таймера (сразу после нажатия «24 ч»): «23 ч 41 мин», «2 ч», «41 мин», «меньше минуты»
+export function leftText(ms) {
+  if (!(ms >= 6e4)) return 'меньше минуты';
+  const min = Math.ceil(ms / 6e4);
+  const h = Math.floor(min / 60), m = min % 60;
+  return h ? `${h} ч${m ? ` ${m} мин` : ''}` : `${m} мин`;
+}
+
+// Доступ - по ответу сервера оплаты (кэш в state.acc) или пробные сутки. Демо-доступ первых дней (state.plan) больше не открывает платное
+const NO_ACCESS = { paid: false, until: null, tier: null, renews: false, stopped: false, next: null, gift: false, forever: false, life: false, trial: false };
 export function access(state, now) {
   const a = state && state.acc;
-  if (!a || !(a.forever || (a.until && a.until > now))) return { ...NO_ACCESS };
+  if (!a || !(a.forever || (a.until && a.until > now))) {
+    const tr = trialState(state, now);
+    return tr.status === 'active' ? { ...NO_ACCESS, paid: true, until: tr.until, tier: 'trial', trial: true } : { ...NO_ACCESS };
+  }
   return { paid: true, until: a.forever ? null : a.until, tier: a.plan || null, renews: !!a.renews, stopped: !!a.stopped,
-    next: a.next || null, gift: !!a.gift, forever: !!a.forever, life: !!a.life };
+    next: a.next || null, gift: !!a.gift, forever: !!a.forever, life: !!a.life, trial: false };
 }
 
 // Ссылка доступа от поддержки: ?claim=<заказ>.<секрет>. Мусор = null
@@ -184,6 +206,7 @@ export function parseClaim(search) {
 // Что писать про подписку: тариф, срок, следующее списание или отмену
 export function accessLine(a, fmt) {
   if (!a.paid) return 'Доступа нет';
+  if (a.trial) return 'Пробный полный доступ на сутки';
   if (a.life) return a.renews
     ? 'Навсегда · оплачено один раз. Автопродление месяца ещё включено, отключи его кнопкой ниже'
     : 'Навсегда · оплачено один раз, списаний больше не будет';
@@ -290,6 +313,11 @@ export function passage(lib, bookmark, n) {
   if (title === null) { title = lib[0].title; author = lib[0].author; }
   return { tokens, next, title, author };
 }
+
+export const formatInt = n => n.toLocaleString('ru-RU').replace(/\s/g, '\u00a0');
+
+// Текст «зачем тренировать»: сколько слов за час на скорости теста (до сотен) - честная арифметика от результата
+export const wordsPerHour = wpm => Math.round((wpm * 60) / 100) * 100;
 
 export const formatRub = n => n.toLocaleString('ru-RU').replace(/ /g, ' ') + ' ₽';
 

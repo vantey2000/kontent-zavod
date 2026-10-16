@@ -16,6 +16,7 @@ export function fresh() {
     auth: null,          // { token, email, pw } - вход в оплаченный доступ (сервер skorochtenie-api), pw = пароль задан
     acc: null,           // последний ответ сервера о доступе: { paid, until, plan, renews, stopped, next, gift, forever }
     pending: null,       // заказ, ушедший в кассу: { order, k, plan, at } - по нему телефон забирает доступ после оплаты
+    trial: null,         // момент начала пробных суток полного доступа (мс), один раз на телефон
     bookmark: { t: 0, w: 0 },
     schulteBest: null,   // лучшее время таблицы 5x5 до v2, переносится в best.schulte
     readerLog: {},       // { ключ дня: скорость читалки }
@@ -45,6 +46,7 @@ function normalize(s) {
     freeReads: obj(s.freeReads) || {},
     auth: auth && typeof auth.token === 'string' && typeof auth.email === 'string' ? { token: auth.token, email: auth.email, pw: !!auth.pw } : null,
     acc: acc && (acc.forever === true || num(acc.until) !== null) ? acc : null,
+    trial: num(s.trial),
     pending: pending && typeof pending.order === 'string' && /^sk[\w-]{6,40}$/.test(pending.order) && typeof pending.k === 'string' && num(pending.at) !== null ? pending : null,
     bookmark: bookmark && num(bookmark.t) !== null && num(bookmark.w) !== null ? bookmark : f.bookmark,
     schulteBest: num(s.schulteBest),
