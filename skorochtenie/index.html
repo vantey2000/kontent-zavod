@@ -345,7 +345,7 @@
         <div class="card stat stat-eff"><div class="v" id="r-eff"></div><div class="k">эффективная скорость, слов в минуту с учётом понимания</div></div>
       </div>
       <p class="muted small" id="r-avg"></p>
-      <!-- Зачем тренировать: после цифры, до предложения. Платным и на пробе не показываем -->
+      <!-- Зачем тренировать: после цифры, до предложения. Платным и на пробных сутках не показываем -->
       <div class="why stack" id="r-why">
         <span class="eyebrow">Зачем тренировать скорость</span>
         <h2>Читать быстрее значит успевать больше</h2>
@@ -361,12 +361,11 @@
       <div class="card stack offer" id="r-offer">
         <span class="eyebrow" id="r-offer-eb">Программа на 30 дней</span>
         <p class="muted"><span id="r-start-l">Читалка начнёт с</span> <b id="r-start" style="color: var(--fg)"></b> и к 30-му дню дойдёт до <b id="r-goal" style="color: var(--fg)"></b> слов в минуту. Это темп тренировки, а не обещание результата: результат покажет повторный тест через 7 дней</p>
-        <p id="r-trial"><b>Попробуй бесплатно: одна пробная тренировка со всеми 13 упражнениями.</b> По очереди, около 12 минут: читалка, таблицы Шульте, вспышка, указка и остальные. В конце увидишь свои цифры и соберёшь тренировку из того, что понравилось</p>
-        <p id="r-trial-over" hidden>Пробная тренировка уже была, прогресс сохранён. Открой доступ, и тренировки продолжатся по программе</p>
-        <button class="btn" id="b-result-next">Начать пробную тренировку</button>
-        <p class="muted small center" id="r-trial-note">Без карты и регистрации, ничего не спишется. Дальше тренировки по подписке</p>
+        <p id="r-trial"><b>Читалка на твоей скорости открыта бесплатно, 3&nbsp;минуты в день.</b> Полная тренировка дня на 10&nbsp;минут и все 13 упражнений - по подписке</p>
+        <p id="r-trial-over" hidden></p>
+        <button class="btn" id="b-result-next">Начать программу</button>
       </div>
-      <button class="link" id="b-result-plans" style="justify-self: center">Посмотреть тарифы</button>
+      <button class="link" id="b-result-plans" style="justify-self: center" hidden>Посмотреть тарифы</button>
     </div>
     <div class="stack" id="result-fast" hidden style="margin-top: 24px">
       <h2 id="rf-title">Похоже, текст пролистан</h2>
@@ -401,8 +400,8 @@
       <button class="btn" id="b-pay">Открыть доступ</button>
       <p class="err center" id="pay-err" role="alert" hidden></p>
       <p class="muted small center" id="pay-refund"></p>
-      <button class="btn ghost" id="b-trial-pay" hidden>Пройти пробную тренировку бесплатно</button>
-      <button class="link" id="b-free" style="justify-self: center">Не сейчас</button>
+      <button class="btn ghost" id="b-trial-pay" hidden>Продолжить пробную тренировку</button>
+      <button class="link" id="b-free" style="justify-self: center">Продолжить бесплатно</button>
       <button class="link" id="b-login-open" style="justify-self: center; color: var(--muted); font-weight: 400">Уже оплатил? Войти</button>
     </div>
   </section>
@@ -464,7 +463,7 @@
     <div class="top"><div class="logo" data-name></div><div class="top-r"><button class="link" id="b-home-pay"></button></div></div>
     <div class="theme-row" style="margin-top: 8px"><div class="tswitch" role="group" aria-label="Сменить тему"><span class="ts-cap">Сменить тему</span><span class="ts-seg"><button type="button" data-mode-set="night">Тёмная</button><button type="button" data-mode-set="day">Светлая</button></span></div></div>
     <div class="stack" style="margin-top: 10px">
-      <!-- Пробная тренировка: предложение, «Продолжить» или «пройдена»; у старых суток отсчёт. У оплативших скрыто -->
+      <!-- Проба, взятая до 17.10.2026: начатая тренировка - «Продолжить», у старых суток отсчёт. Остальным скрыто -->
       <div class="card stack trialcard" id="h-trial" hidden>
         <span class="eyebrow" id="h-trial-eb"></span>
         <p class="tc-title" id="h-trial-title"></p>

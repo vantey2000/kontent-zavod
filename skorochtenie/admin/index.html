@@ -144,7 +144,7 @@
 
     <section data-s="trial" hidden>
       <div class="cards" id="tcards"></div>
-      <div class="hint" style="margin:-8px 0 16px">Проба = одна пробная тренировка со всеми 13 упражнениями (до вечера 16 октября были пробные сутки, они показаны отдельно). Переход = купили ÷ (купили + прошли и не купили + бросили + сутки кончились). Кто ещё проходит пробу, в процент не входит: они пока решают</div>
+      <div class="hint" style="margin:-8px 0 16px">Архив: пробы сняты 17 октября, новых не будет, здесь те, кто взял пробу 16 октября. Проба = одна пробная тренировка со всеми 13 упражнениями (до вечера 16 октября были пробные сутки, они показаны отдельно). Переход = купили ÷ (купили + прошли и не купили + бросили + сутки кончились). Кто ещё проходит пробу, в процент не входит: они пока решают</div>
       <div class="tools" id="tfilters"></div>
       <div id="trials"></div>
       <div class="hint">Проба без почты и карты, поэтому до оплаты человек виден как телефон: номер пробы, площадка и время. Почта появляется, когда он платит или входит в оплаченный доступ на этом же телефоне. Купил с другого телефона или браузера - здесь не свяжется. Пробы, взятые до включения учёта вечером 16 октября, появятся, когда человек снова откроет приложение</div>
@@ -395,13 +395,11 @@
     const n = k => tot[k] || 0;
     const firsts = firstPays().filter(t => mskDay(t) >= from);
     firsts.forEach(t => { const k = mskDay(t); (byDay[k] = byDay[k] || {}).paid = (byDay[k].paid || 0) + 1; });
-    // пятый элемент - шаг, от которого считать процент, если это не прошлый: экран оплаты видят и без пробы
+    // пятый элемент - шаг, от которого считать процент, если это не прошлый
     const steps = [
       ['Открыли тест', n('open')],
       ['Дочитали и увидели результат', n('test')],
-      ['Начали пробную тренировку', n('trial'), 'до вечера 16.10 здесь считались пробные сутки'],
-      ['Прошли её до конца', n('tend'), 'все 13 упражнений, пропуски тоже'],
-      ['Увидели экран оплаты', n('pay'), '', '', 1],
+      ['Увидели экран оплаты', n('pay')],
       ['Нажали «Открыть доступ»', n('month') + n('year'), 'месяц ' + n('month') + ' · навсегда ' + n('year')],   // в счётчике year = кнопка 2 990
       ['Оплатили (новые подписчики)', firsts.length, '', 'pay']
     ];
@@ -409,13 +407,13 @@
     $('steps').innerHTML = steps.map((s, i) => '<div class="step' + (s[3] ? ' ' + s[3] : '') + '"><div class="t"><span>' + s[0] + '</span><b>' + s[1] + '</b></div>'
       + '<div class="bar"><i style="width:' + Math.min(100, s[1] / top * 100).toFixed(1) + '%"></i></div>'
       + '<div class="c">' + (i ? (s[4] != null ? pct(s[1], steps[s[4]][1]) + ' от дочитавших' : pct(s[1], steps[i - 1][1]) + ' от прошлого шага') + ' · ' + pct(s[1], steps[0][1]) + ' от открывших' : 'все, кто открыл') + (s[2] ? ' · ' + s[2] : '') + '</div></div>').join('');
-    $('side').innerHTML = '<span>Нажали «Не сейчас» на оплате: <b>' + n('free') + '</b></span><span>Упёрлись в замок: <b>' + n('lock') + '</b></span>';
+    $('side').innerHTML = '<span>Продолжили бесплатно: <b>' + n('free') + '</b></span><span>Упёрлись в замок: <b>' + n('lock') + '</b></span>';
 
     const srcs = Object.keys(bySrc).sort((a, b) => (bySrc[b].open || 0) - (bySrc[a].open || 0));
     const g = (o, k) => (o && o[k]) || 0;
-    $('bysrc').innerHTML = '<tr><th>Площадка</th><th class="n">Открыли</th><th class="n">Дочитали</th><th class="n">Проба</th><th class="n">Тариф</th></tr>'
+    $('bysrc').innerHTML = '<tr><th>Площадка</th><th class="n">Открыли</th><th class="n">Дочитали</th><th class="n">Оплата</th><th class="n">Тариф</th></tr>'
       + (srcs.map(s => { const o = bySrc[s], tar = g(o, 'month') + g(o, 'year');
-        return '<tr><td>' + esc(SRC[s] || s) + '</td><td class="n">' + g(o, 'open') + '</td><td class="n">' + g(o, 'test') + '</td><td class="n">' + g(o, 'trial') + '</td><td class="n">' + tar + '<small>' + pct(tar, g(o, 'open')) + '</small></td></tr>'; }).join('')
+        return '<tr><td>' + esc(SRC[s] || s) + '</td><td class="n">' + g(o, 'open') + '</td><td class="n">' + g(o, 'test') + '</td><td class="n">' + g(o, 'pay') + '</td><td class="n">' + tar + '<small>' + pct(tar, g(o, 'open')) + '</small></td></tr>'; }).join('')
         || '<tr><td colspan="5" class="hint">За этот срок событий нет</td></tr>');
     const days = Object.keys(byDay).sort().reverse();
     $('byday').innerHTML = '<tr><th>День</th><th class="n">Открыли</th><th class="n">Дочитали</th><th class="n">Тариф</th><th class="n">Оплатили</th></tr>'
