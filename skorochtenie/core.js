@@ -35,6 +35,13 @@ export function wantsBuy(hash, search) {
   return (!!s && /^kupit(-|$)/.test(s)) || new URLSearchParams(String(search ?? '')).has('kupit');
 }
 
+// Кнопка «Открыть доступ» из директа (воронка «Выбери свою программу», 16.10.2026): #pay-ig открывает оплату
+// с ОБОИМИ тарифами, человек выбирает сам. Метка целиком (pay-ig) идёт в учёт воронки, как kupit
+export function wantsPay(hash) {
+  const s = sourceFromHash(hash);
+  return !!s && /^pay(-|$)/.test(s);
+}
+
 const LETTER = /[\p{L}\p{N}]/u;
 const hasLetter = t => LETTER.test(t);
 

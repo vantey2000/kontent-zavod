@@ -469,7 +469,7 @@ $('b-pay').addEventListener('click', async () => {
   b.textContent = 'Открыть доступ';
   showErr('pay-err', r.data.error || 'Касса не ответила. Попробуй ещё раз через минуту');
 });
-$('b-free').addEventListener('click', () => { track('free'); goHome(); });
+$('b-free').addEventListener('click', () => { track('free'); homeOrStart(); });   // по #pay-… приходят и без теста
 $('b-trial-pay').addEventListener('click', () => (trialGoing(c.trialState(state, Date.now())) ? runTrial() : startTrial()));
 $('b-pay-back').addEventListener('click', () => (payBack === 'acct' ? showAcct() : payBack === 'result' && run ? show('result') : payBack === 'start' ? homeOrStart() : goHome()));
 
@@ -1261,6 +1261,7 @@ $('b-own').addEventListener('click', () => {
 
 // по ссылке покупки сразу оплата «навсегда» (уже купившему - раздел доступа), иначе главная или первый экран
 if (c.wantsBuy(location.hash, location.search)) showPay('start', 'buy');
+else if (c.wantsPay(location.hash)) showPay('start', 'all');   // из директа: оба тарифа, «Назад» - на главную или первый экран
 else if (state.tests.length) goHome(); else show('start');
 
 // Доступ сверяется с сервером в фоне, после первого экрана. Вернулся с кассы (?paid=1) или пришёл по ссылке
