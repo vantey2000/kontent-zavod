@@ -805,7 +805,7 @@ function openTile(k, locked, rt) {
   if (k === 'test') return rt.available ? startTest() : null;
   if (k === 'lib') return showLib();
   if (k === 'own') return show('own');
-  if (k === 'reader' && !acc().paid) return openExercise(k, { minutes: 3, onDone: () => { useFreeRead(); goHome(); } });
+  if (k === 'reader' && !acc().paid) return openExercise(k, { minutes: 3, ramp: true, onDone: () => { useFreeRead(); goHome(); } });
   openExercise(k, { minutes: 3, tables: 1, onDone: goHome });
 }
 
@@ -818,11 +818,13 @@ function useFreeRead() {
 // ---------- тренировка дня ----------
 
 let session = null;
+let lastRamp = null;   // чем кончился разгон бесплатной читалки: { from, to } для экрана «Тренировка сделана»
 
 function startTraining() {
   const a = acc();
   if (!a.paid && !c.canFreeRead(state.freeReads, today())) { track('lock'); return showPay('home'); }
-  session = { steps: c.trainSteps(day().day, a.paid, state.train), i: 0 };
+  lastRamp = null;
+  session = { steps: c.trainSteps(day().day, a.paid, state.train), i: 0, ramp: !a.paid };
   runStep();
 }
 
@@ -833,6 +835,7 @@ function runStep() {
     tables: s.kind === 'schulte-6' ? 1 : 2,
     seconds: s.timed ? s.minutes * 60 : 0,   // своя тренировка: раундовые упражнения идут по часам
     stepLabel: `Шаг ${session.i + 1} из ${session.steps.length}`,
+    ramp: session.ramp && s.kind === 'reader',   // бесплатная читалка дня разгоняется, программа идёт своим темпом
     onDone: () => {
       session.i++;
       if (session.i < session.steps.length) runStep(); else finishDay();
@@ -850,6 +853,9 @@ function finishDay() {
   session = null;
   const st = c.streak(state.done, key);
   $('done-streak').textContent = `${c.pluralDays(st)} подряд. Возвращайся завтра, чтобы не прервать серию`;
+  $('done-ramp').hidden = !lastRamp;
+  if (lastRamp) $('done-ramp').textContent = `Читалка разогналась с ${lastRamp.from} до ${lastRamp.to} слов в минуту`;
+  lastRamp = null;
   show('done');
   // кольцо и галочка рисуются штрихом; конфетти только на вехах серии 7, 14 и 30
   const chk = $('done-check');
@@ -996,9 +1002,14 @@ function openExercise(kind, opts) {
   if (SCHULTE[kind]) return schulte(body, { ...opts, kind, ...SCHULTE[kind] });
   if (DRILL_UI[kind]) return DRILL_UI[kind](body, drillCtx(kind, opts));
   if (kind === 'reader') {
-    const p = opts.tokens ? { tokens: opts.tokens } : takePassage(speed * opts.minutes);
+    // бесплатная читалка разгоняется, как ролик-тест: от скорости на сегодня до 750 (core.rampTo), текста ровно на minutes
+    const ramp = opts.ramp && !opts.tokens ? { from: speed, to: c.rampTo(speed) } : null;
+    // в разгоне текста берём столько, чтобы с паузами на точках и запятых вышло ровно minutes (core.rampFit)
+    const n = ramp ? c.rampFit(c.passage(LIBRARY, state.bookmark, c.rampWords(ramp.from, ramp.to, opts.minutes)).tokens, ramp.from, ramp.to, opts.minutes) : speed * opts.minutes;
+    const p = opts.tokens ? { tokens: opts.tokens } : takePassage(n);
     if (!opts.title && p.title) $('ex-title').textContent = `Читалка · ${p.author}, «${p.title}»`;
-    return timed(body, { mode: 'reader', tokens: p.tokens, wpm: speed, onDone: opts.onDone });
+    if (ramp) $('ex-hint').textContent = `Скорость растёт с каждым словом: от ${ramp.from} до ${ramp.to} слов в минуту. Держись, сколько сможешь`;
+    return timed(body, { mode: 'reader', tokens: p.tokens, wpm: speed, ramp, onDone: opts.onDone });
   }
   const factor = { blocks: 0.8, pointer: 0.7, column: 0.8, hopscotch: 0.7 }[kind] || 0.7;
   const s = round10(speed * factor);
@@ -1029,7 +1040,7 @@ let skipEx = null;
 $('b-ex-skip').addEventListener('click', () => { const f = skipEx; skipEx = null; stopActive(); stopActive = () => {}; if (f) f(); });
 
 // Читалка, блоки и указка: один движок с паузой, скоростью и прогрессом
-function timed(body, { mode, tokens, wpm, onDone }) {
+function timed(body, { mode, tokens, wpm, ramp = null, onDone }) {
   // единицы показа: слово, блок, строка колонки или остановка указки по точкам
   let hops = null;
   if (mode === 'hopscotch') {
@@ -1087,7 +1098,9 @@ function timed(body, { mode, tokens, wpm, onDone }) {
   controls.style.marginTop = '14px';
   body.append(controls);
 
-  const setLabel = () => { label.textContent = `Скорость ${speed} слов/мин`; };
+  // в разгоне скорость ведёт сама читалка: ползунка нет, подпись показывает текущий темп и финиш
+  const setLabel = () => { label.textContent = ramp ? `Разгон: ${speed} слов/мин, финиш на ${ramp.to}` : `Скорость ${speed} слов/мин`; };
+  range.hidden = !!ramp;
   setLabel();
   range.addEventListener('input', () => { speed = Number(range.value); setLabel(); });
 
@@ -1128,6 +1141,7 @@ function timed(body, { mode, tokens, wpm, onDone }) {
     if (paused || finished) return;
     if (i >= units.length) return finish();
     const u = units[i];
+    if (ramp) { speed = c.rampSpeed(ramp.from, ramp.to, i / Math.max(1, units.length - 1)); setLabel(); }
     showUnit(u);
     i++;
     barI.style.transform = `scaleX(${i / units.length})`;
@@ -1137,6 +1151,7 @@ function timed(body, { mode, tokens, wpm, onDone }) {
 
   function finish() {
     finished = true;
+    if (ramp) { lastRamp = { from: ramp.from, to: speed }; label.textContent = `Финиш: ${speed} слов/мин. Старт был на ${ramp.from}`; }
     if (word) word.textContent = '';
     if (chunkEl) chunkEl.textContent = 'Готово';
     pauseB.hidden = true; back10.hidden = true;

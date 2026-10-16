@@ -138,6 +138,45 @@ export function readerSpeed(baseWpm, day) {
 
 export const goalSpeed = baseWpm => readerSpeed(baseWpm, CONFIG.programDays);
 
+// Разгон бесплатной читалки (просьба Ивана 17.10.2026): эффект ролика-теста, где темп шёл 250 → 750 слов в минуту.
+// Старт - скорость читалки на сегодня, финиш - 750, у быстрых читателей в полтора раза выше старта, но не выше 1000.
+// Скорость растёт с каждым словом в одно и то же число раз, поэтому большую часть времени темп посильный, а рывок в конце
+export function rampTo(start) {
+  const s = Math.max(1, Math.round(start));
+  return Math.max(s, Math.min(Math.max(750, Math.round((s * 1.5) / 10) * 10), Math.max(1000, s)));
+}
+
+// Скорость на доле прочитанного p (0..1), шаг 10 слов в минуту
+export function rampSpeed(from, to, p) {
+  const q = Math.min(1, Math.max(0, Number(p) || 0));
+  return Math.round((from * Math.pow(to / from, q)) / 10) * 10;
+}
+
+// Сколько слов взять, чтобы разгон from → to занял minutes минут: время слова 60/скорость, скорость растёт геометрически
+export function rampWords(from, to, minutes) {
+  const r = to / from;
+  if (!(r > 1.0001)) return Math.round(from * minutes);
+  return Math.round((minutes * from * Math.log(r)) / (1 - 1 / r));
+}
+
+// Сколько первых слов текста уложить в разгон на minutes минут с паузами читалки (точка, запятая, длинное слово
+// длятся дольше, в среднем на четверть): без этой подгонки «3 минуты» шли бы около четырёх и финиш наступал позже
+export function rampFit(tokens, from, to, minutes) {
+  const limit = minutes * 60000;
+  const time = k => {
+    let ms = 0;
+    for (let i = 0; i < k; i++) ms += wordDelayMs(tokens[i], rampSpeed(from, to, k > 1 ? i / (k - 1) : 1));
+    return ms;
+  };
+  let lo = 1, hi = tokens.length;
+  if (hi <= 1 || time(hi) <= limit) return hi;
+  while (lo < hi) {                       // самое большое k, у которого разгон не длиннее minutes
+    const mid = Math.ceil((lo + hi) / 2);
+    if (time(mid) <= limit) lo = mid; else hi = mid - 1;
+  }
+  return lo;
+}
+
 // Даты: ключ дня по локальному времени, разница считается по календарю, а не по миллисекундам
 const pad = n => String(n).padStart(2, '0');
 export const dateKey = d => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
