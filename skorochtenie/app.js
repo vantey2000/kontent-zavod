@@ -217,8 +217,9 @@ $('b-result-next').addEventListener('click', () => (acc().paid ? goHome() : show
 // Оплата: сервер заводит заказ и даёт ссылку кассы, почту и карту человек вводит на форме кассы. Телефон хранит
 // номер заказа с секретом и после возврата забирает по нему доступ (сервер .business/scripts/skorochtenie-api)
 
-let payTier = 'year';
+let payTier = 'life';
 let payBack = 'home';
+let payUp = false;   // переход с месяца на «навсегда»: экран оплаты только с одним тарифом
 
 async function api(path, { method = 'GET', body, auth = true } = {}) {
   const headers = {};
@@ -238,42 +239,52 @@ function showErr(id, msg) {
 }
 
 function payTerms() {
-  const { priceYear, priceMonth } = c.CONFIG;
-  $('pay-terms').textContent = payTier === 'year' ? `${c.formatRub(priceYear)} раз в год` : `${c.formatRub(priceMonth)} раз в месяц`;
+  const { priceLife, priceMonth } = c.CONFIG;
+  $('pay-terms').textContent = payTier === 'life'
+    ? `: ${c.formatRub(priceLife)} один раз, повторных списаний не будет`
+    : ` и автопродлением: ${c.formatRub(priceMonth)} раз в месяц. Отменить можно в приложении в любой момент`;
 }
 
-function showPay(back) {
-  if (acc().paid) return showAcct();
-  payBack = back;
-  const { priceYear, priceMonth, refundDays } = c.CONFIG;
-  $('pay-year').textContent = c.formatRub(priceYear);
-  $('pay-month').textContent = c.formatRub(priceMonth);
-  $('pay-year-month').textContent = `≈ ${c.formatRub(Math.round(priceYear / 12))} в месяц`;
-  $('pay-refund').textContent = `Если не подойдёт, вернём деньги в течение ${refundDays} дней`;
+// согласие относится к условиям тарифа: сменил тариф - отмечает заново (у месяца автопродление, у «навсегда» нет)
+function selectTier(tier) {
+  if (tier !== payTier) $('pay-ok').checked = false;
+  payTier = tier;
+  document.querySelectorAll('.plan').forEach(x => x.setAttribute('aria-checked', String(x.dataset.tier === tier)));
   payTerms();
+}
+
+// up = переход с месяца на «навсегда» из раздела подписки: месячный тариф скрыт, назад - в подписку
+function showPay(back, up = false) {
+  if (acc().paid && !up) return showAcct();
+  payBack = back;
+  payUp = up;
+  const { priceLife, priceMonth, refundDays } = c.CONFIG;
+  $('pay-life').textContent = c.formatRub(priceLife);
+  $('pay-month').textContent = c.formatRub(priceMonth);
+  $('plan-month').hidden = up;
+  $('b-free').hidden = up;
+  $('b-login-open').hidden = up;
+  $('pay-refund').textContent = `Если не подойдёт, вернём деньги в течение ${refundDays} дней`;
+  if (up) { $('pay-ok').checked = false; selectTier('life'); } else payTerms();
   showErr('pay-err', '');
   $('pay-consent').classList.remove('need');
   track('pay');
   show('pay');
 }
 
-document.querySelectorAll('.plan').forEach(p => p.addEventListener('click', () => {
-  payTier = p.dataset.tier;
-  document.querySelectorAll('.plan').forEach(x => x.setAttribute('aria-checked', String(x === p)));
-  payTerms();
-}));
+document.querySelectorAll('.plan').forEach(p => p.addEventListener('click', () => selectTier(p.dataset.tier)));
 $('pay-ok').addEventListener('change', () => { if ($('pay-ok').checked) { $('pay-consent').classList.remove('need'); showErr('pay-err', ''); } });
 $('b-pay').addEventListener('click', async () => {
   if (!$('pay-ok').checked) {
     $('pay-consent').classList.add('need');
-    showErr('pay-err', 'Отметь согласие с офертой и автопродлением');
+    showErr('pay-err', payTier === 'life' ? 'Отметь согласие с офертой' : 'Отметь согласие с офертой и автопродлением');
     return;
   }
   const b = $('b-pay');
   b.disabled = true;
   b.textContent = 'Готовим оплату…';
   showErr('pay-err', '');
-  track(payTier === 'year' ? 'year' : 'month');
+  track(payTier === 'life' ? 'year' : 'month');   // в счётчике воронки столбец year = нажали тариф 2 990 (сейчас «Навсегда»)
   const r = await api('/api/paylink', { method: 'POST', body: { plan: payTier } });
   if (r.status === 200 && r.data.url) {
     state.pending = { order: r.data.order, k: r.data.k, plan: payTier, at: Date.now() };
@@ -286,7 +297,7 @@ $('b-pay').addEventListener('click', async () => {
   showErr('pay-err', r.data.error || 'Касса не ответила. Попробуй ещё раз через минуту');
 });
 $('b-free').addEventListener('click', () => { track('free'); goHome(); });
-$('b-pay-back').addEventListener('click', () => (payBack === 'result' && run ? show('result') : goHome()));
+$('b-pay-back').addEventListener('click', () => (payBack === 'acct' ? showAcct() : payBack === 'result' && run ? show('result') : goHome()));
 
 // доступ пришёл с сервера: запоминаем вход и кэш доступа
 function applyAccess(d) {
@@ -332,7 +343,7 @@ $('b-wait-home').addEventListener('click', homeOrStart);
 
 function showAcct(fresh = false) {
   const a = acc();
-  $('acct-title').textContent = fresh ? 'Доступ открыт' : 'Подписка';
+  $('acct-title').textContent = fresh ? 'Доступ открыт' : a.life ? 'Доступ' : 'Подписка';
   $('acct-line').textContent = c.accessLine(a, fmtDate);
   $('acct-email').textContent = state.auth ? `Почта: ${state.auth.email}` : '';
   const pw = !!(state.auth && state.auth.pw);
@@ -342,10 +353,13 @@ function showAcct(fresh = false) {
   showErr('acct-pw-err', '');
   showErr('acct-err', '');
   $('b-acct-cancel').hidden = !a.renews;
+  $('acct-up').hidden = !(a.paid && !a.forever && a.tier === 'month');   // платит за месяц - можно перейти на «навсегда»
+  $('acct-up-price').textContent = c.formatRub(c.CONFIG.priceLife);
   $('b-acct-home').textContent = state.tests.length ? 'К тренировке' : 'Пройти тест';
   show('acct');
 }
 $('b-acct-back').addEventListener('click', homeOrStart);
+$('b-acct-up').addEventListener('click', () => showPay('acct', true));
 $('b-acct-home').addEventListener('click', homeOrStart);
 $('b-acct-pw').addEventListener('click', async () => {
   const pw = $('acct-pw').value;
@@ -409,7 +423,7 @@ function renderHome() {
   $('h-mode').textContent = a.paid
     ? (pd.done ? 'Программа пройдена, тренировки продолжаются' : `День ${pd.day} из ${c.CONFIG.programDays}`)
     : `Бесплатный режим · день ${pd.day}`;
-  $('b-home-pay').textContent = a.paid ? (a.forever ? 'Доступ без срока' : `Доступ до ${fmtDate(a.until)}`) : 'Открыть доступ';
+  $('b-home-pay').textContent = a.paid ? (a.life ? 'Доступ навсегда' : a.forever ? 'Доступ без срока' : `Доступ до ${fmtDate(a.until)}`) : 'Открыть доступ';
   m.countUp($('h-streak'), st, { from: shownStreak ?? st, ms: 400 });
   shownStreak = st;
   $('h-streak-l').textContent = `${c.pluralDays(st).replace(/^\d+ /, '')} подряд`;

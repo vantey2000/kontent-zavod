@@ -7,9 +7,9 @@
 <meta name="referrer" content="no-referrer">
 <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'unsafe-inline'; style-src 'unsafe-inline'; img-src data:; connect-src https://skorochtenie-api.aivan-loginov.workers.dev https://skorochtenie-events.aivan-loginov.workers.dev; base-uri 'none'; form-action 'none'">
 <meta name="theme-color" content="#070606">
-<title>Темп · админка</title>
+<title>Скорочтение · админка</title>
 <style>
-  /* Админка «Темпа» (16.10.2026): токены «ночной типографии» приложения, только системные шрифты, без внешних запросов */
+  /* Админка «Скорочтения» (16.10.2026): токены «ночной типографии» приложения, только системные шрифты, без внешних запросов */
   :root {
     --bg: #070606; --panel: #121110; --panel2: #1b1917; --rule: #2a2724; --line: #3a3631;
     --fg: #f2ead8; --muted: #a39b8c; --dim: #5f5a52;
@@ -66,7 +66,7 @@
   .b-paying { background: rgba(111,194,138,.14); color: var(--ok); }
   .b-cancelled { background: rgba(217,181,106,.14); color: var(--gold); }
   .b-gift { background: rgba(143,178,224,.14); color: var(--blue); }
-  .b-paid { background: rgba(111,194,138,.14); color: var(--ok); }
+  .b-paid, .b-life { background: rgba(111,194,138,.14); color: var(--ok); }
   .b-expired { background: var(--red-dim); color: var(--red-soft); }
   .b-none { background: var(--panel2); color: var(--muted); }
   .own { font-size: 11px; font-weight: 700; color: var(--dim); border: 1px solid var(--line); border-radius: 6px; padding: 0 5px; }
@@ -180,11 +180,12 @@
   'use strict';
   const API = 'https://skorochtenie-api.aivan-loginov.workers.dev';
   const EV = 'https://skorochtenie-events.aivan-loginov.workers.dev';
-  const PRICE = { month: 490, year: 2990 };
+  const PRICE = { month: 490, life: 2990, year: 2990 };   // year - старый годовой тариф до 16.10.2026
   const STORE = 'sk_admin';
   const MSK = 3 * 3600e3, DAY = 864e5;
-  const ST = { paying: 'платит', cancelled: 'отменил, доступ идёт', gift: 'подарок', paid: 'оплачено', expired: 'срок вышел', none: 'без доступа' };
-  const PLAN = { month: 'месяц', year: 'год' };
+  const ST = { paying: 'платит', life: 'купил навсегда', cancelled: 'отменил, доступ идёт', gift: 'подарок', paid: 'оплачено', expired: 'срок вышел', none: 'без доступа' };
+  const PLAN = { month: 'месяц', life: 'навсегда', year: 'год' };
+  const LIVE = ['paying', 'life', 'cancelled', 'gift', 'paid'];   // статусы с доступом сейчас
   const SRC = { ig: 'Instagram', 'ig-2h': 'Instagram, касание 2 ч', 'ig-20h': 'Instagram, касание 20 ч', yt: 'YouTube', sh: 'Shorts', vk: 'VK', bio: 'шапка профиля', direct: 'без метки', other: 'другое' };
 
   const $ = id => document.getElementById(id);
@@ -256,10 +257,10 @@
     const paying = U.filter(u => u.status === 'paying');
     const soon = paying.filter(u => u.next && Date.parse(u.next + 'T23:59:59+03:00') - now <= 7 * DAY);
     const cells = [
-      [U.filter(u => ['paying', 'cancelled', 'gift', 'paid'].includes(u.status)).length, 'с доступом сейчас', '', 1],
-      [paying.length, 'платят, автопродление', 'месяц ' + paying.filter(u => u.plan === 'month').length + ' · год ' + paying.filter(u => u.plan === 'year').length],
+      [U.filter(u => LIVE.includes(u.status)).length, 'с доступом сейчас', '', 1],
+      [paying.length, 'платят за месяц, автопродление', paying.some(u => u.plan === 'year') ? 'старый год ' + paying.filter(u => u.plan === 'year').length : ''],
       [cnt('cancelled'), 'отменили, доступ идёт'],
-      [cnt('gift'), 'подарков'],
+      [cnt('life'), 'купили навсегда', 'подарков ' + cnt('gift')],
       [rub(sumM(month)), 'выручка за этот месяц', '', 1],
       [rub(sumM(prev)), 'за прошлый месяц'],
       [rub(P.reduce((a, p) => a + p.sum, 0)), 'выручка всего', P.length + ' оплат'],
@@ -278,7 +279,7 @@
   function renderUsers() {
     const U = users(), counts = { all: U.length };
     U.forEach(u => { counts[u.status] = (counts[u.status] || 0) + 1; });
-    $('filters').innerHTML = [['all', 'все'], ['paying', 'платят'], ['cancelled', 'отменили'], ['gift', 'подарок'], ['expired', 'срок вышел'], ['none', 'без доступа']]
+    $('filters').innerHTML = [['all', 'все'], ['paying', 'платят'], ['life', 'навсегда'], ['cancelled', 'отменили'], ['gift', 'подарок'], ['expired', 'срок вышел'], ['none', 'без доступа']]
       .map(f => '<button class="chip' + (filter === f[0] ? ' on' : '') + '" data-f="' + f[0] + '">' + f[1] + ' ' + (counts[f[0]] || 0) + '</button>').join('');
     const q = $('q').value.trim().toLowerCase();
     const last = u => Math.max(0, u.account ? u.account.created : 0, ...u.pays.map(p => p.at), u.stopped ? u.stopped.at : 0);
@@ -292,7 +293,7 @@
       if (u.stopped) meta.push('отменил ' + d(u.stopped.at) + (u.stopped.via === 'app' ? ' в приложении' : ' в кассе'));
       const acts = ['<button class="btn sm" data-a="link">Ссылка входа</button>', '<button class="btn ghost sm" data-a="30">Подарок 30 дней</button>', '<button class="btn ghost sm" data-a="forever">Подарок навсегда</button>'];
       if (u.gift) acts.push('<button class="btn red sm" data-a="revoke">Забрать подарок</button>');
-      if (u.status === 'paying') acts.push('<button class="btn red sm" data-a="cancel">Отменить автосписание</button>');
+      if (u.status === 'paying' || (u.status === 'life' && u.renews)) acts.push('<button class="btn red sm" data-a="cancel">Отменить автосписание</button>');
       return '<div class="row" data-e="' + esc(u.email) + '"><button class="h" aria-expanded="false"><div class="l1"><span class="em">' + esc(u.email) + (u.own ? ' <span class="own">свой</span>' : '') + '</span>'
         + '<span class="badge b-' + u.status + '">' + ST[u.status] + (w ? ' · ' + w : '') + '</span></div>'
         + '<div class="meta">' + meta.map(m => '<span>' + esc(m) + '</span>').join('') + '</div></button>'
@@ -306,10 +307,10 @@
 
   function renderPays() {
     const P = allPays().sort((a, b) => b.at - a.at), by = {};
-    P.forEach(p => { const m = mskDay(p.at).slice(0, 7); const x = by[m] = by[m] || { n: 0, s: 0, who: new Set(), month: 0, year: 0 }; x.n++; x.s += p.sum; x.who.add(p.email); x[p.plan === 'year' ? 'year' : 'month']++; });
+    P.forEach(p => { const m = mskDay(p.at).slice(0, 7); const x = by[m] = by[m] || { n: 0, s: 0, who: new Set(), month: 0, life: 0 }; x.n++; x.s += p.sum; x.who.add(p.email); x[p.plan === 'month' ? 'month' : 'life']++; });   // старый год (2 990) - в столбце «навсегда»
     const ms = Object.keys(by).sort().reverse();
-    $('months').innerHTML = '<tr><th>Месяц</th><th class="n">Оплат</th><th class="n">Людей</th><th class="n">Месяц / год</th><th class="n">Сумма</th></tr>'
-      + (ms.map(m => '<tr><td>' + new Date(m + '-15T12:00:00Z').toLocaleDateString('ru-RU', { month: 'long', year: 'numeric' }) + '</td><td class="n">' + by[m].n + '</td><td class="n">' + by[m].who.size + '</td><td class="n">' + by[m].month + ' / ' + by[m].year + '</td><td class="n">' + rub(by[m].s) + '</td></tr>').join('')
+    $('months').innerHTML = '<tr><th>Месяц</th><th class="n">Оплат</th><th class="n">Людей</th><th class="n">Месяц /<br>навсегда</th><th class="n">Сумма</th></tr>'
+      + (ms.map(m => '<tr><td>' + new Date(m + '-15T12:00:00Z').toLocaleDateString('ru-RU', { month: 'long', year: 'numeric' }) + '</td><td class="n">' + by[m].n + '</td><td class="n">' + by[m].who.size + '</td><td class="n">' + by[m].month + ' / ' + by[m].life + '</td><td class="n">' + rub(by[m].s) + '</td></tr>').join('')
         || '<tr><td colspan="5" class="hint">Оплат пока нет</td></tr>');
     $('paylist').innerHTML = '<tr><th>Дата</th><th>Почта</th><th>Тариф</th><th class="n">Сумма</th></tr>'
       + (P.map(p => '<tr><td>' + d(p.at) + '</td><td>' + esc(p.email) + (p.own ? ' <span class="own">свой</span>' : '') + '</td><td>' + PLAN[p.plan] + '</td><td class="n">' + rub(p.sum) + '</td></tr>').join('')
@@ -332,7 +333,7 @@
       ['Открыли тест', n('open')],
       ['Дочитали и увидели результат', n('test')],
       ['Увидели экран оплаты', n('pay')],
-      ['Нажали «Открыть доступ»', n('month') + n('year'), 'месяц ' + n('month') + ' · год ' + n('year')],
+      ['Нажали «Открыть доступ»', n('month') + n('year'), 'месяц ' + n('month') + ' · навсегда ' + n('year')],   // в счётчике year = кнопка 2 990
       ['Оплатили (новые подписчики)', firsts.length, '', 'pay']
     ];
     const top = steps[0][1] || 1;
@@ -355,7 +356,7 @@
 
     const O = (data ? data.orders : []).filter(o => $('showown').checked || !o.own), paid = O.filter(o => o.paid).length;
     $('orders').innerHTML = '<div class="side" style="border:0;margin:0;padding:0">'
-      + '<span>Начали оплату: <b>' + O.length + '</b> (месяц ' + O.filter(o => o.plan === 'month').length + ' · год ' + O.filter(o => o.plan === 'year').length + ')</span>'
+      + '<span>Начали оплату: <b>' + O.length + '</b> (месяц ' + O.filter(o => o.plan === 'month').length + ' · навсегда ' + O.filter(o => o.plan !== 'month').length + ')</span>'
       + '<span>Оплатили: <b>' + paid + '</b> (' + pct(paid, O.length) + ')</span></div>';
   }
 
@@ -423,7 +424,7 @@
     const email = $('lemail').value.trim().toLowerCase();
     if (!okEmail(email)) return show('lerr', 'Проверь почту');
     const u = (data ? data.users : []).find(x => x.email === email);
-    if (!u || !['paying', 'cancelled', 'gift', 'paid'].includes(u.status)) {
+    if (!u || !LIVE.includes(u.status)) {
       if (!confirm('У ' + email + ' сейчас нет доступа: по ссылке человек войдёт и упрётся в оплату. Всё равно сделать?')) return;
     }
     try { linkBox($('lout'), await makeLink(email)); } catch (ex) { show('lerr', ex.message); }

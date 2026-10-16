@@ -1,11 +1,11 @@
 // Логика приложения без DOM: всё, что считается, живёт здесь и покрыто tests/core.test.mjs
 
 export const CONFIG = {
-  appName: 'Темп',                     // рабочее имя, финальное выбирает Иван (развилка 2 плана)
+  appName: 'Скорочтение',              // имя выбрал Иван 16.10.2026 (было рабочее «Темп»)
   tagline: 'тренажёр для мозга',
   programName: 'Скорочтение за 30 дней',
-  priceYear: 2990,
-  priceMonth: 490,
+  priceLife: 2990,                     // «Навсегда»: разовая оплата, без автосписаний (с 16.10.2026 вместо года)
+  priceMonth: 490,                     // «Месяц»: подписка с автосписанием каждые 30 дней
   refundDays: 14,
   programDays: 30,
   retestEveryDays: 7,
@@ -158,12 +158,12 @@ export const MILESTONES = [7, 14, 30];
 export const isMilestone = n => MILESTONES.includes(n);
 
 // Доступ - по ответу сервера оплаты (кэш в state.acc). Демо-доступ первых дней (state.plan) больше не открывает платное
-const NO_ACCESS = { paid: false, until: null, tier: null, renews: false, stopped: false, next: null, gift: false, forever: false };
+const NO_ACCESS = { paid: false, until: null, tier: null, renews: false, stopped: false, next: null, gift: false, forever: false, life: false };
 export function access(state, now) {
   const a = state && state.acc;
   if (!a || !(a.forever || (a.until && a.until > now))) return { ...NO_ACCESS };
   return { paid: true, until: a.forever ? null : a.until, tier: a.plan || null, renews: !!a.renews, stopped: !!a.stopped,
-    next: a.next || null, gift: !!a.gift, forever: !!a.forever };
+    next: a.next || null, gift: !!a.gift, forever: !!a.forever, life: !!a.life };
 }
 
 // Ссылка доступа от поддержки: ?claim=<заказ>.<секрет>. Мусор = null
@@ -176,6 +176,9 @@ export function parseClaim(search) {
 // Что писать про подписку: тариф, срок, следующее списание или отмену
 export function accessLine(a, fmt) {
   if (!a.paid) return 'Доступа нет';
+  if (a.life) return a.renews
+    ? 'Навсегда · оплачено один раз. Автопродление месяца ещё включено, отключи его кнопкой ниже'
+    : 'Навсегда · оплачено один раз, списаний больше не будет';
   if (a.forever) return 'Доступ без срока';
   const tier = a.tier === 'year' ? 'Год' : a.tier === 'month' ? 'Месяц' : 'Доступ';
   if (a.gift) return `Подарочный доступ до ${fmt(a.until)}`;
