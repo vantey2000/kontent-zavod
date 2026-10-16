@@ -68,7 +68,8 @@
   .b-gift { background: rgba(143,178,224,.14); color: var(--blue); }
   .b-paid, .b-life { background: rgba(111,194,138,.14); color: var(--ok); }
   .b-expired { background: var(--red-dim); color: var(--red-soft); }
-  .b-none, .b-over { background: var(--panel2); color: var(--muted); }
+  .b-none, .b-over, .b-done { background: var(--panel2); color: var(--muted); }
+  .b-quit { background: var(--red-dim); color: var(--red-soft); }
   .b-active { background: rgba(143,178,224,.14); color: var(--blue); }
   .trow { background: var(--panel); border: 1px solid var(--rule); border-radius: 14px; margin-bottom: 8px; padding: 12px 14px; }
   .own { font-size: 11px; font-weight: 700; color: var(--dim); border: 1px solid var(--line); border-radius: 6px; padding: 0 5px; }
@@ -143,7 +144,7 @@
 
     <section data-s="trial" hidden>
       <div class="cards" id="tcards"></div>
-      <div class="hint" style="margin:-8px 0 16px">Переход = купили ÷ (купили + проба кончилась без оплаты). Кто ещё на пробе, в процент не входит: они пока решают</div>
+      <div class="hint" style="margin:-8px 0 16px">Проба = одна пробная тренировка со всеми 13 упражнениями (до вечера 16 октября были пробные сутки, они показаны отдельно). Переход = купили ÷ (купили + прошли и не купили + бросили + сутки кончились). Кто ещё проходит пробу, в процент не входит: они пока решают</div>
       <div class="tools" id="tfilters"></div>
       <div id="trials"></div>
       <div class="hint">Проба без почты и карты, поэтому до оплаты человек виден как телефон: номер пробы, площадка и время. Почта появляется, когда он платит или входит в оплаченный доступ на этом же телефоне. Купил с другого телефона или браузера - здесь не свяжется. Пробы, взятые до включения учёта вечером 16 октября, появятся, когда человек снова откроет приложение</div>
@@ -214,7 +215,8 @@
   const dDay = s => d(Date.parse(s + 'T12:00:00+03:00'));
   const pct = (a, b) => b ? Math.round(a / b * 100) + '%' : '-';
 
-  const TST = { active: 'на пробе', paid: 'купил', over: 'не купил' };
+  const TST = { active: 'на пробе', paid: 'купил', done: 'не купил', quit: 'бросил', over: 'не купил' };
+  const DECIDED = ['paid', 'done', 'quit', 'over'];   // проба позади: купил, прошёл, бросил или кончились сутки
   const dt = ms => d(ms) + ', ' + new Date(ms).toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit', timeZone: 'Europe/Moscow' });
   const dur = ms => { const m = Math.max(1, Math.round(ms / 60e3)); return m < 60 ? m + ' мин' : m < 48 * 60 ? Math.round(m / 60) + ' ч' : Math.round(m / 1440) + ' дн.'; };
   const left = ms => { const m = Math.max(0, Math.ceil(ms / 60e3)), h = Math.floor(m / 60); return h ? h + ' ч' + (m % 60 ? ' ' + m % 60 + ' мин' : '') : m + ' мин'; };
@@ -265,7 +267,7 @@
   const firstPays = () => users().filter(u => u.pays.length).map(u => Math.min.apply(null, u.pays.map(p => p.at)));
   const trials = () => ((data && data.trials) || []).filter(t => $('showown').checked || !t.own);
   // переход в платный: кто ещё на пробе, в процент не входит
-  const conv = T => { const k = T.filter(t => t.status === 'paid').length; return { k, over: T.filter(t => t.status === 'over').length, p: pct(k, k + T.filter(t => t.status === 'over').length) }; };
+  const conv = T => { const k = T.filter(t => t.status === 'paid').length, dn = T.filter(t => DECIDED.includes(t.status)).length; return { k, dn, p: pct(k, dn) }; };
 
   function render() { renderCards(); renderUsers(); renderPays(); renderTrials(); renderFunnel(); }
 
@@ -286,7 +288,7 @@
       [rub(sumM(prev)), 'за прошлый месяц'],
       [rub(P.reduce((a, p) => a + p.sum, 0)), 'выручка всего', P.length + ' оплат'],
       [rub(soon.reduce((a, u) => a + (PRICE[u.plan] || 0), 0)), 'спишется за 7 дней', soon.length + ' чел.'],
-      [trials().filter(t => t.status === 'active').length, 'на пробе сейчас', (c => 'купили после пробы ' + c.k + (c.k + c.over ? ' · ' + c.p : ''))(conv(trials()))]
+      [trials().filter(t => t.status === 'active').length, 'на пробе сейчас', (c => 'купили после пробы ' + c.k + (c.dn ? ' · ' + c.p : ''))(conv(trials()))]
     ];
     $('cards').innerHTML = cells.map(c => '<div class="card' + (c[3] ? ' hot' : '') + '"><b>' + c[0] + '</b><span>' + c[1] + '</span>' + (c[2] ? '<em>' + c[2] + '</em>' : '') + '</div>').join('');
   }
@@ -346,21 +348,27 @@
     const n = s => T.filter(t => t.status === s).length;
     const plan = p => P.filter(t => (t.buy.plan === 'month') === (p === 'month')).length;   // старый год - к «навсегда»
     const first = T.length ? T[T.length - 1].at : 0;
+    const days = T.filter(t => t.kind === 'day').length;
     $('tcards').innerHTML = [
       [n('active'), 'на пробе сейчас', '', 1],
-      [c.k + (c.k + c.over ? ' · ' + c.p : ''), 'перешли на платный', 'во время пробы ' + P.filter(t => t.buy.during).length + ' · после ' + P.filter(t => !t.buy.during).length, 1],
-      [c.over, 'проба кончилась, не купили'],
-      [T.length, 'брали пробу', first ? 'с ' + d(first) : ''],
+      [c.k + (c.dn ? ' · ' + c.p : ''), 'перешли на платный', 'не дождавшись конца пробы ' + P.filter(t => t.buy.during).length + ' · после ' + P.filter(t => !t.buy.during).length, 1],
+      [n('done'), 'прошли пробу, не купили'],
+      [n('quit'), 'бросили на полпути', 'не прошли за сутки'],
+      [T.length, 'брали пробу', (first ? 'с ' + d(first) : '') + (days ? ' · из них сутки ' + days : '')],
       [rub(P.reduce((a, t) => a + (t.buy.total || 0), 0)), 'заплатили после пробы', 'месяц ' + plan('month') + ' · навсегда ' + plan('life')]
     ].map(x => '<div class="card' + (x[3] ? ' hot' : '') + '"><b>' + x[0] + '</b><span>' + x[1] + '</span>' + (x[2] ? '<em>' + x[2] + '</em>' : '') + '</div>').join('');
-    $('tfilters').innerHTML = [['active', 'на пробе'], ['paid', 'купили'], ['over', 'не купили'], ['all', 'все']]
-      .map(f => '<button class="chip' + (tfilter === f[0] ? ' on' : '') + '" data-tf="' + f[0] + '">' + f[1] + ' ' + (f[0] === 'all' ? T.length : n(f[0])) + '</button>').join('');
-    const list = T.filter(t => tfilter === 'all' || t.status === tfilter);
+    // «не купили» = прошли пробную тренировку или досидели сутки
+    const inF = (t, f) => f === 'all' || t.status === f || (f === 'done' && t.status === 'over');
+    $('tfilters').innerHTML = [['active', 'на пробе'], ['paid', 'купили'], ['done', 'не купили'], ['quit', 'бросили'], ['all', 'все']]
+      .map(f => '<button class="chip' + (tfilter === f[0] ? ' on' : '') + '" data-tf="' + f[0] + '">' + f[1] + ' ' + T.filter(t => inF(t, f[0])).length + '</button>').join('');
+    const list = T.filter(t => inF(t, tfilter));
     $('trials').innerHTML = list.map(t => {
-      const badge = t.status === 'active' ? 'осталось ' + left(t.until - now)
-        : t.status === 'paid' ? PLAN[t.buy.plan] + ' · ' + rub(t.buy.sum) : 'кончилась ' + d(t.until);
-      const meta = [SRC[t.src] || t.src, 'взял пробу ' + dt(t.at)];
-      if (t.status === 'paid') meta.push('купил ' + dt(t.buy.at) + ', через ' + dur(t.buy.at - t.at) + (t.buy.during ? ' во время пробы' : ' после пробы'));
+      const badge = t.status === 'active' ? (t.kind === 'day' ? 'сутки, осталось ' + left(t.until - now) : 'проходит тренировку')
+        : t.status === 'paid' ? PLAN[t.buy.plan] + ' · ' + rub(t.buy.sum)
+          : t.status === 'done' ? 'прошёл пробу ' + d(t.done) : t.status === 'quit' ? 'не прошёл за сутки' : 'сутки кончились ' + d(t.until);
+      const meta = [SRC[t.src] || t.src, (t.kind === 'day' ? 'взял пробные сутки ' : 'начал пробную тренировку ') + dt(t.at)];
+      if (t.done) meta.push('прошёл за ' + dur(t.done - t.at));
+      if (t.status === 'paid') meta.push('купил ' + dt(t.buy.at) + ', через ' + dur(t.buy.at - t.at) + (t.buy.during ? ' от начала, не дождавшись конца пробы' : ' от начала, после пробы'));
       if (t.status === 'paid' && t.buy.total > t.buy.sum) meta.push('всего ' + rub(t.buy.total));
       return '<div class="trow"><div class="l1">'
         + '<span class="em">' + (t.email ? esc(t.email) + (t.own ? ' <span class="own">свой</span>' : '') : 'Телефон · ' + esc(t.id)) + '</span>'
@@ -368,10 +376,10 @@
         + '<div class="meta">' + meta.map(m => '<span>' + esc(m) + '</span>').join('') + '</div></div>';
     }).join('') || '<div class="hint" style="margin-bottom:8px">' + (tfilter === 'active' ? 'Сейчас на пробе никого' : 'Таких проб нет') + '</div>';
     const by = {};
-    T.forEach(t => { const x = by[t.src] = by[t.src] || { n: 0, k: 0, over: 0 }; x.n++; if (t.status === 'paid') x.k++; if (t.status === 'over') x.over++; });
+    T.forEach(t => { const x = by[t.src] = by[t.src] || { n: 0, k: 0, dn: 0 }; x.n++; if (t.status === 'paid') x.k++; if (DECIDED.includes(t.status)) x.dn++; });
     const srcs = Object.keys(by).sort((a, b) => by[b].n - by[a].n);
     $('tsrc').innerHTML = '<tr><th>Площадка</th><th class="n">Брали пробу</th><th class="n">Купили</th><th class="n">Переход</th></tr>'
-      + (srcs.map(s => '<tr><td>' + esc(SRC[s] || s) + '</td><td class="n">' + by[s].n + '</td><td class="n">' + by[s].k + '</td><td class="n">' + pct(by[s].k, by[s].k + by[s].over) + '</td></tr>').join('')
+      + (srcs.map(s => '<tr><td>' + esc(SRC[s] || s) + '</td><td class="n">' + by[s].n + '</td><td class="n">' + by[s].k + '</td><td class="n">' + pct(by[s].k, by[s].dn) + '</td></tr>').join('')
         || '<tr><td colspan="4" class="hint">Проб пока нет</td></tr>');
   }
 
@@ -391,7 +399,8 @@
     const steps = [
       ['Открыли тест', n('open')],
       ['Дочитали и увидели результат', n('test')],
-      ['Взяли пробные сутки', n('trial'), 'полный доступ на 24 часа'],
+      ['Начали пробную тренировку', n('trial'), 'до вечера 16.10 здесь считались пробные сутки'],
+      ['Прошли её до конца', n('tend'), 'все 13 упражнений, пропуски тоже'],
       ['Увидели экран оплаты', n('pay'), '', '', 1],
       ['Нажали «Открыть доступ»', n('month') + n('year'), 'месяц ' + n('month') + ' · навсегда ' + n('year')],   // в счётчике year = кнопка 2 990
       ['Оплатили (новые подписчики)', firsts.length, '', 'pay']
@@ -400,7 +409,7 @@
     $('steps').innerHTML = steps.map((s, i) => '<div class="step' + (s[3] ? ' ' + s[3] : '') + '"><div class="t"><span>' + s[0] + '</span><b>' + s[1] + '</b></div>'
       + '<div class="bar"><i style="width:' + Math.min(100, s[1] / top * 100).toFixed(1) + '%"></i></div>'
       + '<div class="c">' + (i ? (s[4] != null ? pct(s[1], steps[s[4]][1]) + ' от дочитавших' : pct(s[1], steps[i - 1][1]) + ' от прошлого шага') + ' · ' + pct(s[1], steps[0][1]) + ' от открывших' : 'все, кто открыл') + (s[2] ? ' · ' + s[2] : '') + '</div></div>').join('');
-    $('side').innerHTML = '<span>Продолжили бесплатно: <b>' + n('free') + '</b></span><span>Упёрлись в замок: <b>' + n('lock') + '</b></span><span>Вернулись после пробы: <b>' + n('tend') + '</b></span>';
+    $('side').innerHTML = '<span>Нажали «Не сейчас» на оплате: <b>' + n('free') + '</b></span><span>Упёрлись в замок: <b>' + n('lock') + '</b></span>';
 
     const srcs = Object.keys(bySrc).sort((a, b) => (bySrc[b].open || 0) - (bySrc[a].open || 0));
     const g = (o, k) => (o && o[k]) || 0;

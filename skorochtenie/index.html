@@ -101,6 +101,17 @@
   .why .ticks li { line-height: 1.45; }
   .offer, .trialcard { box-shadow: inset 0 0 0 2px var(--red); }
   .tc-title { font: 400 24px/1.15 var(--display); font-variant-numeric: lining-nums; }
+  /* пробная тренировка: «Пропустить» в упражнении и личные цифры на финале */
+  .exskip { display: block; margin: -2px 0 6px; padding: 6px 0; font-size: 14px; }
+  .nums { display: grid; gap: 0; }
+  .nrow { display: flex; justify-content: space-between; gap: 12px; padding: 9px 0; border-bottom: 1px solid var(--rule); }
+  .nrow:last-child { border-bottom: 0; }
+  .nrow b { font-variant-numeric: tabular-nums lining-nums; text-align: right; }
+  .trpick { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+  .trpick .prow { padding: 0 10px; }
+  .trpick .pchk { min-height: 48px; gap: 8px; padding: 8px 0; }
+  .trpick .pchk .small { display: none; }
+  .trpick .pchk b { font-size: 14px; line-height: 1.25; }
   /* своя тренировка: переключатель режима, отметка упражнения и кнопки времени (выбранное залито, как тема) */
   .plan-link { display: block; margin: 4px auto 0; }
   .plan-link .lock { margin-right: 4px; vertical-align: -1px; }
@@ -350,10 +361,10 @@
       <div class="card stack offer" id="r-offer">
         <span class="eyebrow" id="r-offer-eb">Программа на 30 дней</span>
         <p class="muted"><span id="r-start-l">Читалка начнёт с</span> <b id="r-start" style="color: var(--fg)"></b> и к 30-му дню дойдёт до <b id="r-goal" style="color: var(--fg)"></b> слов в минуту. Это темп тренировки, а не обещание результата: результат покажет повторный тест через 7 дней</p>
-        <p id="r-trial"><b>Попробуй её целиком: 24 часа полного доступа бесплатно.</b> Тренировка дня на 10 минут, все 13 упражнений, библиотека классики и читалка для своего текста</p>
-        <p id="r-trial-over" hidden>Пробные сутки уже были, прогресс сохранён. Открой доступ, и тренировки продолжатся по программе</p>
-        <button class="btn" id="b-result-next">Открыть доступ на 24 часа</button>
-        <p class="muted small center" id="r-trial-note">Без карты и регистрации. Через сутки останется бесплатный режим, ничего не спишется</p>
+        <p id="r-trial"><b>Попробуй бесплатно: одна пробная тренировка со всеми 13 упражнениями.</b> По очереди, около 12 минут: читалка, таблицы Шульте, вспышка, указка и остальные. В конце увидишь свои цифры и соберёшь тренировку из того, что понравилось</p>
+        <p id="r-trial-over" hidden>Пробная тренировка уже была, прогресс сохранён. Открой доступ, и тренировки продолжатся по программе</p>
+        <button class="btn" id="b-result-next">Начать пробную тренировку</button>
+        <p class="muted small center" id="r-trial-note">Без карты и регистрации, ничего не спишется. Дальше тренировки по подписке</p>
       </div>
       <button class="link" id="b-result-plans" style="justify-self: center">Посмотреть тарифы</button>
     </div>
@@ -390,8 +401,8 @@
       <button class="btn" id="b-pay">Открыть доступ</button>
       <p class="err center" id="pay-err" role="alert" hidden></p>
       <p class="muted small center" id="pay-refund"></p>
-      <button class="btn ghost" id="b-trial-pay" hidden>Попробовать 24 часа бесплатно</button>
-      <button class="link" id="b-free" style="justify-self: center">Продолжить бесплатно</button>
+      <button class="btn ghost" id="b-trial-pay" hidden>Пройти пробную тренировку бесплатно</button>
+      <button class="link" id="b-free" style="justify-self: center">Не сейчас</button>
       <button class="link" id="b-login-open" style="justify-self: center; color: var(--muted); font-weight: 400">Уже оплатил? Войти</button>
     </div>
   </section>
@@ -453,7 +464,7 @@
     <div class="top"><div class="logo" data-name></div><div class="top-r"><button class="link" id="b-home-pay"></button></div></div>
     <div class="theme-row" style="margin-top: 8px"><div class="tswitch" role="group" aria-label="Сменить тему"><span class="ts-cap">Сменить тему</span><span class="ts-seg"><button type="button" data-mode-set="night">Тёмная</button><button type="button" data-mode-set="day">Светлая</button></span></div></div>
     <div class="stack" style="margin-top: 10px">
-      <!-- Пробные сутки: предложение, отсчёт или «закончились». У оплативших скрыто -->
+      <!-- Пробная тренировка: предложение, «Продолжить» или «пройдена»; у старых суток отсчёт. У оплативших скрыто -->
       <div class="card stack trialcard" id="h-trial" hidden>
         <span class="eyebrow" id="h-trial-eb"></span>
         <p class="tc-title" id="h-trial-title"></p>
@@ -511,10 +522,37 @@
   </section>
 
   <!-- 7. Упражнение -->
+  <!-- Финал пробной тренировки: личные цифры, «Собери свою тренировку», оплата -->
+  <section id="s-trial" hidden>
+    <svg class="check" viewBox="0 0 96 96" aria-hidden="true"><circle cx="48" cy="48" r="44"/><path class="tick" d="M30 49 L43 62 L67 36"/></svg>
+    <h2 class="center">Пробная тренировка пройдена</h2>
+    <p class="muted center" id="tr-sub" style="margin: 8px 0 20px"></p>
+    <div class="stack">
+      <div class="card stack">
+        <span class="eyebrow">Твоя точка отсчёта</span>
+        <div class="nums" id="tr-nums"></div>
+        <p class="muted small">Через 30 дней тренировок эти цифры будет с чем сравнить</p>
+      </div>
+      <div class="card stack">
+        <span class="eyebrow">Собери свою тренировку</span>
+        <p class="muted small">Отметь, что понравилось: с доступом тренировка дня пойдёт по этому списку. Не отметишь ничего - по программе</p>
+        <div class="trpick" id="tr-pick"></div>
+        <p class="muted small" id="tr-total"></p>
+      </div>
+      <div class="card stack offer">
+        <span class="eyebrow">Программа на 30 дней</span>
+        <p><b>Оставь тренировки себе.</b> Тренировка дня на 10 минут или своя, все 13 упражнений, библиотека классики, читалка для своего текста и повторный тест раз в 7 дней</p>
+        <button class="btn" id="b-tr-pay">Открыть доступ</button>
+      </div>
+      <button class="btn ghost" data-home>На главную</button>
+    </div>
+  </section>
+
   <section id="s-ex" hidden>
     <div class="top"><button class="back" id="b-ex-back">← Назад</button><div class="top-r"><span class="muted small" id="ex-step"></span><div class="tswitch compact" role="group" aria-label="Сменить тему"><span class="ts-cap">Сменить тему</span><span class="ts-seg"><button type="button" data-mode-set="night">Тёмная</button><button type="button" data-mode-set="day">Светлая</button></span></div></div></div>
     <h2 id="ex-title" style="margin-top: 6px"></h2>
     <p class="muted small" id="ex-hint" style="margin: 4px 0 6px"></p>
+    <button class="link exskip" id="b-ex-skip" hidden>Пропустить упражнение →</button>
     <div id="ex-body"></div>
   </section>
 

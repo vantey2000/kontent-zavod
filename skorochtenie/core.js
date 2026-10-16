@@ -9,8 +9,8 @@ export const CONFIG = {
   refundDays: 14,
   programDays: 30,
   retestEveryDays: 7,
-  freeReadsPerDay: 1,
-  trialHours: 24,                      // пробный полный доступ после теста: сутки с нажатия, без карты, один раз на телефон (решение Ивана 16.10.2026)
+  freeReadsPerDay: 0,                  // бесплатной читалки дня больше нет: одна пробная тренировка, потом всё по подписке (решение Ивана 16.10.2026)
+  trialHours: 24,                      // старые пробные сутки: кто взял их до пробной тренировки, дорабатывает 24 часа, как обещали
   avgAdultWpm: 200,                    // «обычно взрослый читает про себя около 200», как в ролике
   maxHonestWpm: 1500,                  // быстрее = текст пролистан, результат не сохраняем
   minHonestWpm: 40,                    // медленнее = тест прерывался (вкладка лежала открытой), тоже не сохраняем
@@ -166,14 +166,39 @@ export function streak(doneKeys, todayKey) {
 export const MILESTONES = [7, 14, 30];
 export const isMilestone = n => MILESTONES.includes(n);
 
-// Пробные сутки: state.trial = момент нажатия «Открыть полный доступ на 24 часа». Один раз на телефон:
-// кончились - статус over навсегда. Часы телефона, переведённые назад раньше начала пробы, её не продлевают
+// Пробная тренировка (решение Ивана 16.10.2026, вместо пробных суток): одна на телефон, без карты, все 13 упражнений
+// по очереди, около 12 минут. Чередуем взгляд и чтение, начинаем с читалки (хук ролика), заканчиваем личной цифрой.
+// Раунды по часам (seconds), Шульте по одной таблице, тексты на ~45 секунд, поиск и перевёрнутый текст - одна страница
+export const TRIAL_STEPS = [
+  { kind: 'reader', minutes: 1 },
+  { kind: 'schulte', tables: 1 },
+  { kind: 'blocks', minutes: 0.75 },
+  { kind: 'sight', seconds: 45 },
+  { kind: 'pointer', minutes: 0.75 },
+  { kind: 'flash', seconds: 45 },
+  { kind: 'column', minutes: 0.75 },
+  { kind: 'search' },
+  { kind: 'hopscotch', minutes: 0.75 },
+  { kind: 'schulte-letters', tables: 1 },
+  { kind: 'flipped' },
+  { kind: 'schulte-6', tables: 1 },
+  { kind: 'memory', seconds: 45 },
+].map(x => ({ minutes: 1, tables: 1, seconds: 0, ...x }));
+
+// Состояние пробы. state.trial = момент начала. Новая проба несёт state.trun = { i, done, skip }: следующий шаг,
+// момент окончания, пропущенные упражнения; идёт, пока не пройдена, без срока. Без trun - старые пробные сутки:
+// 24 часа с нажатия, часы телефона, переведённые назад раньше начала, сутки не продлевают
 export function trialState(state, now) {
   const t = state && state.trial;
   if (typeof t !== 'number' || !Number.isFinite(t)) return { status: 'none', until: null, left: 0 };
+  const run = state.trun;
+  if (run && typeof run === 'object') {
+    const i = Math.min(TRIAL_STEPS.length, Math.max(0, Math.floor(run.i) || 0));
+    return { status: run.done ? 'over' : 'active', legacy: false, i, done: run.done || null, skip: Array.isArray(run.skip) ? run.skip : [], until: null, left: 0 };
+  }
   const until = t + CONFIG.trialHours * 36e5;
-  if (now >= until || now < t - 10 * 6e4) return { status: 'over', until, left: 0 };
-  return { status: 'active', until, left: until - now };
+  if (now >= until || now < t - 10 * 6e4) return { status: 'over', legacy: true, until, left: 0 };
+  return { status: 'active', legacy: true, until, left: until - now };
 }
 
 // Номер пробы для учёта в админке: 16 знаков base64url из 12 случайных байт, ни о человеке, ни о телефоне не говорит
@@ -189,13 +214,14 @@ export function leftText(ms) {
   return h ? `${h} ч${m ? ` ${m} мин` : ''}` : `${m} мин`;
 }
 
-// Доступ - по ответу сервера оплаты (кэш в state.acc) или пробные сутки. Демо-доступ первых дней (state.plan) больше не открывает платное
+// Доступ - по ответу сервера оплаты (кэш в state.acc) или старые пробные сутки. Пробная тренировка доступа не даёт: она идёт
+// своей последовательностью, оплата видит обычного человека без доступа. Демо-доступ первых дней (state.plan) не открывает платное
 const NO_ACCESS = { paid: false, until: null, tier: null, renews: false, stopped: false, next: null, gift: false, forever: false, life: false, trial: false };
 export function access(state, now) {
   const a = state && state.acc;
   if (!a || !(a.forever || (a.until && a.until > now))) {
     const tr = trialState(state, now);
-    return tr.status === 'active' ? { ...NO_ACCESS, paid: true, until: tr.until, tier: 'trial', trial: true } : { ...NO_ACCESS };
+    return tr.status === 'active' && tr.legacy ? { ...NO_ACCESS, paid: true, until: tr.until, tier: 'trial', trial: true } : { ...NO_ACCESS };
   }
   return { paid: true, until: a.forever ? null : a.until, tier: a.plan || null, renews: !!a.renews, stopped: !!a.stopped,
     next: a.next || null, gift: !!a.gift, forever: !!a.forever, life: !!a.life, trial: false };

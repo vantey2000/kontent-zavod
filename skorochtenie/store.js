@@ -18,7 +18,9 @@ export function fresh() {
     auth: null,          // { token, email, pw } - вход в оплаченный доступ (сервер skorochtenie-api), pw = пароль задан
     acc: null,           // последний ответ сервера о доступе: { paid, until, plan, renews, stopped, next, gift, forever }
     pending: null,       // заказ, ушедший в кассу: { order, k, plan, at } - по нему телефон забирает доступ после оплаты
-    trial: null,         // момент начала пробных суток полного доступа (мс), один раз на телефон
+    trial: null,         // момент начала пробы (мс), одна на телефон. Без trun - старые пробные сутки
+    trun: null,          // пробная тренировка: { i - следующий шаг, done - момент окончания (мс) или null, skip - пропущенные упражнения }
+    tdsent: false,       // сервер узнал, что пробная тренировка пройдена
     tid: null,           // номер пробы для учёта в админке (случайный, без почты)
     tsent: null,         // что сервер знает о пробе: null - ничего, '-' - без почты, почта - с этой почтой
     train: null,         // своя тренировка: { mode: 'program' | 'custom', items: [{ kind, minutes }] } (core.normalizeTrain)
@@ -52,6 +54,8 @@ function normalize(s) {
     auth: auth && typeof auth.token === 'string' && typeof auth.email === 'string' ? { token: auth.token, email: auth.email, pw: !!auth.pw } : null,
     acc: acc && (acc.forever === true || num(acc.until) !== null) ? acc : null,
     trial: num(s.trial),
+    trun: trunOf(s.trun),
+    tdsent: s.tdsent === true,
     tid: typeof s.tid === 'string' && /^[A-Za-z0-9_-]{12,32}$/.test(s.tid) ? s.tid : null,
     tsent: typeof s.tsent === 'string' && s.tsent.length <= 120 ? s.tsent : null,
     train: normalizeTrain(s.train),
@@ -64,6 +68,14 @@ function normalize(s) {
     src: typeof s.src === 'string' && /^[a-z0-9-]{1,16}$/.test(s.src) ? s.src : null,
     sent: Array.isArray(s.sent) ? s.sent.filter(x => typeof x === 'string').slice(0, 20) : [],
   };
+}
+
+// прогресс пробной тренировки: шаг 0-13, окончание числом или null, пропущенные - только строки
+function trunOf(t) {
+  const o = obj(t);
+  if (!o) return null;
+  const i = num(o.i);
+  return { i: i === null ? 0 : Math.min(13, Math.max(0, Math.floor(i))), done: num(o.done), skip: Array.isArray(o.skip) ? o.skip.filter(x => typeof x === 'string').slice(0, 13) : [] };
 }
 
 function bestOf(s) {
