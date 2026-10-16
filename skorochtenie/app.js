@@ -1008,8 +1008,8 @@ function openExercise(kind, opts) {
     const n = ramp ? c.rampFit(c.passage(LIBRARY, state.bookmark, c.rampWords(ramp.from, ramp.to, opts.minutes)).tokens, ramp.from, ramp.to, opts.minutes) : speed * opts.minutes;
     const p = opts.tokens ? { tokens: opts.tokens } : takePassage(n);
     if (!opts.title && p.title) $('ex-title').textContent = `Читалка · ${p.author}, «${p.title}»`;
-    if (ramp) $('ex-hint').textContent = `Скорость растёт с каждым словом: от ${ramp.from} до ${ramp.to} слов в минуту. Держись, сколько сможешь`;
-    return timed(body, { mode: 'reader', tokens: p.tokens, wpm: speed, ramp, onDone: opts.onDone });
+    if (ramp) $('ex-hint').textContent = `Динамическая сама разгоняется от ${ramp.from} до ${ramp.to} слов в минуту. Фиксированная держит скорость с ползунка`;
+    return timed(body, { mode: 'reader', tokens: p.tokens, wpm: speed, ramp, limitMs: ramp ? opts.minutes * 60000 : 0, onDone: opts.onDone });
   }
   const factor = { blocks: 0.8, pointer: 0.7, column: 0.8, hopscotch: 0.7 }[kind] || 0.7;
   const s = round10(speed * factor);
@@ -1040,7 +1040,7 @@ let skipEx = null;
 $('b-ex-skip').addEventListener('click', () => { const f = skipEx; skipEx = null; stopActive(); stopActive = () => {}; if (f) f(); });
 
 // Читалка, блоки и указка: один движок с паузой, скоростью и прогрессом
-function timed(body, { mode, tokens, wpm, ramp = null, onDone }) {
+function timed(body, { mode, tokens, wpm, ramp = null, limitMs = 0, onDone }) {
   // единицы показа: слово, блок, строка колонки или остановка указки по точкам
   let hops = null;
   if (mode === 'hopscotch') {
@@ -1094,15 +1094,45 @@ function timed(body, { mode, tokens, wpm, ramp = null, onDone }) {
   const pauseB = el('button', 'btn', 'Пауза');
   const row = el('div', 'row'); if (mode === 'reader' || mode === 'blocks') row.append(back10); row.append(pauseB);
   const doneB = el('button', 'btn', 'Дальше'); doneB.hidden = true;
-  const controls = el('div', 'controls'); controls.append(bar, rangeBox, row, doneB);
+  // под полосой прогресса два режима (просьба Ивана 17.10.2026): «Динамическая» разгоняется сама, по умолчанию,
+  // «Фиксированная» держит скорость, которую человек поставил ползунком. Только у читалки с разгоном
+  const modeSeg = ramp ? el('div', 'seg speed-mode') : null;
+  if (modeSeg) {
+    modeSeg.setAttribute('role', 'radiogroup');
+    modeSeg.setAttribute('aria-label', 'Скорость читалки');
+    for (const [k, t] of [['dyn', 'Динамическая'], ['fix', 'Фиксированная']]) {
+      const b = el('button', null, t);
+      b.type = 'button';
+      b.setAttribute('role', 'radio');
+      b.dataset.speed = k;
+      b.addEventListener('click', () => setDyn(k === 'dyn'));
+      modeSeg.append(b);
+    }
+  }
+  const controls = el('div', 'controls'); controls.append(...[bar, modeSeg, rangeBox, row, doneB].filter(Boolean));
   controls.style.marginTop = '14px';
   body.append(controls);
 
-  // в разгоне скорость ведёт сама читалка: ползунка нет, подпись показывает текущий темп и финиш
-  const setLabel = () => { label.textContent = ramp ? `Разгон: ${speed} слов/мин, финиш на ${ramp.to}` : `Скорость ${speed} слов/мин`; };
-  range.hidden = !!ramp;
-  setLabel();
-  range.addEventListener('input', () => { speed = Number(range.value); setLabel(); });
+  // в динамике скорость ведёт сама читалка и ползунок едет за ней. Человек сдвинул ползунок выше или ниже - скорость
+  // встаёт туда и дальше всё равно растёт сама к финишу (слова Ивана 17.10.2026: «ползунок как в первом варианте»,
+  // «передвинул на скорость выше - не останавливается, всё равно продолжает расти»). В фиксированной - стоит
+  let dyn = !!ramp;
+  let base = ramp ? { p: 0, v: ramp.from } : null;
+  let elapsed = 0;   // время показа слов без пауз: читалка с разгоном кончается по тексту или через limitMs
+  const progress = () => i / Math.max(1, units.length - 1);
+  const setLabel = () => { label.textContent = dyn ? `Разгон: ${speed} слов/мин, финиш на ${ramp.to}` : `Скорость ${speed} слов/мин`; };
+  function setDyn(d) {
+    dyn = d;
+    if (d) base = { p: Math.min(1, progress()), v: speed };   // вернулся в динамику - разгон дальше с текущей скорости
+    modeSeg.querySelectorAll('[data-speed]').forEach(b => b.setAttribute('aria-checked', String((b.dataset.speed === 'dyn') === d)));
+    setLabel();
+  }
+  if (modeSeg) setDyn(true); else setLabel();
+  range.addEventListener('input', () => {
+    speed = Number(range.value);
+    if (dyn) base = { p: Math.min(1, progress()), v: speed };
+    setLabel();
+  });
 
   const place = tok => placeWord(word, stage, tok, WORD_PX);
 
@@ -1139,19 +1169,21 @@ function timed(body, { mode, tokens, wpm, ramp = null, onDone }) {
   function tick() {
     timer = null;
     if (paused || finished) return;
-    if (i >= units.length) return finish();
+    if (i >= units.length || (limitMs && elapsed >= limitMs)) return finish();
     const u = units[i];
-    if (ramp) { speed = c.rampSpeed(ramp.from, ramp.to, i / Math.max(1, units.length - 1)); setLabel(); }
+    if (dyn) { speed = c.rampAt(base, ramp.to, progress()); range.value = speed; setLabel(); }
     showUnit(u);
     i++;
-    barI.style.transform = `scaleX(${i / units.length})`;
     const ms = u.reduce((s, t) => s + c.wordDelayMs(t, speed), 0);
+    elapsed += ms;
+    barI.style.transform = `scaleX(${limitMs ? Math.min(1, Math.max(i / units.length, elapsed / limitMs)) : i / units.length})`;
     timer = setTimeout(tick, ms);
   }
 
   function finish() {
     finished = true;
-    if (ramp) { lastRamp = { from: ramp.from, to: speed }; label.textContent = `Финиш: ${speed} слов/мин. Старт был на ${ramp.from}`; }
+    // итог разгона; если человек сам сбавил ниже старта, «разогналась» не пишем
+    if (ramp) { lastRamp = speed > ramp.from ? { from: ramp.from, to: speed } : null; label.textContent = `Финиш: ${speed} слов/мин. Старт был на ${ramp.from}`; }
     if (word) word.textContent = '';
     if (chunkEl) chunkEl.textContent = 'Готово';
     pauseB.hidden = true; back10.hidden = true;
