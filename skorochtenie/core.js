@@ -253,6 +253,46 @@ export function dailySteps(day, paid) {
   return [mk(WARMUPS[d % WARMUPS.length], 2), mk('reader', 5), mk(DRILLS[d % DRILLS.length], 3)];
 }
 
+// Своя тренировка (просьба Ивана 16.10.2026): человек отмечает упражнения и ставит каждому 1, 2, 3 или 5 минут.
+// Порядок в тренировке = порядок каталога: сначала разминка взгляда и памяти, потом чтение
+export const TRAIN_MINUTES = [1, 2, 3, 5];
+export const TRAIN_KINDS = ['schulte', 'schulte-letters', 'schulte-6', 'sight', 'flash', 'memory', 'search', 'reader', 'blocks', 'pointer', 'column', 'hopscotch', 'flipped'];
+
+// Хранилище могли испортить: чужие упражнения, минуты не из набора и повторы выкидываем. Нет настройки = null
+export function normalizeTrain(t) {
+  if (!t || typeof t !== 'object' || Array.isArray(t)) return null;
+  const seen = new Set();
+  const items = (Array.isArray(t.items) ? t.items : [])
+    .filter(i => i && TRAIN_KINDS.includes(i.kind) && TRAIN_MINUTES.includes(i.minutes) && !seen.has(i.kind) && seen.add(i.kind))
+    .map(i => ({ kind: i.kind, minutes: i.minutes }))
+    .sort((a, b) => TRAIN_KINDS.indexOf(a.kind) - TRAIN_KINDS.indexOf(b.kind));
+  return { mode: t.mode === 'custom' ? 'custom' : 'program', items };
+}
+
+// Шаги тренировки дня: своя - только с доступом и непустым списком, иначе программа. У своих шагов timed:
+// время идёт по часам (Шульте, раунды, тексты повторяются, пока минуты не вышли), у программы всё по-старому
+export function trainSteps(day, paid, train) {
+  const t = normalizeTrain(train);
+  if (!paid || !t || t.mode !== 'custom' || !t.items.length) return dailySteps(day, paid);
+  return t.items.map(i => ({ kind: i.kind, minutes: i.minutes, timed: true, ...STEP[i.kind] }));
+}
+
+export const stepsMinutes = steps => steps.reduce((sum, x) => sum + x.minutes, 0);
+
+// Обратный отсчёт своей тренировки: «1:00», «0:42»; секунды вверх, как у таймера
+export function clockText(ms) {
+  const s = Math.max(0, Math.ceil(ms / 1000));
+  return `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`;
+}
+
+export function pluralMinutes(n) {
+  const a = Math.abs(n) % 100, b = a % 10;
+  if (a > 10 && a < 20) return `${n} минут`;
+  if (b === 1) return `${n} минута`;
+  if (b >= 2 && b <= 4) return `${n} минуты`;
+  return `${n} минут`;
+}
+
 export function retestStatus(tests, todayKey) {
   if (!tests || !tests.length) return { available: true, inDays: 0 };
   const d = daysBetween(tests[tests.length - 1].key, todayKey);

@@ -1,6 +1,8 @@
 // Прогресс в браузере телефона. Хранилище бывает запрещено (приватный режим, превью):
 // тогда работаем из памяти до перезагрузки и не падаем
 
+import { normalizeTrain } from './core.js';
+
 const KEY = 'temp.state.v1';
 let memory = null;
 let persistent = true;
@@ -19,6 +21,7 @@ export function fresh() {
     trial: null,         // момент начала пробных суток полного доступа (мс), один раз на телефон
     tid: null,           // номер пробы для учёта в админке (случайный, без почты)
     tsent: null,         // что сервер знает о пробе: null - ничего, '-' - без почты, почта - с этой почтой
+    train: null,         // своя тренировка: { mode: 'program' | 'custom', items: [{ kind, minutes }] } (core.normalizeTrain)
     bookmark: { t: 0, w: 0 },
     schulteBest: null,   // лучшее время таблицы 5x5 до v2, переносится в best.schulte
     readerLog: {},       // { ключ дня: скорость читалки }
@@ -51,6 +54,7 @@ function normalize(s) {
     trial: num(s.trial),
     tid: typeof s.tid === 'string' && /^[A-Za-z0-9_-]{12,32}$/.test(s.tid) ? s.tid : null,
     tsent: typeof s.tsent === 'string' && s.tsent.length <= 120 ? s.tsent : null,
+    train: normalizeTrain(s.train),
     pending: pending && typeof pending.order === 'string' && /^sk[\w-]{6,40}$/.test(pending.order) && typeof pending.k === 'string' && num(pending.at) !== null ? pending : null,
     bookmark: bookmark && num(bookmark.t) !== null && num(bookmark.w) !== null ? bookmark : f.bookmark,
     schulteBest: num(s.schulteBest),

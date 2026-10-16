@@ -66,7 +66,7 @@
   .btn.ghost { background: var(--panel2); color: var(--fg); box-shadow: inset 0 0 0 1px var(--rule); }
   .btn:disabled { opacity: .45; cursor: default; }
   .btn { text-wrap: balance; }   /* длинная надпись на узком телефоне делится на две ровные строки, а не «… на 24 / часа» */
-  .btn:focus-visible, .opt:focus-visible, .tile:focus-visible, .mcard:focus-visible, .link:focus-visible, .back:focus-visible, .cell:focus-visible, .key:focus-visible, .plan:focus-visible, .libitem:focus-visible { outline: 2px solid var(--red); outline-offset: 2px; }
+  .btn:focus-visible, .opt:focus-visible, .tile:focus-visible, .mcard:focus-visible, .link:focus-visible, .seg button:focus-visible, .pchk:focus-visible, .mins button:focus-visible, .back:focus-visible, .cell:focus-visible, .key:focus-visible, .plan:focus-visible, .libitem:focus-visible { outline: 2px solid var(--red); outline-offset: 2px; }
   .card { background: var(--panel); border-radius: 18px; padding: 16px; box-shadow: inset 0 0 0 1px var(--rule); }
   .hero-start { min-height: calc(100dvh - 120px); display: flex; flex-direction: column; justify-content: center; gap: 0; }
   /* демо-слово старта в рамке с засечками, как сцена читалки */
@@ -101,6 +101,26 @@
   .why .ticks li { line-height: 1.45; }
   .offer, .trialcard { box-shadow: inset 0 0 0 2px var(--red); }
   .tc-title { font: 400 24px/1.15 var(--display); font-variant-numeric: lining-nums; }
+  /* своя тренировка: переключатель режима, отметка упражнения и кнопки времени (выбранное залито, как тема) */
+  .plan-link { display: block; margin: 4px auto 0; }
+  .plan-link .lock { margin-right: 4px; vertical-align: -1px; }
+  .seg { display: flex; padding: 3px; border-radius: 14px; box-shadow: inset 0 0 0 1px var(--line); }
+  .seg button { flex: 1; min-height: 44px; border: 0; background: none; color: var(--muted); font: 600 15px/1 var(--sans); border-radius: 11px; cursor: pointer; }
+  .seg button[aria-checked="true"] { background: var(--fg); color: var(--ink); }
+  .plan-list { gap: 8px; }
+  .prow { background: var(--panel); border-radius: 16px; box-shadow: inset 0 0 0 1px var(--rule); padding: 0 14px; }
+  .prow.on { box-shadow: inset 0 0 0 2px var(--red); }
+  .pchk { display: flex; align-items: center; gap: 12px; width: 100%; min-height: 56px; padding: 10px 0; background: none; border: 0; color: var(--fg); font: inherit; text-align: left; cursor: pointer; }
+  .pchk .box { flex: 0 0 22px; height: 22px; border-radius: 7px; box-shadow: inset 0 0 0 2px var(--line); display: grid; place-items: center; }
+  .prow.on .pchk .box { background: var(--red); box-shadow: none; }
+  .prow.on .pchk .box::after { content: ""; width: 10px; height: 5px; margin-top: -3px; border: solid var(--ink); border-width: 0 0 2px 2px; transform: rotate(-45deg); }
+  .pchk b { display: block; font-weight: 700; }
+  .pchk .small { display: block; }
+  .mins { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; padding: 0 0 12px 34px; }
+  .mins button { min-height: 44px; border: 0; border-radius: 10px; background: var(--panel2); color: var(--fg); box-shadow: inset 0 0 0 1px var(--rule); font: 600 14px/1 var(--sans); cursor: pointer; white-space: nowrap; }
+  .mins button[aria-checked="true"] { background: var(--fg); color: var(--ink); box-shadow: none; }
+  .plan-foot { display: grid; gap: 8px; margin: 14px -16px 0; padding-inline: 16px; background: var(--bg); box-shadow: 0 -1px 0 var(--rule); }   /* сплошной фон: итог не налезает на список под ним */
+  .clock { display: grid; gap: 6px; margin: 4px 0 8px; }
   .consent { display: flex; gap: 10px; align-items: flex-start; font-size: 13px; color: var(--muted); cursor: pointer; }
   .consent input { flex: none; width: 20px; height: 20px; margin: 1px 0 0; accent-color: var(--red); }
   .consent a, .small a { color: var(--fg); }
@@ -240,8 +260,8 @@
   .later { animation: rise var(--dur-enter) var(--ease-out) backwards; animation-delay: calc(var(--i, 0) * 1ms); }
 
   /* движение: нажатие, каскад карточек, ключевые кадры */
-  .btn, .opt, .tile, .key, .libitem, .mcard { transition: transform var(--dur-press) var(--ease-out); }
-  .btn:active:not(:disabled), .opt:active, .tile:active, .key:active, .libitem:active, .plan:active, .mcard:active { transform: scale(.97); }
+  .btn, .opt, .tile, .key, .libitem, .mcard, .seg button, .mins button { transition: transform var(--dur-press) var(--ease-out); }
+  .btn:active:not(:disabled), .seg button:active, .mins button:active, .opt:active, .tile:active, .key:active, .libitem:active, .plan:active, .mcard:active { transform: scale(.97); }
   .tiles.enter > .tile { animation: rise var(--dur-enter) var(--ease-out) backwards; animation-delay: calc(var(--i, 0) * 1ms); }
   .chart.enter .pt { animation: fade 240ms var(--ease-out) 700ms backwards; }
   .confetti { position: fixed; inset: 0; width: 100%; height: 100%; pointer-events: none; z-index: 10; }
@@ -351,6 +371,7 @@
     <ul class="ticks" style="margin-bottom: 18px">
       <li>Тренировка дня 10 минут, скорость читалки растёт от твоего теста</li>
       <li>13 тренировок: Шульте трёх видов, растяжка взгляда, вспышка, запомни число, поиск буквы, читалка, блоки, указка, колонка, указка по точкам, перевёрнутый текст</li>
+      <li>Своя тренировка: выбираешь упражнения и время каждого, от 1 минуты</li>
       <li>Библиотека классики и читалка для любого своего текста</li>
       <li>Повторный тест раз в 7 дней и график роста</li>
     </ul>
@@ -448,6 +469,7 @@
         <div id="h-steps"></div>
         <button class="btn" id="b-train" style="margin-top: 12px"></button>
         <p class="muted small center" id="h-train-note" style="margin-top: 8px"></p>
+        <button class="link plan-link" id="b-plan">Настроить тренировку</button>
       </div>
       <div class="card stack">
         <div style="display: flex; justify-content: space-between; gap: 10px"><b>Скорость</b><span class="muted small" id="h-speed"></span></div>
@@ -466,6 +488,25 @@
         <span class="eyebrow">Бесплатные гайды</span>
         <a class="mcard" href="https://ivan-loginov.ru/guide-raspakovka-claude/"><b>Распаковка в Claude</b><span>Три промпта: распаковка себя, экспертности и аудитории с банком из 30&nbsp;тем</span></a>
       </div>
+    </div>
+  </section>
+
+  <!-- 6а. Своя тренировка: упражнения на выбор и время каждого -->
+  <section id="s-plan" hidden>
+    <div class="top"><button class="back" id="b-plan-back">← Назад</button><div class="logo" data-name></div></div>
+    <h1 style="font-size: 34px">Настроить тренировку</h1>
+    <div class="stack">
+      <div class="seg" id="plan-mode" role="radiogroup" aria-label="Тренировка дня">
+        <button type="button" role="radio" data-mode="program" aria-checked="true">По программе</button>
+        <button type="button" role="radio" data-mode="custom" aria-checked="false">Своя</button>
+      </div>
+      <p class="muted" id="plan-note"></p>
+      <div class="stack plan-list" id="plan-list" hidden></div>
+    </div>
+    <div class="sticky plan-foot">
+      <p class="center" id="plan-total"></p>
+      <p class="err center" id="plan-err" role="alert" hidden></p>
+      <button class="btn" id="b-plan-done">Готово</button>
     </div>
   </section>
 

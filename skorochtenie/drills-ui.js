@@ -1,7 +1,8 @@
 // Экраны новых упражнений: растяжка, вспышка, поиск буквы, запомни число, перевёрнутый текст.
-// Вся арифметика в drills.js. Каждый экран получает body и ctx: { onDone, record(kind, value), words, tokens, random, setStop, fmtSec }
+// Вся арифметика в drills.js. Каждый экран получает body и ctx: { onDone, record(kind, value), words, tokens, random, setStop, fmtSec,
+// seconds - время своей тренировки (нет = по числу раундов, как в программе), more() - следующий кусок текста }
 import * as d from './drills.js';
-import { wordDelayMs } from './core.js';
+import { wordDelayMs, clockText } from './core.js';
 
 function el(tag, cls, text) {
   const e = document.createElement(tag);
@@ -11,6 +12,29 @@ function el(tag, cls, text) {
 }
 
 const ROUNDS = { sight: 12, flash: 12, memory: 10 };
+
+// Обратный отсчёт своей тренировки: полоса и «Осталось 0:42». over() - минуты вышли: новый раунд, таблицу или текст
+// не начинаем, начатое доигрываем. Время идёт по часам, как у тренировки с секундомером
+export function countdown(seconds) {
+  const box = el('div', 'clock');
+  const label = el('span', 'muted small');
+  const bar = el('div', 'progress'); const barI = el('i'); bar.append(barI);
+  box.append(label, bar);
+  const ms = seconds * 1000, t0 = performance.now();
+  const left = () => Math.max(0, ms - (performance.now() - t0));
+  const paint = () => {
+    const l = left();
+    label.textContent = l > 0 ? `Осталось ${clockText(l)}` : 'Время вышло, доделай начатое';
+    barI.style.transform = `scaleX(${1 - l / ms})`;
+  };
+  paint();
+  const iv = setInterval(paint, 250);
+  return {
+    el: box,
+    over: () => left() <= 0,
+    stop() { clearInterval(iv); label.textContent = 'Время вышло'; barI.style.transform = 'scaleX(1)'; },
+  };
+}
 
 // Полоса раундов, подпись уровня и кнопка «Дальше», общие для раундовых упражнений
 function frame(body, ctx, kind, total) {
@@ -26,10 +50,20 @@ function frame(body, ctx, kind, total) {
   doneB.addEventListener('click', () => ctx.onDone && ctx.onDone());
   body.append(info, stage, opts, res, bar, doneB);
   let round = 0;
+  // своя тренировка: раунды идут, пока не вышло время, полосу раундов заменяет отсчёт сверху
+  const clock = ctx.seconds ? countdown(ctx.seconds) : null;
+  if (clock) { body.prepend(clock.el); bar.hidden = true; }
   return {
     stage, opts, res, doneB, levelL,
-    next() { round++; roundL.textContent = `Раунд ${Math.min(round, total)} из ${total}`; barI.style.transform = `scaleX(${(round - 1) / total})`; return round <= total; },
-    finish(text) { barI.style.transform = 'scaleX(1)'; stage.textContent = ''; opts.textContent = ''; res.textContent = text; doneB.hidden = false; doneB.focus(); },
+    stop() { if (clock) clock.stop(); },
+    next() {
+      if (clock) {
+        if (round && clock.over()) return false;   // первый раунд всегда, дальше - пока есть время
+        round++; roundL.textContent = `Раунд ${round}`; return true;
+      }
+      round++; roundL.textContent = `Раунд ${Math.min(round, total)} из ${total}`; barI.style.transform = `scaleX(${(round - 1) / total})`; return round <= total;
+    },
+    finish(text) { if (clock) clock.stop(); barI.style.transform = 'scaleX(1)'; stage.textContent = ''; opts.textContent = ''; res.textContent = text; doneB.hidden = false; doneB.focus(); },
   };
 }
 
@@ -82,7 +116,7 @@ export function sight(body, ctx) {
     }, d.SIGHT.showMs);
   }
   f.res.textContent = 'Смотри в точку. Что было справа?';
-  ctx.setStop(() => clearTimeout(timer));
+  ctx.setStop(() => { clearTimeout(timer); f.stop(); });
   ctx.recordAtDone(() => ctx.record('sight', best));
   timer = setTimeout(round, 600);
 }
@@ -115,49 +149,68 @@ export function flash(body, ctx) {
     }, d.flashMs(level));
   }
   f.res.textContent = 'Группа мелькнёт один раз. Что было?';
-  ctx.setStop(() => clearTimeout(timer));
+  ctx.setStop(() => { clearTimeout(timer); f.stop(); });
   ctx.recordAtDone(() => ctx.record('flash', bestMs));
   timer = setTimeout(() => round(0), 600);
 }
 
 // ---- Поиск буквы ----
+// В своей тренировке по времени: нашёл все слова, а минуты ещё есть - следующий текст с новой буквой
 export function search(body, ctx) {
-  const tokens = ctx.tokens.slice(0, 70);
-  const r = d.letterSearch(tokens, ctx.random);
+  const clock = ctx.seconds ? countdown(ctx.seconds) : null;
   const info = el('div', 'sch-info');
-  const target = el('span', null, ''); target.append('Найди слова с буквой ', el('b', 'letter', r.letter));
+  const target = el('span');
   const timeL = el('span', 'muted', '0,0 с'); timeL.style.textAlign = 'right';
   info.append(target, timeL);
   const box = el('div', 'pointer-text search-text');
-  const spans = tokens.map(t => { const s = el('span', null, t); s.tabIndex = 0; s.setAttribute('role', 'button'); return s; });
-  spans.forEach((s, k) => { box.append(s); if (k < spans.length - 1) box.append(' '); });
   const res = el('p', 'muted center');
   const doneB = el('button', 'btn', 'Дальше'); doneB.hidden = true;
+  if (clock) body.append(clock.el);
   body.append(info, box, res, doneB);
-  const left = new Set(r.targets);
-  let misses = 0, t0 = performance.now(), timer = setInterval(() => { timeL.textContent = `${ctx.fmtSec(((performance.now() - t0) / 1000).toFixed(1))} с`; }, 100);
-  res.textContent = `Осталось найти: ${left.size}`;
-  function tap(i, s) {
-    if (s.classList.contains('hit')) return;
-    if (left.has(i)) {
-      left.delete(i); s.classList.add('hit');
-      res.textContent = `Осталось найти: ${left.size}`;
-      if (!left.size) {
-        clearInterval(timer);
-        const sec = Math.round((performance.now() - t0) / 100) / 10;
-        res.textContent = `${ctx.fmtSec(sec)} с, лишних нажатий: ${misses}`;
-        ctx.record('search', sec);
-        doneB.hidden = false; doneB.focus();
+  let timer = null, nextT = null;
+
+  function page(all) {
+    const tokens = all.slice(0, 70);
+    const r = d.letterSearch(tokens, ctx.random);
+    target.textContent = '';
+    target.append('Найди слова с буквой ', el('b', 'letter', r.letter));
+    box.textContent = '';
+    const spans = tokens.map(t => { const s = el('span', null, t); s.tabIndex = 0; s.setAttribute('role', 'button'); return s; });
+    spans.forEach((s, k) => { box.append(s); if (k < spans.length - 1) box.append(' '); });
+    const left = new Set(r.targets);
+    let misses = 0;
+    const t0 = performance.now();
+    clearInterval(timer);
+    timer = setInterval(() => { timeL.textContent = `${ctx.fmtSec(((performance.now() - t0) / 1000).toFixed(1))} с`; }, 100);
+    res.textContent = `Осталось найти: ${left.size}`;
+    function tap(i, s) {
+      if (s.classList.contains('hit')) return;
+      if (left.has(i)) {
+        left.delete(i); s.classList.add('hit');
+        res.textContent = `Осталось найти: ${left.size}`;
+        if (!left.size) {
+          clearInterval(timer);
+          const sec = Math.round((performance.now() - t0) / 100) / 10;
+          ctx.record('search', sec);
+          const line = `${ctx.fmtSec(sec)} с, лишних нажатий: ${misses}`;
+          const finish = () => { if (clock) clock.stop(); res.textContent = line; doneB.hidden = false; doneB.focus(); };
+          if (!clock || clock.over()) return finish();
+          res.textContent = `${line}. Следующий текст…`;
+          // время могло выйти за паузу: тогда нового текста нет, сразу «Дальше»
+          nextT = setTimeout(() => (clock.over() ? finish() : page(ctx.more())), 900);
+        }
+      } else {
+        misses++;
+        s.classList.add('miss');
+        setTimeout(() => s.classList.remove('miss'), 300);
       }
-    } else {
-      misses++;
-      s.classList.add('miss');
-      setTimeout(() => s.classList.remove('miss'), 300);
     }
+    spans.forEach((s, i) => { s.addEventListener('click', () => tap(i, s)); s.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); tap(i, s); } }); });
   }
-  spans.forEach((s, i) => { s.addEventListener('click', () => tap(i, s)); s.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); tap(i, s); } }); });
+
   doneB.addEventListener('click', () => ctx.onDone && ctx.onDone());
-  ctx.setStop(() => clearInterval(timer));
+  ctx.setStop(() => { clearInterval(timer); clearTimeout(nextT); if (clock) clock.stop(); });
+  page(ctx.tokens);
 }
 
 // ---- Запомни число ----
@@ -196,29 +249,41 @@ export function memory(body, ctx) {
   keys.forEach(k => { const b = el('button', 'key' + (k === '✓' ? ' ok' : ''), k); b.addEventListener('click', () => key(k)); pad.append(b); });
   f.opts.append(pad);
   f.res.textContent = 'Число покажется на полторы секунды';
-  ctx.setStop(() => clearTimeout(timer));
+  ctx.setStop(() => { clearTimeout(timer); f.stop(); });
   ctx.recordAtDone(() => { if (best) ctx.record('memory', best); });
   timer = setTimeout(round, 600);
 }
 
 // ---- Перевёрнутый текст ----
+// В своей тренировке по времени: прочитал абзац, а минуты ещё есть - следующий абзац
 export function flipped(body, ctx) {
-  const tokens = ctx.tokens.slice(0, 120);
-  const box = el('div', 'read-text flipped-text', tokens.join(' '));
+  const clock = ctx.seconds ? countdown(ctx.seconds) : null;
+  const box = el('div', 'read-text flipped-text');
   const res = el('p', 'muted center');
   const readB = el('button', 'btn', 'Прочитал');
   const doneB = el('button', 'btn', 'Дальше'); doneB.hidden = true;
+  if (clock) body.append(clock.el);
   body.append(box, res, readB, doneB);
-  const t0 = performance.now();
+  let tokens = [], t0 = 0, nextT = null;
+  function page(all) {
+    tokens = all.slice(0, 120);
+    box.textContent = tokens.join(' ');
+    readB.hidden = false;
+    t0 = performance.now();
+  }
   readB.addEventListener('click', () => {
     const sec = (performance.now() - t0) / 1000;
     const score = d.flippedScore(tokens.length, sec);
     res.textContent = `${tokens.length} слов за ${ctx.fmtSec(Math.round(sec * 10) / 10)} с, это ${ctx.fmtSec(score)} с на 100 слов`;
     ctx.record('flipped', score);
-    readB.hidden = true; doneB.hidden = false; doneB.focus();
-  }, { once: true });
+    readB.hidden = true;
+    const finish = () => { if (clock) clock.stop(); doneB.hidden = false; doneB.focus(); };
+    if (!clock || clock.over()) return finish();
+    nextT = setTimeout(() => (clock.over() ? finish() : page(ctx.more())), 1200);   // время могло выйти за паузу
+  });
   doneB.addEventListener('click', () => ctx.onDone && ctx.onDone());
-  ctx.setStop(() => {});
+  ctx.setStop(() => { clearTimeout(nextT); if (clock) clock.stop(); });
+  page(ctx.tokens);
 }
 
 export const DRILL_UI = { sight, flash, search, memory, flipped };

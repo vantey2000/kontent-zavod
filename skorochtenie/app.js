@@ -1,13 +1,13 @@
 // Интерфейс: экраны и упражнения. Вся арифметика в core.js, хранение в store.js
 import * as c from './core.js';
 import * as dr from './drills.js';
-import { DRILL_UI } from './drills-ui.js';
+import { DRILL_UI, countdown } from './drills-ui.js';
 import { TESTS, LIBRARY } from './content.js';
 import * as store from './store.js';
 import * as m from './motion.js';
 
 const $ = id => document.getElementById(id);
-const SCREENS = ['start', 'read', 'quiz', 'result', 'pay', 'wait', 'acct', 'login', 'home', 'ex', 'lib', 'own', 'done'];
+const SCREENS = ['start', 'read', 'quiz', 'result', 'pay', 'wait', 'acct', 'login', 'home', 'plan', 'ex', 'lib', 'own', 'done'];
 const ANCHOR = 0.38;          // опорная буква на 38% ширины, как засечка в ролике
 const WORD_PX = 46;
 
@@ -522,7 +522,13 @@ function renderHome() {
   }
   $('h-prog').style.setProperty('--p', String(pd.done ? 1 : pd.day / c.CONFIG.programDays));
 
-  const steps = c.dailySteps(pd.day, a.paid);
+  const steps = c.trainSteps(pd.day, a.paid, state.train);
+  const own = steps.some(s => s.timed);   // своя тренировка вместо программы
+  $('h-title').textContent = own ? 'Своя тренировка' : 'Тренировка дня';
+  const planB = $('b-plan');
+  planB.textContent = '';
+  if (!a.paid) planB.append(el('i', 'lock'), ' ');
+  planB.append('Настроить тренировку');
   const list = $('h-steps');
   list.textContent = '';
   steps.forEach((s, i) => {
@@ -553,7 +559,7 @@ function renderHome() {
     train.textContent = 'Повторить ещё раз';
     note.textContent = 'Тренировка дня сделана';
   } else {
-    train.textContent = a.paid ? 'Начать · 10 минут' : 'Начать · 3 минуты';
+    train.textContent = `Начать · ${c.pluralMinutes(c.stepsMinutes(steps))}`;
     note.textContent = a.paid ? '' : 'В бесплатном режиме одна читалка в день';
   }
 
@@ -713,7 +719,7 @@ let session = null;
 function startTraining() {
   const a = acc();
   if (!a.paid && !c.canFreeRead(state.freeReads, today())) return showPay('home');
-  session = { steps: c.dailySteps(day().day, a.paid), i: 0 };
+  session = { steps: c.trainSteps(day().day, a.paid, state.train), i: 0 };
   runStep();
 }
 
@@ -722,6 +728,7 @@ function runStep() {
   openExercise(s.kind, {
     minutes: s.minutes,
     tables: s.kind === 'schulte-6' ? 1 : 2,
+    seconds: s.timed ? s.minutes * 60 : 0,   // своя тренировка: раундовые упражнения идут по часам
     stepLabel: `Шаг ${session.i + 1} из ${session.steps.length}`,
     onDone: () => {
       session.i++;
@@ -752,6 +759,97 @@ function finishDay() {
   if (a.trial) $('done-trial-text').textContent = `Это был день ${day().day} из ${c.CONFIG.programDays}. Пробный доступ закончится через ${c.leftText(a.until - Date.now())}: оставь его, и завтра программа продолжится`;
 }
 $('b-done-keep').addEventListener('click', () => showPay('home'));
+
+// ---------- своя тренировка ----------
+// Экран «Настроить тренировку»: «По программе» или «Своя» - отмеченные упражнения со временем 1, 2, 3 или 5 минут.
+// Сохраняется сразу при каждом нажатии; тренировка дня идёт по списку сверху вниз (core.trainSteps). Только с доступом
+
+const defaultMinutes = kind => (kind === 'reader' ? 3 : 2);
+const trainNow = () => c.normalizeTrain(state.train) || { mode: 'program', items: [] };
+
+// после сохранения список рисуется заново: фокус возвращается на ту же кнопку, чтобы с клавиатуры не терять место
+function saveTrain(t, focus) {
+  state.train = c.normalizeTrain(t);
+  persist();
+  paintPlan();
+  if (focus) { const f = document.querySelector(focus); if (f) f.focus({ preventScroll: true }); }
+}
+
+function showPlan() {
+  if (!acc().paid) { track('lock'); return showPay('home'); }
+  showErr('plan-err', '');
+  paintPlan();
+  show('plan');
+}
+
+function paintPlan() {
+  const t = trainNow();
+  const custom = t.mode === 'custom';
+  const prog = c.dailySteps(day().day, true);
+  document.querySelectorAll('#plan-mode [data-mode]').forEach(b => b.setAttribute('aria-checked', String(b.dataset.mode === t.mode)));
+  $('plan-note').textContent = custom
+    ? 'Отметь упражнения и выбери время каждого. Тренировка дня пойдёт по этому списку сверху вниз'
+    : `Каждый день новая разминка и текстовая тренировка, ${c.pluralMinutes(c.stepsMinutes(prog))}. Сегодня: ${prog.map(x => x.title).join(', ')}`;
+  const list = $('plan-list');
+  list.hidden = !custom;
+  list.textContent = '';
+  const on = new Map(t.items.map(i => [i.kind, i.minutes]));
+  for (const kind of c.TRAIN_KINDS) {
+    const info = c.STEP_INFO[kind];
+    const row = el('div', 'prow' + (on.has(kind) ? ' on' : ''));
+    row.dataset.kind = kind;
+    const chk = el('button', 'pchk');
+    chk.type = 'button';
+    chk.setAttribute('aria-pressed', String(on.has(kind)));
+    const txt = el('span');
+    txt.append(el('b', null, info.title), el('span', 'muted small', info.hint));
+    chk.append(el('span', 'box'), txt);
+    chk.addEventListener('click', () => {
+      const items = t.items.filter(i => i.kind !== kind);
+      if (!on.has(kind)) items.push({ kind, minutes: defaultMinutes(kind) });
+      showErr('plan-err', '');
+      saveTrain({ mode: 'custom', items }, `.prow[data-kind="${kind}"] .pchk`);
+    });
+    row.append(chk);
+    if (on.has(kind)) {
+      const mins = el('div', 'mins');
+      mins.setAttribute('role', 'radiogroup');
+      mins.setAttribute('aria-label', `Время: ${info.title}`);
+      for (const mn of c.TRAIN_MINUTES) {
+        const b = el('button', null, `${mn} мин`);
+        b.type = 'button';
+        b.dataset.min = String(mn);
+        b.setAttribute('role', 'radio');
+        b.setAttribute('aria-checked', String(on.get(kind) === mn));
+        b.addEventListener('click', () => saveTrain({ mode: 'custom', items: t.items.map(i => (i.kind === kind ? { kind, minutes: mn } : i)) },
+          `.prow[data-kind="${kind}"] [data-min="${mn}"]`));
+        mins.append(b);
+      }
+      row.append(mins);
+    }
+    list.append(row);
+  }
+  const count = custom ? t.items.length : prog.length;
+  $('plan-total').textContent = !count ? 'Ничего не выбрано'
+    : `Всего ${c.pluralMinutes(custom ? c.stepsMinutes(t.items) : c.stepsMinutes(prog))} · упражнений: ${count}`;
+}
+
+document.querySelectorAll('#plan-mode [data-mode]').forEach(b => b.addEventListener('click', () => {
+  const t = trainNow();
+  if (b.dataset.mode === t.mode) return;
+  showErr('plan-err', '');
+  if (b.dataset.mode === 'program') return saveTrain({ ...t, mode: 'program' });   // свой список не стирается
+  // первая своя тренировка начинается с сегодняшних шагов программы, дальше человек правит
+  const items = t.items.length ? t.items : c.dailySteps(day().day, true).map(x => ({ kind: x.kind, minutes: x.minutes }));
+  saveTrain({ mode: 'custom', items });
+}));
+$('b-plan-done').addEventListener('click', () => {
+  const t = trainNow();
+  if (t.mode === 'custom' && !t.items.length) return showErr('plan-err', 'Отметь хотя бы одно упражнение или выбери «По программе»');
+  goHome();
+});
+$('b-plan-back').addEventListener('click', goHome);
+$('b-plan').addEventListener('click', showPlan);
 
 // ---------- упражнения ----------
 
@@ -810,6 +908,8 @@ function drillCtx(kind, opts) {
   return {
     words: words(),
     tokens: p ? p.tokens : [],
+    seconds: opts.seconds || 0,
+    more: () => takePassage(kind === 'search' ? 70 : 120).tokens,   // следующий текст, пока не вышло время своей тренировки
     random: Math.random,
     fmtSec,
     onDone: () => { if (atDone) atDone(); opts.onDone && opts.onDone(); },
@@ -960,6 +1060,7 @@ function timed(body, { mode, tokens, wpm, onDone }) {
 
 function schulte(body, opts) {
   const total = opts.tables || 1;
+  const clock = opts.seconds ? countdown(opts.seconds) : null;   // своя тренировка: таблицы идут, пока не вышло время
   const size = opts.size || 5, symbols = opts.symbols || null, kind = opts.kind || 'schulte';
   const n = size * size;
   const order = symbols ? symbols.slice(0, n) : Array.from({ length: n }, (_, i) => i + 1);
@@ -971,9 +1072,10 @@ function schulte(body, opts) {
   const grid = el('div', size === 6 ? 'grid6' : 'grid5');
   const doneB = el('button', 'btn', 'Дальше'); doneB.hidden = true;
   const res = el('p', 'muted center');
+  if (clock) body.append(clock.el);
   body.append(info, grid, res, doneB);
   [info, res, doneB].forEach(x => { x.style.margin = '12px 0'; });
-  const label = () => { nextL.textContent = `Таблица ${table + 1} из ${total} · найди ${order[next]}`; };
+  const label = () => { nextL.textContent = `Таблица ${table + 1}${clock ? '' : ` из ${total}`} · найди ${order[next]}`; };
 
   function newTable() {
     next = 0;
@@ -1007,11 +1109,13 @@ function schulte(body, opts) {
     persist();
     table++;
     res.textContent = `Таблица за ${fmtSec(sec)} с · лучшее ${fmtSec(state.best[kind])} с`;
-    if (table < total) newTable(); else { grid.textContent = ''; nextL.textContent = 'Готово'; doneB.hidden = false; }
+    if (clock ? !clock.over() : table < total) return newTable();
+    if (clock) clock.stop();
+    grid.textContent = ''; nextL.textContent = 'Готово'; doneB.hidden = false;
   }
 
   doneB.addEventListener('click', () => opts.onDone && opts.onDone());
-  stopActive = () => clearInterval(timer);
+  stopActive = () => { clearInterval(timer); if (clock) clock.stop(); };
   newTable();
 }
 
