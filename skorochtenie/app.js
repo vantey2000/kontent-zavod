@@ -241,8 +241,30 @@ function startTrial() {
     state.trial = Date.now();
     persist();
     track('trial');
+    syncTrial();
   }
   goHome();
+}
+
+// Учёт пробы для админки (сервер skorochtenie-api, trial.js): кто сейчас на пробе и кто из них купил.
+// Номер пробы придумывает телефон, сервер узнаёт начало и площадку, после входа в оплаченный доступ - почту,
+// заказ в кассу несёт номер пробы. Страница ответа не ждёт; не дошло - повтор при следующем открытии.
+// state.tsent: null - сервер о пробе не знает, '-' - знает без почты, почта - знает с этой почтой
+function trialInfo() {
+  if (!state.trial) return null;
+  // учёт не должен ломать оплату: номер не получился (старый core.js в кэше, нет crypto) - заказ уходит без пробы
+  try { if (!state.tid) { state.tid = c.newTrialId(); persist(); } } catch { return null; }
+  return { id: state.tid, at: state.trial, src: state.src || 'direct' };
+}
+let trialSending = false;
+async function syncTrial() {
+  const t = trialInfo();
+  const mail = state.auth ? state.auth.email : '-';
+  if (!t || trialSending || state.tsent === mail || (state.tsent && mail === '-')) return;
+  trialSending = true;
+  const r = await api('/api/trial', { method: 'POST', body: t });
+  trialSending = false;
+  if (r.status === 200 || r.status === 400) { state.tsent = mail; persist(); }   // 400 = сервер такую пробу не примет никогда
 }
 
 // ---------- подписка ----------
@@ -321,7 +343,8 @@ $('b-pay').addEventListener('click', async () => {
   b.textContent = 'Готовим оплату…';
   showErr('pay-err', '');
   track(payTier === 'life' ? 'year' : 'month');   // в счётчике воронки столбец year = нажали тариф 2 990 (сейчас «Навсегда»)
-  const r = await api('/api/paylink', { method: 'POST', body: { plan: payTier } });
+  const t = trialInfo();   // была проба на этом телефоне - оплата отметит её купленной
+  const r = await api('/api/paylink', { method: 'POST', body: t ? { plan: payTier, trial: t } : { plan: payTier } });
   if (r.status === 200 && r.data.url) {
     state.pending = { order: r.data.order, k: r.data.k, plan: payTier, at: Date.now() };
     persist();
@@ -342,6 +365,7 @@ function applyAccess(d) {
   else if (state.auth && typeof d.password === 'boolean') state.auth.pw = d.password;
   if (d.access) state.acc = d.access;
   persist();
+  if (d.token) syncTrial();   // вошёл в оплаченный доступ на телефоне с пробой - сервер прикрепит почту к пробе
 }
 
 // Забрать доступ по заказу. Ответ: 'ok' | 'wait' | 'gone' | 'net'
@@ -1043,4 +1067,6 @@ else if (state.tests.length) goHome(); else show('start');
   if (!$('s-home').hidden) renderHome();
 })();
 // «Открыл» уходит после полной загрузки, уже с нарисованным первым экраном: учёт в фоне, не на пути человека
-if (document.readyState === 'complete') track('open'); else addEventListener('load', () => track('open'), { once: true });
+// Проба, о которой сервер не узнал (не было связи или взята до учёта 16.10), уходит тогда же
+const afterLoad = () => { track('open'); syncTrial(); };
+if (document.readyState === 'complete') afterLoad(); else addEventListener('load', afterLoad, { once: true });

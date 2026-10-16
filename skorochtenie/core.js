@@ -176,6 +176,11 @@ export function trialState(state, now) {
   return { status: 'active', until, left: until - now };
 }
 
+// Номер пробы для учёта в админке: 16 знаков base64url из 12 случайных байт, ни о человеке, ни о телефоне не говорит
+export function newTrialId(rnd = n => crypto.getRandomValues(new Uint8Array(n))) {
+  return btoa(String.fromCharCode(...rnd(12))).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+}
+
 // Сколько осталось пробы, минуты вверх, как у таймера (сразу после нажатия «24 ч»): «23 ч 41 мин», «2 ч», «41 мин», «меньше минуты»
 export function leftText(ms) {
   if (!(ms >= 6e4)) return 'меньше минуты';

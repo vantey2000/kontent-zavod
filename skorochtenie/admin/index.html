@@ -54,9 +54,9 @@
   .chk input { width: 20px; height: 20px; min-height: 0; accent-color: var(--red); }
   .row { background: var(--panel); border: 1px solid var(--rule); border-radius: 14px; margin-bottom: 8px; }
   .row .h { display: block; width: 100%; text-align: left; background: none; border: 0; padding: 12px 14px; cursor: pointer; }
-  .row .l1 { display: flex; justify-content: space-between; gap: 10px; align-items: baseline; flex-wrap: wrap; }
-  .row .em { font-weight: 700; font-size: 15px; word-break: break-all; }
-  .row .meta { font-size: 12.5px; color: var(--muted); margin-top: 4px; display: flex; gap: 4px 12px; flex-wrap: wrap; }
+  .row .l1, .trow .l1 { display: flex; justify-content: space-between; gap: 10px; align-items: baseline; flex-wrap: wrap; }
+  .row .em, .trow .em { font-weight: 700; font-size: 15px; word-break: break-all; }
+  .row .meta, .trow .meta { font-size: 12.5px; color: var(--muted); margin-top: 4px; display: flex; gap: 4px 12px; flex-wrap: wrap; }
   .row .more { display: none; padding: 0 14px 14px; font-size: 13.5px; color: var(--fg); }
   .row.open .more { display: block; }
   .more p { margin-top: 6px; }
@@ -68,7 +68,9 @@
   .b-gift { background: rgba(143,178,224,.14); color: var(--blue); }
   .b-paid, .b-life { background: rgba(111,194,138,.14); color: var(--ok); }
   .b-expired { background: var(--red-dim); color: var(--red-soft); }
-  .b-none { background: var(--panel2); color: var(--muted); }
+  .b-none, .b-over { background: var(--panel2); color: var(--muted); }
+  .b-active { background: rgba(143,178,224,.14); color: var(--blue); }
+  .trow { background: var(--panel); border: 1px solid var(--rule); border-radius: 14px; margin-bottom: 8px; padding: 12px 14px; }
   .own { font-size: 11px; font-weight: 700; color: var(--dim); border: 1px solid var(--line); border-radius: 6px; padding: 0 5px; }
   .box { background: var(--panel); border: 1px solid var(--rule); border-radius: 14px; padding: 14px; margin-bottom: 12px; }
   .box h3 { font-size: 15px; margin-bottom: 10px; }
@@ -122,6 +124,7 @@
     <div class="tabs" id="tabs" role="tablist">
       <button data-t="users" class="on">Подписчики</button>
       <button data-t="pays">Оплаты</button>
+      <button data-t="trial">Проба</button>
       <button data-t="funnel">Воронка</button>
       <button data-t="grant">Выдать доступ</button>
     </div>
@@ -136,6 +139,15 @@
       <div class="box"><h3>По месяцам</h3><div class="scroll"><table id="months"></table></div></div>
       <div class="box"><h3>Все оплаты</h3><div class="scroll"><table id="paylist"></table></div>
         <div class="hint">Первая оплата и автосписания. Возвраты делаются в кабинете кассы и здесь не видны</div></div>
+    </section>
+
+    <section data-s="trial" hidden>
+      <div class="cards" id="tcards"></div>
+      <div class="hint" style="margin:-8px 0 16px">Переход = купили ÷ (купили + проба кончилась без оплаты). Кто ещё на пробе, в процент не входит: они пока решают</div>
+      <div class="tools" id="tfilters"></div>
+      <div id="trials"></div>
+      <div class="hint">Проба без почты и карты, поэтому до оплаты человек виден как телефон: номер пробы, площадка и время. Почта появляется, когда он платит или входит в оплаченный доступ на этом же телефоне. Купил с другого телефона или браузера - здесь не свяжется. Пробы, взятые до включения учёта вечером 16 октября, появятся, когда человек снова откроет приложение</div>
+      <div class="box" style="margin-top:12px"><h3>По площадкам</h3><div class="scroll"><table id="tsrc"></table></div></div>
     </section>
 
     <section data-s="funnel" hidden>
@@ -202,7 +214,12 @@
   const dDay = s => d(Date.parse(s + 'T12:00:00+03:00'));
   const pct = (a, b) => b ? Math.round(a / b * 100) + '%' : '-';
 
-  let KEY = '', data = null, ev = [], evErr = '', filter = 'all', period = 7;
+  const TST = { active: 'на пробе', paid: 'купил', over: 'не купил' };
+  const dt = ms => d(ms) + ', ' + new Date(ms).toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit', timeZone: 'Europe/Moscow' });
+  const dur = ms => { const m = Math.max(1, Math.round(ms / 60e3)); return m < 60 ? m + ' мин' : m < 48 * 60 ? Math.round(m / 60) + ' ч' : Math.round(m / 1440) + ' дн.'; };
+  const left = ms => { const m = Math.max(0, Math.ceil(ms / 60e3)), h = Math.floor(m / 60); return h ? h + ' ч' + (m % 60 ? ' ' + m % 60 + ' мин' : '') : m + ' мин'; };
+
+  let KEY = '', data = null, ev = [], evErr = '', filter = 'all', period = 7, tfilter = 'active';
 
   function show(id, msg) { const e = $(id); e.textContent = msg || ''; e.hidden = !msg; }
   // ключ приходит один раз ссылкой ...admin/#k=ключ: запоминаем на устройстве и убираем из адреса
@@ -246,8 +263,11 @@
   const users = () => (data ? data.users : []).filter(u => $('showown').checked || !u.own);
   const allPays = () => users().flatMap(u => u.pays.map(p => Object.assign({ email: u.email, own: u.own }, p)));
   const firstPays = () => users().filter(u => u.pays.length).map(u => Math.min.apply(null, u.pays.map(p => p.at)));
+  const trials = () => ((data && data.trials) || []).filter(t => $('showown').checked || !t.own);
+  // переход в платный: кто ещё на пробе, в процент не входит
+  const conv = T => { const k = T.filter(t => t.status === 'paid').length; return { k, over: T.filter(t => t.status === 'over').length, p: pct(k, k + T.filter(t => t.status === 'over').length) }; };
 
-  function render() { renderCards(); renderUsers(); renderPays(); renderFunnel(); }
+  function render() { renderCards(); renderUsers(); renderPays(); renderTrials(); renderFunnel(); }
 
   function renderCards() {
     const U = users(), now = Date.now(), cnt = s => U.filter(u => u.status === s).length;
@@ -265,7 +285,8 @@
       [rub(sumM(month)), 'выручка за этот месяц', '', 1],
       [rub(sumM(prev)), 'за прошлый месяц'],
       [rub(P.reduce((a, p) => a + p.sum, 0)), 'выручка всего', P.length + ' оплат'],
-      [rub(soon.reduce((a, u) => a + (PRICE[u.plan] || 0), 0)), 'спишется за 7 дней', soon.length + ' чел.']
+      [rub(soon.reduce((a, u) => a + (PRICE[u.plan] || 0), 0)), 'спишется за 7 дней', soon.length + ' чел.'],
+      [trials().filter(t => t.status === 'active').length, 'на пробе сейчас', (c => 'купили после пробы ' + c.k + (c.k + c.over ? ' · ' + c.p : ''))(conv(trials()))]
     ];
     $('cards').innerHTML = cells.map(c => '<div class="card' + (c[3] ? ' hot' : '') + '"><b>' + c[0] + '</b><span>' + c[1] + '</span>' + (c[2] ? '<em>' + c[2] + '</em>' : '') + '</div>').join('');
   }
@@ -292,6 +313,8 @@
       if (u.paid) meta.push('оплачено ' + rub(u.paid) + (u.pays.length > 1 ? ' (' + u.pays.length + ')' : ''));
       meta.push(u.account ? (u.account.password ? 'пароль задан' : 'без пароля') : 'в приложение не входил');
       if (u.stopped) meta.push('отменил ' + d(u.stopped.at) + (u.stopped.via === 'app' ? ' в приложении' : ' в кассе'));
+      const tr = trials().find(t => t.status === 'paid' && t.email === u.email);
+      if (tr) meta.push('купил после пробы ' + d(tr.at));
       const acts = ['<button class="btn sm" data-a="link">Ссылка входа</button>', '<button class="btn ghost sm" data-a="30">Подарок 30 дней</button>', '<button class="btn ghost sm" data-a="forever">Подарок навсегда</button>'];
       if (u.gift) acts.push('<button class="btn red sm" data-a="revoke">Забрать подарок</button>');
       if (u.status === 'paying' || (u.status === 'life' && u.renews)) acts.push('<button class="btn red sm" data-a="cancel">Отменить автосписание</button>');
@@ -316,6 +339,40 @@
     $('paylist').innerHTML = '<tr><th>Дата</th><th>Почта</th><th>Тариф</th><th class="n">Сумма</th></tr>'
       + (P.map(p => '<tr><td>' + d(p.at) + '</td><td>' + esc(p.email) + (p.own ? ' <span class="own">свой</span>' : '') + '</td><td>' + planOf(p) + '</td><td class="n">' + rub(p.sum) + '</td></tr>').join('')
         || '<tr><td colspan="4" class="hint">Оплат пока нет</td></tr>');
+  }
+
+  function renderTrials() {
+    const T = trials(), now = Date.now(), c = conv(T), P = T.filter(t => t.status === 'paid');
+    const n = s => T.filter(t => t.status === s).length;
+    const plan = p => P.filter(t => (t.buy.plan === 'month') === (p === 'month')).length;   // старый год - к «навсегда»
+    const first = T.length ? T[T.length - 1].at : 0;
+    $('tcards').innerHTML = [
+      [n('active'), 'на пробе сейчас', '', 1],
+      [c.k + (c.k + c.over ? ' · ' + c.p : ''), 'перешли на платный', 'во время пробы ' + P.filter(t => t.buy.during).length + ' · после ' + P.filter(t => !t.buy.during).length, 1],
+      [c.over, 'проба кончилась, не купили'],
+      [T.length, 'брали пробу', first ? 'с ' + d(first) : ''],
+      [rub(P.reduce((a, t) => a + (t.buy.total || 0), 0)), 'заплатили после пробы', 'месяц ' + plan('month') + ' · навсегда ' + plan('life')]
+    ].map(x => '<div class="card' + (x[3] ? ' hot' : '') + '"><b>' + x[0] + '</b><span>' + x[1] + '</span>' + (x[2] ? '<em>' + x[2] + '</em>' : '') + '</div>').join('');
+    $('tfilters').innerHTML = [['active', 'на пробе'], ['paid', 'купили'], ['over', 'не купили'], ['all', 'все']]
+      .map(f => '<button class="chip' + (tfilter === f[0] ? ' on' : '') + '" data-tf="' + f[0] + '">' + f[1] + ' ' + (f[0] === 'all' ? T.length : n(f[0])) + '</button>').join('');
+    const list = T.filter(t => tfilter === 'all' || t.status === tfilter);
+    $('trials').innerHTML = list.map(t => {
+      const badge = t.status === 'active' ? 'осталось ' + left(t.until - now)
+        : t.status === 'paid' ? PLAN[t.buy.plan] + ' · ' + rub(t.buy.sum) : 'кончилась ' + d(t.until);
+      const meta = [SRC[t.src] || t.src, 'взял пробу ' + dt(t.at)];
+      if (t.status === 'paid') meta.push('купил ' + dt(t.buy.at) + ', через ' + dur(t.buy.at - t.at) + (t.buy.during ? ' во время пробы' : ' после пробы'));
+      if (t.status === 'paid' && t.buy.total > t.buy.sum) meta.push('всего ' + rub(t.buy.total));
+      return '<div class="trow"><div class="l1">'
+        + '<span class="em">' + (t.email ? esc(t.email) + (t.own ? ' <span class="own">свой</span>' : '') : 'Телефон · ' + esc(t.id)) + '</span>'
+        + '<span class="badge b-' + t.status + '">' + TST[t.status] + ' · ' + badge + '</span></div>'
+        + '<div class="meta">' + meta.map(m => '<span>' + esc(m) + '</span>').join('') + '</div></div>';
+    }).join('') || '<div class="hint" style="margin-bottom:8px">' + (tfilter === 'active' ? 'Сейчас на пробе никого' : 'Таких проб нет') + '</div>';
+    const by = {};
+    T.forEach(t => { const x = by[t.src] = by[t.src] || { n: 0, k: 0, over: 0 }; x.n++; if (t.status === 'paid') x.k++; if (t.status === 'over') x.over++; });
+    const srcs = Object.keys(by).sort((a, b) => by[b].n - by[a].n);
+    $('tsrc').innerHTML = '<tr><th>Площадка</th><th class="n">Брали пробу</th><th class="n">Купили</th><th class="n">Переход</th></tr>'
+      + (srcs.map(s => '<tr><td>' + esc(SRC[s] || s) + '</td><td class="n">' + by[s].n + '</td><td class="n">' + by[s].k + '</td><td class="n">' + pct(by[s].k, by[s].k + by[s].over) + '</td></tr>').join('')
+        || '<tr><td colspan="4" class="hint">Проб пока нет</td></tr>');
   }
 
   function renderFunnel() {
@@ -405,6 +462,7 @@
     } catch (ex) { b.disabled = false; alert('Не получилось: ' + ex.message); }
   });
   $('filters').addEventListener('click', e => { const f = e.target.closest('[data-f]'); if (!f) return; filter = f.dataset.f; renderUsers(); });
+  $('tfilters').addEventListener('click', e => { const f = e.target.closest('[data-tf]'); if (!f) return; tfilter = f.dataset.tf; renderTrials(); });
   $('periods').addEventListener('click', e => { const p = e.target.closest('[data-p]'); if (!p) return; period = +p.dataset.p;
     document.querySelectorAll('#periods .chip').forEach(x => x.classList.toggle('on', x === p)); renderFunnel(); });
   $('q').addEventListener('input', renderUsers);
