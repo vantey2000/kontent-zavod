@@ -1,0 +1,442 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="robots" content="noindex, nofollow">
+<meta name="referrer" content="no-referrer">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'unsafe-inline'; style-src 'unsafe-inline'; img-src data:; connect-src https://skorochtenie-api.aivan-loginov.workers.dev https://skorochtenie-events.aivan-loginov.workers.dev; base-uri 'none'; form-action 'none'">
+<meta name="theme-color" content="#070606">
+<title>Темп · админка</title>
+<style>
+  /* Админка «Темпа» (16.10.2026): токены «ночной типографии» приложения, только системные шрифты, без внешних запросов */
+  :root {
+    --bg: #070606; --panel: #121110; --panel2: #1b1917; --rule: #2a2724; --line: #3a3631;
+    --fg: #f2ead8; --muted: #a39b8c; --dim: #5f5a52;
+    --red: #ed4345; --red-dim: #3a1415; --red-soft: #ffb3b4; --ok: #6fc28a; --ink: #0d0b0a; --blue: #8fb2e0; --gold: #d9b56a;
+    --display: "Hoefler Text", Baskerville, "Iowan Old Style", Georgia, "Noto Serif", serif;
+    --sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    color-scheme: dark;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { background: var(--bg); color: var(--fg); font: 15px/1.45 var(--sans); font-variant-numeric: tabular-nums lining-nums; -webkit-text-size-adjust: 100%; -webkit-tap-highlight-color: transparent; }
+  [hidden] { display: none !important; }
+  button, input, select { font: inherit; color: inherit; }
+  .wrap { max-width: 980px; margin: 0 auto; padding: max(16px, env(safe-area-inset-top)) 16px max(48px, env(safe-area-inset-bottom)); }
+  .logo { font: 400 26px/1 var(--display); }
+  .logo i { font-style: normal; color: var(--red); }
+  .top { display: flex; justify-content: space-between; align-items: center; gap: 10px; flex-wrap: wrap; margin-bottom: 16px; }
+  .top .sub { font-size: 12px; color: var(--muted); margin-top: 4px; }
+  .top-r { display: flex; gap: 6px; }
+  .btn { background: var(--fg); color: var(--ink); border: 0; border-radius: 12px; font-weight: 700; font-size: 14px; padding: 11px 14px; cursor: pointer; min-height: 42px; }
+  .btn.ghost { background: transparent; color: var(--fg); box-shadow: inset 0 0 0 1px var(--line); }
+  .btn.red { background: transparent; color: var(--red-soft); box-shadow: inset 0 0 0 1px var(--red-dim); }
+  .btn.sm { padding: 8px 11px; font-size: 13px; min-height: 38px; border-radius: 10px; }
+  .btn:active { transform: scale(.97); }
+  .btn:disabled { opacity: .5; }
+  input, select { background: var(--panel); border: 1px solid var(--line); border-radius: 12px; font-size: 16px; padding: 11px 12px; outline: none; width: 100%; min-height: 44px; }
+  input:focus, select:focus { border-color: var(--fg); }
+  select { -webkit-appearance: none; appearance: none; padding-right: 36px; background: var(--panel) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8'%3E%3Cpath d='M1 1l5 5 5-5' fill='none' stroke='%23a39b8c' stroke-width='1.6'/%3E%3C/svg%3E") no-repeat right 14px center; }
+  .cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 8px; margin-bottom: 18px; }
+  .card { background: var(--panel); border: 1px solid var(--rule); border-radius: 14px; padding: 12px 14px; }
+  .card b { display: block; font-size: 22px; font-weight: 800; letter-spacing: -.01em; }
+  .card span { font-size: 12px; color: var(--muted); display: block; }
+  .card em { font-style: normal; font-size: 12px; color: var(--fg); display: block; margin-top: 2px; }
+  .card.hot b { color: var(--red); }
+  .tabs { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 14px; }
+  .tabs button { background: transparent; border: 0; box-shadow: inset 0 0 0 1px var(--line); color: var(--muted); border-radius: 99px; padding: 10px 14px; font-weight: 600; font-size: 14px; cursor: pointer; }
+  .tabs button.on { background: var(--fg); color: var(--ink); box-shadow: none; }
+  .tools { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 10px; align-items: center; }
+  .tools input[type=search] { flex: 1; min-width: 180px; }
+  .chip { border: 0; box-shadow: inset 0 0 0 1px var(--line); border-radius: 99px; padding: 8px 12px; font-size: 13px; color: var(--muted); cursor: pointer; background: transparent; }
+  .chip.on { box-shadow: inset 0 0 0 1.5px var(--fg); color: var(--fg); }
+  .chk { font-size: 13px; color: var(--muted); display: flex; gap: 8px; align-items: center; cursor: pointer; }
+  .chk input { width: 20px; height: 20px; min-height: 0; accent-color: var(--red); }
+  .row { background: var(--panel); border: 1px solid var(--rule); border-radius: 14px; margin-bottom: 8px; }
+  .row .h { display: block; width: 100%; text-align: left; background: none; border: 0; padding: 12px 14px; cursor: pointer; }
+  .row .l1 { display: flex; justify-content: space-between; gap: 10px; align-items: baseline; flex-wrap: wrap; }
+  .row .em { font-weight: 700; font-size: 15px; word-break: break-all; }
+  .row .meta { font-size: 12.5px; color: var(--muted); margin-top: 4px; display: flex; gap: 4px 12px; flex-wrap: wrap; }
+  .row .more { display: none; padding: 0 14px 14px; font-size: 13.5px; color: var(--fg); }
+  .row.open .more { display: block; }
+  .more p { margin-top: 6px; }
+  .more p b { color: var(--muted); font-weight: 600; }
+  .acts { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 12px; }
+  .badge { font-size: 12px; font-weight: 700; border-radius: 99px; padding: 3px 10px; white-space: nowrap; }
+  .b-paying { background: rgba(111,194,138,.14); color: var(--ok); }
+  .b-cancelled { background: rgba(217,181,106,.14); color: var(--gold); }
+  .b-gift { background: rgba(143,178,224,.14); color: var(--blue); }
+  .b-paid { background: rgba(111,194,138,.14); color: var(--ok); }
+  .b-expired { background: var(--red-dim); color: var(--red-soft); }
+  .b-none { background: var(--panel2); color: var(--muted); }
+  .own { font-size: 11px; font-weight: 700; color: var(--dim); border: 1px solid var(--line); border-radius: 6px; padding: 0 5px; }
+  .box { background: var(--panel); border: 1px solid var(--rule); border-radius: 14px; padding: 14px; margin-bottom: 12px; }
+  .box h3 { font-size: 15px; margin-bottom: 10px; }
+  .scroll { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+  table { width: 100%; border-collapse: collapse; font-size: 13.5px; }
+  th, td { text-align: left; padding: 8px 4px; border-bottom: 1px solid var(--rule); vertical-align: top; }
+  th:first-child, td:first-child { padding-left: 0; } th:last-child, td:last-child { padding-right: 0; }
+  th { color: var(--muted); font-weight: 600; font-size: 11.5px; }
+  td small { display: block; color: var(--muted); font-size: 11.5px; }
+  td.day { white-space: nowrap; }
+  td.n, th.n { text-align: right; white-space: nowrap; }
+  tr.tot td { font-weight: 700; border-bottom: 0; }
+  .hint { font-size: 12.5px; color: var(--muted); margin-top: 8px; }
+  .err { background: var(--red-dim); border: 1px solid #6b2a2c; color: var(--red-soft); border-radius: 12px; padding: 10px 12px; font-size: 13.5px; margin: 10px 0; }
+  .okmsg { color: var(--ok); font-size: 13.5px; margin-top: 8px; }
+  .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+  .login { max-width: 420px; margin: 14vh auto 0; }
+  .login p { font-size: 14px; color: var(--muted); margin: 10px 0 14px; }
+  .linkout { display: flex; gap: 6px; margin-top: 10px; }
+  .linkout input { font-size: 13px; }
+  .steps { display: grid; gap: 10px; }
+  .step .t { display: flex; justify-content: space-between; gap: 10px; font-size: 14px; }
+  .step .t b { font-size: 16px; }
+  .step .bar { height: 8px; background: var(--panel2); border-radius: 99px; margin-top: 5px; overflow: hidden; }
+  .step .bar i { display: block; height: 100%; background: var(--fg); border-radius: 99px; }
+  .step.pay .bar i { background: var(--red); }
+  .step .c { font-size: 12px; color: var(--muted); margin-top: 3px; }
+  .side { display: flex; gap: 8px 18px; flex-wrap: wrap; font-size: 13.5px; color: var(--muted); margin-top: 12px; padding-top: 10px; border-top: 1px solid var(--rule); }
+  .side b { color: var(--fg); }
+  @media (max-width: 560px) { .grid2 { grid-template-columns: 1fr; } .card b { font-size: 20px; } .cards { grid-template-columns: 1fr 1fr; } }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="login" id="login" hidden>
+    <div class="logo">Т<i>е</i>мп · админка</div>
+    <p>Вставь ключ админки. Он запомнится на этом устройстве</p>
+    <input type="password" id="keyin" placeholder="ключ" autocomplete="off" aria-label="Ключ админки">
+    <button class="btn" id="keysave" style="margin-top:10px;width:100%">Войти</button>
+    <div class="err" id="loginerr" hidden></div>
+  </div>
+
+  <div id="app" hidden>
+    <div class="top">
+      <div><div class="logo">Т<i>е</i>мп · админка</div><div class="sub" id="loaded">загружаю…</div></div>
+      <div class="top-r"><button class="btn ghost sm" id="reload">Обновить</button><button class="btn ghost sm" id="logout">Выйти</button></div>
+    </div>
+    <div class="err" id="apperr" hidden></div>
+    <label class="chk" style="margin-bottom:12px"><input type="checkbox" id="showown"> показывать свои и тестовые оплаты (по умолчанию не входят в выручку)</label>
+    <div class="cards" id="cards"></div>
+    <div class="tabs" id="tabs" role="tablist">
+      <button data-t="users" class="on">Подписчики</button>
+      <button data-t="pays">Оплаты</button>
+      <button data-t="funnel">Воронка</button>
+      <button data-t="grant">Выдать доступ</button>
+    </div>
+
+    <section data-s="users">
+      <div class="tools"><input type="search" id="q" placeholder="Поиск по почте" aria-label="Поиск по почте"></div>
+      <div class="tools" id="filters"></div>
+      <div id="users"></div>
+    </section>
+
+    <section data-s="pays" hidden>
+      <div class="box"><h3>По месяцам</h3><div class="scroll"><table id="months"></table></div></div>
+      <div class="box"><h3>Все оплаты</h3><div class="scroll"><table id="paylist"></table></div>
+        <div class="hint">Первая оплата и автосписания. Возвраты делаются в кабинете кассы и здесь не видны</div></div>
+    </section>
+
+    <section data-s="funnel" hidden>
+      <div class="tools" id="periods">
+        <button class="chip" data-p="1">Сегодня</button><button class="chip on" data-p="7">7 дней</button><button class="chip" data-p="30">30 дней</button>
+      </div>
+      <div class="err" id="funerr" hidden></div>
+      <div class="box"><h3>Путь человека</h3><div class="steps" id="steps"></div><div class="side" id="side"></div>
+        <div class="hint">Каждое событие считается с телефона один раз, поэтому числа = люди, а не загрузки. «Оплатили» = новые подписчики по данным кассы, без продлений. Дни по Москве</div></div>
+      <div class="box"><h3>По площадкам</h3><div class="scroll"><table id="bysrc"></table></div>
+        <div class="hint">Площадка = метка в адресе после #. Без метки = зашли напрямую или Instagram срезал метку. «Тариф» = нажали «Открыть доступ», под числом - доля от открывших. Оплаты кассы площадку не знают</div></div>
+      <div class="box"><h3>По дням</h3><div class="scroll"><table id="byday"></table></div></div>
+      <div class="box"><h3>Касса за последние 3 дня</h3><div id="orders"></div>
+        <div class="hint">Заказ появляется, когда человек нажал «Открыть доступ» и ушёл на форму кассы. Хранится 3 дня. Один человек может нажать несколько раз</div></div>
+    </section>
+
+    <section data-s="grant" hidden>
+      <div class="box">
+        <h3>Подарочный доступ</h3>
+        <div class="grid2">
+          <input type="email" id="gemail" placeholder="почта человека" inputmode="email" autocomplete="off" aria-label="Почта для подарка">
+          <select id="gdays" aria-label="Срок подарка"><option value="30">на 30 дней</option><option value="90">на 90 дней</option><option value="365">на год</option><option value="forever">навсегда</option></select>
+        </div>
+        <input type="text" id="gnote" placeholder="заметка для себя: за что подарок" style="margin-top:8px" aria-label="Заметка">
+        <div class="acts"><button class="btn" id="gdo">Выдать доступ</button><button class="btn red" id="gundo">Забрать подарок</button></div>
+        <div class="hint">Подарок не трогает оплаченную подписку. Чтобы человек вошёл, сделай ему ссылку входа ниже</div>
+        <div class="err" id="gerr" hidden></div><div class="okmsg" id="gok"></div>
+      </div>
+      <div class="box">
+        <h3>Ссылка входа на другой телефон</h3>
+        <input type="email" id="lemail" placeholder="почта, на которую оплачено" inputmode="email" autocomplete="off" aria-label="Почта для ссылки входа">
+        <div class="acts"><button class="btn" id="ldo">Сделать ссылку входа</button></div>
+        <div id="lout"></div>
+        <div class="hint">Для тех, кто сменил телефон или открыл приложение не в том браузере и не задал пароль. Ссылка живёт 7 дней и открывает доступ этой почты, отправь её человеку в личку</div>
+        <div class="err" id="lerr" hidden></div>
+      </div>
+    </section>
+  </div>
+</div>
+<script>
+(function () {
+  'use strict';
+  const API = 'https://skorochtenie-api.aivan-loginov.workers.dev';
+  const EV = 'https://skorochtenie-events.aivan-loginov.workers.dev';
+  const PRICE = { month: 490, year: 2990 };
+  const STORE = 'sk_admin';
+  const MSK = 3 * 3600e3, DAY = 864e5;
+  const ST = { paying: 'платит', cancelled: 'отменил, доступ идёт', gift: 'подарок', paid: 'оплачено', expired: 'срок вышел', none: 'без доступа' };
+  const PLAN = { month: 'месяц', year: 'год' };
+  const SRC = { ig: 'Instagram', 'ig-2h': 'Instagram, касание 2 ч', 'ig-20h': 'Instagram, касание 20 ч', yt: 'YouTube', sh: 'Shorts', vk: 'VK', bio: 'шапка профиля', direct: 'без метки', other: 'другое' };
+
+  const $ = id => document.getElementById(id);
+  const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+  const rub = n => (Number(n) || 0).toLocaleString('ru-RU') + ' ₽';
+  const mskDay = ms => new Date(ms + MSK).toISOString().slice(0, 10);
+  const d = ms => {
+    if (!ms) return '-';
+    const o = { day: 'numeric', month: 'short', timeZone: 'Europe/Moscow' };
+    if (mskDay(ms).slice(0, 4) !== mskDay(Date.now()).slice(0, 4)) o.year = 'numeric';
+    return new Date(ms).toLocaleDateString('ru-RU', o);
+  };
+  const dDay = s => d(Date.parse(s + 'T12:00:00+03:00'));
+  const pct = (a, b) => b ? Math.round(a / b * 100) + '%' : '-';
+
+  let KEY = '', data = null, ev = [], evErr = '', filter = 'all', period = 7;
+
+  function show(id, msg) { const e = $(id); e.textContent = msg || ''; e.hidden = !msg; }
+  // ключ приходит один раз ссылкой ...admin/#k=ключ: запоминаем на устройстве и убираем из адреса
+  function keyFromHash() {
+    const m = location.hash.match(/k=([A-Za-z0-9_-]{16,})/);
+    if (!m) return false;
+    KEY = m[1];
+    try { localStorage.setItem(STORE, KEY); } catch (e) {}
+    history.replaceState(null, '', location.pathname);
+    return true;
+  }
+  keyFromHash();
+  if (!KEY) { try { KEY = localStorage.getItem(STORE) || ''; } catch (e) {} }
+  addEventListener('hashchange', () => { if (keyFromHash()) start(); });
+
+  async function api(path, body) {
+    const opts = { cache: 'no-store', headers: { 'X-Admin-Key': KEY } };
+    if (body) { opts.method = 'POST'; opts.headers['Content-Type'] = 'application/json'; opts.body = JSON.stringify(body); }
+    const r = await fetch(API + path, opts);
+    const t = await r.text(); let j = null; try { j = JSON.parse(t); } catch (e) {}
+    return { status: r.status, j, t };
+  }
+
+  async function load() {
+    show('apperr', ''); $('loaded').textContent = 'загружаю…';
+    const today = mskDay(Date.now()), from = mskDay(Date.now() - 29 * DAY);
+    const evReq = fetch(EV + '/otchet?from=' + from + '&to=' + today, { cache: 'no-store' })
+      .then(r => r.json()).then(j => { if (!j.ok) throw new Error(j.error || 'ошибка'); ev = j.rows || []; evErr = ''; })
+      .catch(e => { evErr = 'Счётчик воронки не ответил: ' + e.message; });
+    try {
+      const r = await api('/api/admin/overview');
+      if (r.status === 403) { try { localStorage.removeItem(STORE); } catch (e) {} KEY = ''; return showLogin('Ключ не подошёл'); }
+      if (r.status !== 200 || !r.j) throw new Error(r.t || ('ошибка ' + r.status));
+      data = r.j;
+    } catch (e) { show('apperr', 'Не получилось загрузить подписчиков: ' + e.message); }
+    await evReq;
+    $('loaded').textContent = 'обновлено ' + new Date().toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' });
+    render();
+  }
+
+  const users = () => (data ? data.users : []).filter(u => $('showown').checked || !u.own);
+  const allPays = () => users().flatMap(u => u.pays.map(p => Object.assign({ email: u.email, own: u.own }, p)));
+  const firstPays = () => users().filter(u => u.pays.length).map(u => Math.min.apply(null, u.pays.map(p => p.at)));
+
+  function render() { renderCards(); renderUsers(); renderPays(); renderFunnel(); }
+
+  function renderCards() {
+    const U = users(), now = Date.now(), cnt = s => U.filter(u => u.status === s).length;
+    const month = mskDay(now).slice(0, 7);
+    const t = new Date(now + MSK); t.setUTCDate(1); t.setUTCMonth(t.getUTCMonth() - 1);
+    const prev = t.toISOString().slice(0, 7);
+    const P = allPays(), sumM = m => P.filter(p => mskDay(p.at).slice(0, 7) === m).reduce((a, p) => a + p.sum, 0);
+    const paying = U.filter(u => u.status === 'paying');
+    const soon = paying.filter(u => u.next && Date.parse(u.next + 'T23:59:59+03:00') - now <= 7 * DAY);
+    const cells = [
+      [U.filter(u => ['paying', 'cancelled', 'gift', 'paid'].includes(u.status)).length, 'с доступом сейчас', '', 1],
+      [paying.length, 'платят, автопродление', 'месяц ' + paying.filter(u => u.plan === 'month').length + ' · год ' + paying.filter(u => u.plan === 'year').length],
+      [cnt('cancelled'), 'отменили, доступ идёт'],
+      [cnt('gift'), 'подарков'],
+      [rub(sumM(month)), 'выручка за этот месяц', '', 1],
+      [rub(sumM(prev)), 'за прошлый месяц'],
+      [rub(P.reduce((a, p) => a + p.sum, 0)), 'выручка всего', P.length + ' оплат'],
+      [rub(soon.reduce((a, u) => a + (PRICE[u.plan] || 0), 0)), 'спишется за 7 дней', soon.length + ' чел.']
+    ];
+    $('cards').innerHTML = cells.map(c => '<div class="card' + (c[3] ? ' hot' : '') + '"><b>' + c[0] + '</b><span>' + c[1] + '</span>' + (c[2] ? '<em>' + c[2] + '</em>' : '') + '</div>').join('');
+  }
+
+  function when(u) {
+    if (u.status === 'paying' && u.next) return 'списание ' + dDay(u.next);
+    if (u.forever) return 'навсегда';
+    if (u.status === 'expired') return u.until ? 'кончился ' + d(u.until) : '';
+    return u.until ? 'до ' + d(u.until) : '';
+  }
+
+  function renderUsers() {
+    const U = users(), counts = { all: U.length };
+    U.forEach(u => { counts[u.status] = (counts[u.status] || 0) + 1; });
+    $('filters').innerHTML = [['all', 'все'], ['paying', 'платят'], ['cancelled', 'отменили'], ['gift', 'подарок'], ['expired', 'срок вышел'], ['none', 'без доступа']]
+      .map(f => '<button class="chip' + (filter === f[0] ? ' on' : '') + '" data-f="' + f[0] + '">' + f[1] + ' ' + (counts[f[0]] || 0) + '</button>').join('');
+    const q = $('q').value.trim().toLowerCase();
+    const last = u => Math.max(0, u.account ? u.account.created : 0, ...u.pays.map(p => p.at), u.stopped ? u.stopped.at : 0);
+    const list = U.filter(u => (filter === 'all' || u.status === filter) && (!q || u.email.includes(q))).sort((a, b) => last(b) - last(a));
+    $('users').innerHTML = list.map(u => {
+      const w = when(u);
+      const meta = [];
+      if (u.plan) meta.push('тариф: ' + PLAN[u.plan]);
+      if (u.paid) meta.push('оплачено ' + rub(u.paid) + (u.pays.length > 1 ? ' (' + u.pays.length + ')' : ''));
+      meta.push(u.account ? (u.account.password ? 'пароль задан' : 'без пароля') : 'в приложение не входил');
+      if (u.stopped) meta.push('отменил ' + d(u.stopped.at) + (u.stopped.via === 'app' ? ' в приложении' : ' в кассе'));
+      const acts = ['<button class="btn sm" data-a="link">Ссылка входа</button>', '<button class="btn ghost sm" data-a="30">Подарок 30 дней</button>', '<button class="btn ghost sm" data-a="forever">Подарок навсегда</button>'];
+      if (u.gift) acts.push('<button class="btn red sm" data-a="revoke">Забрать подарок</button>');
+      if (u.status === 'paying') acts.push('<button class="btn red sm" data-a="cancel">Отменить автосписание</button>');
+      return '<div class="row" data-e="' + esc(u.email) + '"><button class="h" aria-expanded="false"><div class="l1"><span class="em">' + esc(u.email) + (u.own ? ' <span class="own">свой</span>' : '') + '</span>'
+        + '<span class="badge b-' + u.status + '">' + ST[u.status] + (w ? ' · ' + w : '') + '</span></div>'
+        + '<div class="meta">' + meta.map(m => '<span>' + esc(m) + '</span>').join('') + '</div></button>'
+        + '<div class="more">'
+        + (u.pays.length ? '<p><b>Оплаты:</b> ' + u.pays.slice().sort((a, b) => b.at - a.at).map(p => d(p.at) + ' ' + rub(p.sum) + ' (' + PLAN[p.plan] + ')').join(', ') + '</p>' : '<p><b>Оплат не было</b></p>')
+        + (u.gift ? '<p><b>Подарок:</b> ' + (u.gift.forever ? 'навсегда' : 'до ' + d(u.gift.until)) + (u.gift.note ? ' · ' + esc(u.gift.note) : '') + '</p>' : '')
+        + (u.account ? '<p><b>В приложении с</b> ' + d(u.account.created) + '</p>' : '')
+        + '<div class="acts">' + acts.join('') + '</div><div class="lout"></div></div></div>';
+    }).join('') || '<div class="hint">Никого не нашлось</div>';
+  }
+
+  function renderPays() {
+    const P = allPays().sort((a, b) => b.at - a.at), by = {};
+    P.forEach(p => { const m = mskDay(p.at).slice(0, 7); const x = by[m] = by[m] || { n: 0, s: 0, who: new Set(), month: 0, year: 0 }; x.n++; x.s += p.sum; x.who.add(p.email); x[p.plan === 'year' ? 'year' : 'month']++; });
+    const ms = Object.keys(by).sort().reverse();
+    $('months').innerHTML = '<tr><th>Месяц</th><th class="n">Оплат</th><th class="n">Людей</th><th class="n">Месяц / год</th><th class="n">Сумма</th></tr>'
+      + (ms.map(m => '<tr><td>' + new Date(m + '-15T12:00:00Z').toLocaleDateString('ru-RU', { month: 'long', year: 'numeric' }) + '</td><td class="n">' + by[m].n + '</td><td class="n">' + by[m].who.size + '</td><td class="n">' + by[m].month + ' / ' + by[m].year + '</td><td class="n">' + rub(by[m].s) + '</td></tr>').join('')
+        || '<tr><td colspan="5" class="hint">Оплат пока нет</td></tr>');
+    $('paylist').innerHTML = '<tr><th>Дата</th><th>Почта</th><th>Тариф</th><th class="n">Сумма</th></tr>'
+      + (P.map(p => '<tr><td>' + d(p.at) + '</td><td>' + esc(p.email) + (p.own ? ' <span class="own">свой</span>' : '') + '</td><td>' + PLAN[p.plan] + '</td><td class="n">' + rub(p.sum) + '</td></tr>').join('')
+        || '<tr><td colspan="4" class="hint">Оплат пока нет</td></tr>');
+  }
+
+  function renderFunnel() {
+    show('funerr', evErr);
+    const from = mskDay(Date.now() - (period - 1) * DAY);
+    const tot = {}, bySrc = {}, byDay = {};
+    ev.filter(r => r.day >= from).forEach(r => {
+      tot[r.ev] = (tot[r.ev] || 0) + r.n;
+      (bySrc[r.src] = bySrc[r.src] || {})[r.ev] = (bySrc[r.src][r.ev] || 0) + r.n;
+      (byDay[r.day] = byDay[r.day] || {})[r.ev] = (byDay[r.day][r.ev] || 0) + r.n;
+    });
+    const n = k => tot[k] || 0;
+    const firsts = firstPays().filter(t => mskDay(t) >= from);
+    firsts.forEach(t => { const k = mskDay(t); (byDay[k] = byDay[k] || {}).paid = (byDay[k].paid || 0) + 1; });
+    const steps = [
+      ['Открыли тест', n('open')],
+      ['Дочитали и увидели результат', n('test')],
+      ['Увидели экран оплаты', n('pay')],
+      ['Нажали «Открыть доступ»', n('month') + n('year'), 'месяц ' + n('month') + ' · год ' + n('year')],
+      ['Оплатили (новые подписчики)', firsts.length, '', 'pay']
+    ];
+    const top = steps[0][1] || 1;
+    $('steps').innerHTML = steps.map((s, i) => '<div class="step' + (s[3] ? ' ' + s[3] : '') + '"><div class="t"><span>' + s[0] + '</span><b>' + s[1] + '</b></div>'
+      + '<div class="bar"><i style="width:' + Math.min(100, s[1] / top * 100).toFixed(1) + '%"></i></div>'
+      + '<div class="c">' + (i ? pct(s[1], steps[i - 1][1]) + ' от прошлого шага · ' + pct(s[1], steps[0][1]) + ' от открывших' : 'все, кто открыл') + (s[2] ? ' · ' + s[2] : '') + '</div></div>').join('');
+    $('side').innerHTML = '<span>Продолжили бесплатно: <b>' + n('free') + '</b></span><span>Упёрлись в замок: <b>' + n('lock') + '</b></span>';
+
+    const srcs = Object.keys(bySrc).sort((a, b) => (bySrc[b].open || 0) - (bySrc[a].open || 0));
+    const g = (o, k) => (o && o[k]) || 0;
+    $('bysrc').innerHTML = '<tr><th>Площадка</th><th class="n">Открыли</th><th class="n">Дочитали</th><th class="n">Оплата</th><th class="n">Тариф</th></tr>'
+      + (srcs.map(s => { const o = bySrc[s], tar = g(o, 'month') + g(o, 'year');
+        return '<tr><td>' + esc(SRC[s] || s) + '</td><td class="n">' + g(o, 'open') + '</td><td class="n">' + g(o, 'test') + '</td><td class="n">' + g(o, 'pay') + '</td><td class="n">' + tar + '<small>' + pct(tar, g(o, 'open')) + '</small></td></tr>'; }).join('')
+        || '<tr><td colspan="5" class="hint">За этот срок событий нет</td></tr>');
+    const days = Object.keys(byDay).sort().reverse();
+    $('byday').innerHTML = '<tr><th>День</th><th class="n">Открыли</th><th class="n">Дочитали</th><th class="n">Тариф</th><th class="n">Оплатили</th></tr>'
+      + (days.map(k => { const o = byDay[k];
+        return '<tr><td class="day">' + dDay(k) + '</td><td class="n">' + g(o, 'open') + '</td><td class="n">' + g(o, 'test') + '</td><td class="n">' + (g(o, 'month') + g(o, 'year')) + '</td><td class="n">' + g(o, 'paid') + '</td></tr>'; }).join('')
+        || '<tr><td colspan="5" class="hint">За этот срок событий нет</td></tr>');
+
+    const O = (data ? data.orders : []).filter(o => $('showown').checked || !o.own), paid = O.filter(o => o.paid).length;
+    $('orders').innerHTML = '<div class="side" style="border:0;margin:0;padding:0">'
+      + '<span>Начали оплату: <b>' + O.length + '</b> (месяц ' + O.filter(o => o.plan === 'month').length + ' · год ' + O.filter(o => o.plan === 'year').length + ')</span>'
+      + '<span>Оплатили: <b>' + paid + '</b> (' + pct(paid, O.length) + ')</span></div>';
+  }
+
+  /* действия */
+  async function grant(email, what, note) {
+    const body = what === 'revoke' ? { email, revoke: true } : (what === 'forever' ? { email, forever: true, note } : { email, days: Number(what), note });
+    const r = await api('/api/admin/grant', body);
+    if (r.status !== 200) throw new Error(r.t || ('ошибка ' + r.status));
+    return r.t.trim();
+  }
+  async function makeLink(email) {
+    const r = await api('/api/admin/link', { email });
+    if (r.status !== 200) throw new Error(r.t || ('ошибка ' + r.status));
+    return r.t.trim();
+  }
+  function linkBox(el, url) {
+    el.innerHTML = '<div class="linkout"><input type="text" readonly value="' + esc(url) + '" aria-label="Ссылка входа"><button class="btn sm" data-copy>Скопировать</button></div><div class="okmsg" data-said></div>';
+    const said = el.querySelector('[data-said]');
+    el.querySelector('[data-copy]').onclick = async () => {
+      const inp = el.querySelector('input');
+      try { await navigator.clipboard.writeText(url); said.textContent = 'Скопировано. Ссылка живёт 7 дней'; }
+      catch (e) { inp.focus(); inp.select(); said.textContent = 'Выделил ссылку: нажми «Скопировать» в меню телефона'; }
+    };
+  }
+  const okEmail = s => /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(s);
+
+  $('users').addEventListener('click', async e => {
+    const row = e.target.closest('.row'); if (!row) return;
+    const b = e.target.closest('[data-a]');
+    if (!b) { const h = e.target.closest('.h'); if (h) { row.classList.toggle('open'); h.setAttribute('aria-expanded', row.classList.contains('open')); } return; }
+    const email = row.dataset.e, a = b.dataset.a, out = row.querySelector('.lout');
+    try {
+      if (a === 'link') { b.disabled = true; linkBox(out, await makeLink(email)); b.disabled = false; return; }
+      const q = { revoke: 'Забрать подарок у ' + email + '? Оплаченную подписку это не трогает', forever: 'Выдать ' + email + ' подарок навсегда?', 30: 'Выдать ' + email + ' подарок на 30 дней от сегодня? Оплаченный срок он не продлевает, а перекрывает, если длиннее',
+        cancel: 'Отменить автосписание у ' + email + '? Касса больше не будет списывать деньги, оплаченный срок доживёт' }[a];
+      if (!confirm(q)) return;
+      b.disabled = true;
+      if (a === 'cancel') {
+        const r = await api('/api/admin/cancel', { email });
+        if (r.status !== 200) throw new Error((r.j && r.j.error) || r.t);
+      } else await grant(email, a, 'из админки');
+      await load();
+    } catch (ex) { b.disabled = false; alert('Не получилось: ' + ex.message); }
+  });
+  $('filters').addEventListener('click', e => { const f = e.target.closest('[data-f]'); if (!f) return; filter = f.dataset.f; renderUsers(); });
+  $('periods').addEventListener('click', e => { const p = e.target.closest('[data-p]'); if (!p) return; period = +p.dataset.p;
+    document.querySelectorAll('#periods .chip').forEach(x => x.classList.toggle('on', x === p)); renderFunnel(); });
+  $('q').addEventListener('input', renderUsers);
+  $('showown').addEventListener('change', render);
+  $('tabs').addEventListener('click', e => { const b = e.target.closest('[data-t]'); if (!b) return;
+    document.querySelectorAll('#tabs button').forEach(x => x.classList.toggle('on', x === b));
+    document.querySelectorAll('section[data-s]').forEach(s => { s.hidden = s.dataset.s !== b.dataset.t; }); });
+  async function giftForm(what) {
+    show('gerr', ''); $('gok').textContent = '';
+    const email = $('gemail').value.trim().toLowerCase();
+    if (!okEmail(email)) return show('gerr', 'Проверь почту');
+    if (what === 'revoke' && !confirm('Забрать подарок у ' + email + '?')) return;
+    try { const t = await grant(email, what, $('gnote').value.trim()); $('gok').textContent = t.replace(/^granted/, 'Выдано:').replace(/^revoked gift/, 'Подарок забран:').replace(' until ', ' до '); load(); }
+    catch (ex) { show('gerr', ex.message); }
+  }
+  $('gdo').onclick = () => giftForm($('gdays').value);
+  $('gundo').onclick = () => giftForm('revoke');
+  $('ldo').onclick = async () => {
+    show('lerr', ''); $('lout').innerHTML = '';
+    const email = $('lemail').value.trim().toLowerCase();
+    if (!okEmail(email)) return show('lerr', 'Проверь почту');
+    const u = (data ? data.users : []).find(x => x.email === email);
+    if (!u || !['paying', 'cancelled', 'gift', 'paid'].includes(u.status)) {
+      if (!confirm('У ' + email + ' сейчас нет доступа: по ссылке человек войдёт и упрётся в оплату. Всё равно сделать?')) return;
+    }
+    try { linkBox($('lout'), await makeLink(email)); } catch (ex) { show('lerr', ex.message); }
+  };
+  $('reload').onclick = load;
+  $('logout').onclick = () => { try { localStorage.removeItem(STORE); } catch (e) {} KEY = ''; showLogin(''); };
+  $('keysave').onclick = () => { const k = $('keyin').value.trim(); if (!k) return; KEY = k; try { localStorage.setItem(STORE, k); } catch (e) {} start(); };
+  $('keyin').addEventListener('keydown', e => { if (e.key === 'Enter') $('keysave').click(); });
+
+  function showLogin(msg) { $('app').hidden = true; $('login').hidden = false; show('loginerr', msg); }
+  function start() { if (!KEY) return showLogin(''); $('login').hidden = true; $('app').hidden = false; load(); }
+  start();
+})();
+</script>
+</body>
+</html>
