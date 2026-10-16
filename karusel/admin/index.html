@@ -61,8 +61,22 @@
   .grid2{display:grid;grid-template-columns:1fr 1fr;gap:8px}
   .login{max-width:420px;margin:12vh auto 0}
   .login p{font-size:13px;color:var(--muted);margin:8px 0 12px}
+  .cabbtn{margin-left:auto}
+  td.em2{word-break:break-all}
+  td.em2 .emt{display:block;margin-bottom:6px}
+  td.em2 .btn{word-break:normal;white-space:nowrap}
+  .cab{position:fixed;inset:0;background:var(--bg);overflow-y:auto;z-index:20;-webkit-overflow-scrolling:touch}
+  .cab .in{max-width:1100px;margin:0 auto;padding:20px 16px 60px}
+  .cab h1{word-break:break-all}
+  .pgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(120px,1fr));gap:6px}
+  .ph{position:relative;aspect-ratio:3/4;background:#161619;border:1px solid var(--line);border-radius:8px;overflow:hidden;cursor:zoom-in}
+  .ph img{width:100%;height:100%;object-fit:cover;display:block}
+  .ph span{position:absolute;left:4px;bottom:4px;font-size:10.5px;background:rgba(0,0,0,.6);color:#ddd;padding:1px 6px;border-radius:6px}
+  .ph.bad::after{content:'не открылось';position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:11px;color:var(--red)}
+  .zoom{position:fixed;inset:0;background:rgba(0,0,0,.94);z-index:30;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:12px;gap:10px}
+  .zoom img{max-width:100%;max-height:calc(100vh - 80px);object-fit:contain;border-radius:6px}
   [hidden]{display:none!important}
-  @media(max-width:600px){ .grid2{grid-template-columns:1fr} .card b{font-size:19px} }
+  @media(max-width:600px){ .pgrid{grid-template-columns:repeat(3,1fr)} .wide{display:none} .grid2{grid-template-columns:1fr} .card b{font-size:19px} }
 </style>
 </head>
 <body>
@@ -84,6 +98,7 @@
     <div class="cards" id="cards"></div>
     <div class="tabs" id="tabs">
       <button data-t="users" class="on">Участники</button>
+      <button data-t="stats">Статистика</button>
       <button data-t="pays">Оплаты</button>
       <button data-t="ref">Рефералка</button>
       <button data-t="grant">Выдать доступ</button>
@@ -96,6 +111,12 @@
       </div>
       <div class="tools" id="filters"></div>
       <div id="users"></div>
+    </section>
+
+    <section data-s="stats" hidden>
+      <div class="box"><h3>Кто сколько каруселей сделал</h3><table id="stattable"></table>
+        <div class="hint">Карусель = новый текст поста, выгруженный из конструктора (ZIP, «Поделиться» или отдельный слайд). Повтор той же карусели и демо-текст не считаются. Считаем с 16 октября 2026: раньше у подписок и подарков счётчика не было, поэтому у давних учеников цифры начинаются с нуля</div></div>
+      <div class="box"><h3>По дням, последние 14 дней</h3><table id="daytable"></table></div>
     </section>
 
     <section data-s="pays" hidden>
@@ -128,6 +149,17 @@
     </section>
   </div>
 </div>
+<div class="cab" id="cab" hidden>
+  <div class="in">
+    <div class="top">
+      <div><h1 id="cabem"></h1><div class="sub" id="cabsub"></div></div>
+      <button class="btn ghost sm" id="cabclose">← Закрыть кабинет</button>
+    </div>
+    <div class="cards" id="cabcards"></div>
+    <div class="pgrid" id="cabgrid"></div>
+  </div>
+</div>
+<div class="zoom" id="zoom" hidden><img id="zoomimg" alt=""><button class="btn sm" id="zoomclose">Закрыть фото</button></div>
 <script>
 (function(){
   const API='https://karusel-api.aivan-loginov.workers.dev';
@@ -169,7 +201,69 @@
   }
 
   const vis=()=>rows.filter(r=>$('showtest').checked||!r.test);
-  function render(){ renderCards(); renderUsers(); renderPays(); renderRef(); }
+  function render(){ renderCards(); renderUsers(); renderStats(); renderPays(); renderRef(); }
+
+  function renderStats(){
+    const R=vis().filter(r=>r.cabinet), now=Date.now(), w=now-7*864e5;
+    const list=R.slice().sort((a,b)=>(b.carousels||0)-(a.carousels||0)||b.photos-a.photos);
+    $('stattable').innerHTML='<tr><th>Почта</th><th class="num">Каруселей</th><th class="num">За 7 дн</th><th class="num">Фото</th><th class="wide">Последняя</th></tr>'
+      +(list.map(r=>'<tr><td class="em2"><span class="emt">'+esc(r.email)+'</span><button class="btn ghost sm" data-cab="'+esc(r.email)+'">Открыть кабинет</button></td><td class="num"><b>'+(r.carousels||0)+'</b></td><td class="num">'+(r.cAt||[]).filter(t=>t>w).length+'</td><td class="num">'+r.photos+'</td><td class="wide">'+d(r.lastCarousel)+'</td></tr>').join('')||'<tr><td colspan="5" class="hint">Кабинетов пока нет</td></tr>');
+    const days=[]; for(let i=0;i<14;i++){ const t=new Date(now-i*864e5); days.push(t.toLocaleDateString('sv-SE')); }
+    const by={}; R.forEach(r=>(r.cAt||[]).forEach(t=>{ const k=new Date(t).toLocaleDateString('sv-SE'); by[k]=by[k]||{n:0,who:new Set()}; by[k].n++; by[k].who.add(r.email); }));
+    $('daytable').innerHTML='<tr><th>День</th><th class="num">Каруселей</th><th class="num">Людей</th></tr>'
+      +days.map(k=>'<tr><td>'+new Date(k+'T12:00:00').toLocaleDateString('ru-RU',{weekday:'short',day:'numeric',month:'short'})+'</td><td class="num">'+(by[k]?by[k].n:0)+'</td><td class="num">'+(by[k]?by[k].who.size:0)+'</td></tr>').join('');
+  }
+
+  /* кабинет клиента: цифры + сетка фото. Снимки идут с ключом админки, поэтому через fetch -> blob,
+     по мере прокрутки и не больше 4 за раз (100 фото по ~600 КБ сразу положили бы телефон) */
+  let cab=null;
+  async function openCab(email){
+    closeCab(true);
+    const st=cab={email,urls:[],q:[],active:0,io:null};
+    $('cab').hidden=false; document.body.style.overflow='hidden'; $('cab').scrollTop=0;
+    if(!history.state||!history.state.cab) history.pushState({cab:1},'');
+    $('cabem').textContent=email; $('cabsub').textContent='открываю кабинет…'; $('cabcards').innerHTML=''; $('cabgrid').innerHTML='';
+    const r=await api('/api/admin/cabinet?email='+encodeURIComponent(email));
+    if(cab!==st) return;
+    if(r.status!==200){ $('cabsub').textContent=r.status===404?'Кабинета с этой почтой нет':'Не получилось открыть кабинет: '+(r.t||r.status); return; }
+    const c=r.j, now=Date.now(), last=c.cAt.length?c.cAt[c.cAt.length-1]:0;
+    $('cabsub').textContent='кабинет с '+d(c.created);
+    $('cabcards').innerHTML=[[c.photos.length,'фото в кабинете',1],[c.carousels,'каруселей сделал',1],[c.cAt.filter(t=>t>now-7*864e5).length,'каруселей за 7 дней'],[d(last),'последняя карусель']]
+      .map(x=>'<div class="card'+(x[2]?' gold':'')+'"><b>'+x[0]+'</b><span>'+x[1]+'</span></div>').join('');
+    const photos=c.photos.slice().sort((a,b)=>b.created-a.created);
+    if(!photos.length){ $('cabgrid').innerHTML='<div class="hint">Фото в кабинете нет</div>'; return; }
+    $('cabgrid').innerHTML=photos.map(p=>'<div class="ph" data-id="'+esc(p.id)+'"><span>'+d(p.created)+'</span></div>').join('');
+    st.io=new IntersectionObserver(es=>es.forEach(e=>{ if(!e.isIntersecting) return; st.io.unobserve(e.target); st.q.push(e.target); pump(st); }),{root:$('cab'),rootMargin:'600px'});
+    $('cabgrid').querySelectorAll('.ph').forEach(t=>st.io.observe(t));
+  }
+  function pump(st){
+    while(cab===st&&st.active<4&&st.q.length){
+      const t=st.q.shift(); st.active++;
+      loadPhoto(st,t).finally(()=>{ st.active--; pump(st); });
+    }
+  }
+  async function loadPhoto(st,t){
+    try{
+      const r=await fetch(API+'/api/admin/photo?email='+encodeURIComponent(st.email)+'&id='+encodeURIComponent(t.dataset.id),{headers:{'X-Admin-Key':KEY}});
+      if(!r.ok) throw new Error(r.status);
+      const b=await r.blob(); if(cab!==st) return;
+      const u=URL.createObjectURL(b); st.urls.push(u); t.dataset.u=u;
+      const img=new Image(); img.alt=''; img.src=u; t.prepend(img);
+    }catch(e){ if(cab===st) t.classList.add('bad'); }
+  }
+  function closeCab(keepHistory){
+    if(cab){ if(cab.io) cab.io.disconnect(); cab.urls.forEach(u=>URL.revokeObjectURL(u)); }
+    cab=null; $('cab').hidden=true; $('zoom').hidden=true; $('zoomimg').removeAttribute('src'); document.body.style.overflow='';
+    if(!keepHistory&&history.state&&history.state.cab) history.back();
+  }
+  // «назад» на телефоне закрывает фото, потом кабинет, а не уводит из админки
+  window.addEventListener('popstate',()=>{ if(!$('zoom').hidden){ $('zoom').hidden=true; if(cab) history.pushState({cab:1},''); return; } if(cab) closeCab(true); });
+  $('cabclose').onclick=()=>closeCab();
+  $('cabgrid').addEventListener('click',e=>{ const t=e.target.closest('.ph'); if(!t||!t.dataset.u) return; $('zoomimg').src=t.dataset.u; $('zoom').hidden=false; });
+  $('zoomclose').onclick=()=>{ $('zoom').hidden=true; };
+  $('zoom').addEventListener('click',e=>{ if(e.target.id==='zoom') $('zoom').hidden=true; });
+  document.addEventListener('keydown',e=>{ if(e.key!=='Escape') return; if(!$('zoom').hidden) $('zoom').hidden=true; else if(cab) closeCab(); });
+  $('stattable').addEventListener('click',e=>{ const b=e.target.closest('[data-cab]'); if(b) openCab(b.dataset.cab); });
 
   function renderCards(){
     const R=vis(), now=Date.now(), month=new Date().toISOString().slice(0,7);
@@ -184,6 +278,9 @@
       [cnt('cancelled'),'отменили, доступ идёт'],
       [cnt('gift'),'подарков'],
       [R.filter(r=>r.lastActive>now-7*864e5).length,'активны за 7 дней'],
+      [R.filter(r=>r.carousels>0).length,'сделали хотя бы 1 карусель'],
+      [R.reduce((a,r)=>a+(r.carousels||0),0),'каруселей всего',1],
+      [R.reduce((a,r)=>a+(r.cAt||[]).filter(t=>t>now-7*864e5).length,0),'каруселей за 7 дней'],
       [rub(sumM(month)),'выручка за месяц',1],
       [rub(sumM(prev)),'за прошлый месяц'],
       [rub(pays.reduce((a,p)=>a+p.sum,0)),'выручка всего'],
@@ -202,8 +299,9 @@
     $('users').innerHTML=list.map(r=>{
       const when=r.status==='paying'&&r.next?'списание '+d(Date.parse(r.next+'T12:00:00')):(r.forever?'без срока':(r.until?'до '+d(r.until):''));
       return '<div class="row" data-e="'+esc(r.email)+'"><div class="h"><span class="em">'+esc(r.email)+'</span><span class="badge b-'+r.status+'">'+ST[r.status]+(when?' · '+when:'')+'</span></div>'
-        +'<div class="meta"><span>'+(r.cabinet?'кабинет с '+d(r.created):'оплата без кабинета')+'</span><span>активность '+d(r.lastActive)+'</span><span>фото '+r.photos+'</span>'
-        +(r.paid?'<span>оплачено '+rub(r.paid)+' ('+r.pays.length+')</span>':'')+(r.refBy?'<span>пригласил '+esc(r.refBy)+'</span>':'')+(r.invited?'<span>привёл '+r.invited+'</span>':'')+'</div>'
+        +'<div class="meta"><span>'+(r.cabinet?'кабинет с '+d(r.created):'оплата без кабинета')+'</span><span>активность '+d(r.lastActive)+'</span><span>каруселей '+(r.carousels||0)+'</span><span>фото '+r.photos+'</span>'
+        +(r.paid?'<span>оплачено '+rub(r.paid)+' ('+r.pays.length+')</span>':'')+(r.refBy?'<span>пригласил '+esc(r.refBy)+'</span>':'')+(r.invited?'<span>привёл '+r.invited+'</span>':'')
+        +(r.cabinet?'<button class="btn ghost sm cabbtn" data-cab="'+esc(r.email)+'">Открыть кабинет · фото '+r.photos+'</button>':'')+'</div>'
         +'<div class="more">'
         +(r.pays.length?'<div><b>Оплаты:</b> '+r.pays.slice().sort((a,b)=>b.at-a.at).map(p=>d(p.at)+' '+rub(p.sum)).join(', ')+'</div>':'<div>Оплат не было</div>')
         +(r.gift?'<div style="margin-top:4px"><b>Подарок:</b> '+(r.gift.forever?'навсегда':'до '+d(r.gift.until))+(r.gift.note?' · '+esc(r.gift.note):'')+'</div>':'')
@@ -242,6 +340,7 @@
 
   $('users').addEventListener('click',async e=>{
     const row=e.target.closest('.row'); if(!row) return;
+    const cb=e.target.closest('[data-cab]'); if(cb) return openCab(cb.dataset.cab);
     const g=e.target.closest('[data-g]');
     if(!g){ if(e.target.closest('.h')) row.classList.toggle('open'); return; }
     const email=row.dataset.e, what=g.dataset.g;

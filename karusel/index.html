@@ -678,7 +678,7 @@
    Код конструктора в репо сайта не лежит - его отдаёт karusel-api (/api/app) только кабинету с подпиской.
    Он исполняется и сразу убирается из страницы: «Сохранить страницу» не даёт рабочей копии */
 (function(){
-  const API='https://karusel-api.aivan-loginov.workers.dev', BUILD='0f3154bd72';
+  const API='https://karusel-api.aivan-loginov.workers.dev', BUILD='ac5142a87b';
   const SITE='https://ivan-loginov.ru';
   // витрина «Гайды и курсы Ивана» (16.10.2026, слово Ивана): курсы - только флагман, программы - скорочтение,
   // гайды - только «Распаковка в Claude». Мини-курс и остальные гайды убраны
@@ -836,11 +836,19 @@
   /* пробный режим: конструктор зовёт это перед каждой выгрузкой (ZIP, «Поделиться», отдельный слайд).
      Карусель = текст поста: сервер считает хэш нормализованного текста, повтор той же карусели бесплатен */
   let appLoaded=false;
-  window.kbGate=async function(text){
-    if(me&&me.access&&me.access.paid) return true;
+  const textHash=async text=>{
     const norm=String(text||'').replace(/\s+/g,' ').trim().toLowerCase();
+    const d=await crypto.subtle.digest('SHA-256',new TextEncoder().encode(norm));
+    return [...new Uint8Array(d)].slice(0,16).map(b=>b.toString(16).padStart(2,'0')).join('');
+  };
+  window.kbGate=async function(text){
+    // с доступом выгрузку не ждём: карусель уходит в статистику админки фоном, сбой ничему не мешает (16.10.2026)
+    if(me&&me.access&&me.access.paid){
+      textHash(text).then(h=>call('/api/trial/use',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({h})})).catch(()=>{});
+      return true;
+    }
     let h='';
-    try{ const d=await crypto.subtle.digest('SHA-256',new TextEncoder().encode(norm)); h=[...new Uint8Array(d)].slice(0,16).map(b=>b.toString(16).padStart(2,'0')).join(''); }
+    try{ h=await textHash(text); }
     catch(e){ alert('Браузер не дал посчитать карусель - обнови страницу или открой её в Safari или Chrome'); return false; }
     const r=await call('/api/trial/use',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({h})});
     if(me&&r.j){ if(r.j.access) me.access=r.j.access; if(r.j.trial) me.trial=r.j.trial; }
