@@ -274,8 +274,9 @@
   </div>
   <div class="gbox">
     <div class="gview" id="g-load">
-      <div class="gspin"></div>
+      <div class="gspin" id="gloadspin"></div>
       <p class="glead gcenter" id="gloadmsg">Открываю конструктор…</p>
+      <button class="btn ghost gwide" id="gloadretry" hidden>Обновить страницу</button>
     </div>
 
     <div class="gview" id="g-auth" hidden>
@@ -677,7 +678,7 @@
    Код конструктора в репо сайта не лежит - его отдаёт karusel-api (/api/app) только кабинету с подпиской.
    Он исполняется и сразу убирается из страницы: «Сохранить страницу» не даёт рабочей копии */
 (function(){
-  const API='https://karusel-api.aivan-loginov.workers.dev', BUILD='5263bb3321';
+  const API='https://karusel-api.aivan-loginov.workers.dev', BUILD='0f3154bd72';
   const SITE='https://ivan-loginov.ru';
   // витрина «Гайды и курсы Ивана» (16.10.2026, слово Ивана): курсы - только флагман, программы - скорочтение,
   // гайды - только «Распаковка в Claude». Мини-курс и остальные гайды убраны
@@ -721,23 +722,34 @@
   function fmtDate(ms){ const d=new Date(ms), o={day:'numeric',month:'long'};
     const s=d.toLocaleDateString('ru-RU',o); return d.getFullYear()===new Date().getFullYear()?s:s+' '+d.getFullYear(); }
 
+  // связь с сервером конструктора (Cloudflare) бывает подвисает: без лимита страница ждала вечно (16.10.2026
+  // новый кабинет видел «Открываю конструктор…» без конца, со второй попытки открылся). Лимит покрывает и заголовки, и тело ответа
+  const WAIT_MS=25000;
+  function limited(){ const c=new AbortController(), t=setTimeout(()=>c.abort(),WAIT_MS); return {signal:c.signal,done:()=>clearTimeout(t)}; }
+  const SLOW='Сервер долго не отвечает. Обнови страницу. Не помогло - переключись с Wi-Fi на мобильный интернет или наоборот';
   async function call(path,opts={}){
     const headers=Object.assign({},opts.headers||{});
     if(token) headers['Authorization']='Bearer '+token;
-    let r;
-    try{ r=await fetch(API+path,Object.assign({},opts,{headers,cache:'no-store'})); }
-    catch(e){ return {status:0,j:{error:'Нет связи с сервером - проверь интернет и обнови страницу'}}; }
+    const lim=limited();
+    let r, j={};
+    try{
+      r=await fetch(API+path,Object.assign({},opts,{headers,cache:'no-store',signal:lim.signal}));
+      if(!(r.status===503&&!opts._retried)){ try{ j=await r.json(); }catch(e){ if(e&&e.name==='AbortError') throw e; } }
+    }
+    catch(e){ lim.done(); return {status:0,j:{error:e&&e.name==='AbortError'?SLOW:'Нет связи с сервером - проверь интернет и обнови страницу'}}; }
+    lim.done();
     if(r.status===503&&!opts._retried){ await new Promise(res=>setTimeout(res,1600)); return call(path,Object.assign({},opts,{_retried:true})); }
-    let j={}; try{ j=await r.json(); }catch(e){}
     return {status:r.status,j};
   }
+  // загрузка не удалась: кружок убираем, причину и кнопку «Обновить страницу» показываем
+  function loadFail(msg){ $('gloadmsg').textContent=msg; $('gloadspin').hidden=true; $('gloadretry').hidden=false; }
 
   async function boot(){
     if(!token) return show('auth');
     show('load');
     const r=await call('/api/me');
     if(r.status===401){ clearAuth(); return show('auth'); }
-    if(r.status!==200){ $('gloadmsg').textContent=(r.j&&r.j.error)||'Сервер не ответил - обнови страницу через минуту'; return; }
+    if(r.status!==200) return loadFail((r.j&&r.j.error)||'Сервер не ответил - обнови страницу через минуту');
     me=r.j;
     if(me.access&&me.access.paid) return loadApp();
     if(params.has('paid')) return waitPay();
@@ -795,18 +807,22 @@
   async function loadApp(){
     if(appLoaded) return backToApp();   // код конструктора уже исполнен (пробный режим -> оплата): второй запуск сломал бы страницу
     show('load');
-    $('gloadmsg').textContent='Открываю конструктор…';
-    let r;
-    try{ r=await fetch(API+'/api/app',{headers:{Authorization:'Bearer '+token},cache:'no-store'}); }
-    catch(e){ $('gloadmsg').textContent='Нет связи с сервером - проверь интернет и обнови страницу'; return; }
-    if(r.status===401){ clearAuth(); return show('auth'); }
-    if(r.status===402){ try{ const j=await r.json(); if(me){ me.access=j.access; if(j.trial) me.trial=j.trial; } }catch(e){} return showPay(); }
-    if(!r.ok){ $('gloadmsg').textContent='Сервер не ответил - обнови страницу через минуту'; return; }
-    // страница из кэша старее кода на сервере: один раз перезагрузиться за свежей разметкой
-    const b=r.headers.get('X-App-Build')||'';
-    let reloaded=false; try{ reloaded=sessionStorage.getItem('kb_reload')===b; }catch(e){}
-    if(b&&b!==BUILD&&!reloaded){ try{ sessionStorage.setItem('kb_reload',b); }catch(e){} location.replace(location.pathname+'?v='+encodeURIComponent(b)); return; }
-    const code=await r.text();
+    $('gloadmsg').textContent='Открываю конструктор…'; $('gloadspin').hidden=false; $('gloadretry').hidden=true;
+    const lim=limited();
+    let r, code;
+    try{
+      r=await fetch(API+'/api/app',{headers:{Authorization:'Bearer '+token},cache:'no-store',signal:lim.signal});
+      if(r.status===401){ lim.done(); clearAuth(); return show('auth'); }
+      if(r.status===402){ try{ const j=await r.json(); if(me){ me.access=j.access; if(j.trial) me.trial=j.trial; } }catch(e){} lim.done(); return showPay(); }
+      if(!r.ok){ lim.done(); return loadFail('Сервер не ответил - обнови страницу через минуту'); }
+      // страница из кэша старее кода на сервере: один раз перезагрузиться за свежей разметкой
+      const b=r.headers.get('X-App-Build')||'';
+      let reloaded=false; try{ reloaded=sessionStorage.getItem('kb_reload')===b; }catch(e){}
+      if(b&&b!==BUILD&&!reloaded){ lim.done(); try{ sessionStorage.setItem('kb_reload',b); }catch(e){} location.replace(location.pathname+'?v='+encodeURIComponent(b)); return; }
+      code=await r.text();
+    }
+    catch(e){ lim.done(); return loadFail(e&&e.name==='AbortError'?SLOW:'Нет связи с сервером - проверь интернет и обнови страницу'); }
+    lim.done();
     if(params.has('paid')||params.has('v')) history.replaceState(null,'',location.pathname);
     setSubStat();
     document.body.classList.remove('gated');
@@ -866,7 +882,8 @@
 
   async function auth(mode){
     err('gautherr','');
-    const email=$('gemail').value.trim(), pw=$('gpass').value;
+    const email=$('gemail').value.trim().replace(/^mailto:\s*/i,''), pw=$('gpass').value;
+    $('gemail').value=email;   // «mailto:» из скопированной ссылки на почту - не часть адреса
     if(!/^\S+@\S+\.\S+$/.test(email)) return err('gautherr','Проверь email - похоже, в нём опечатка');
     if(pw.length<8) return err('gautherr','Пароль не короче 8 знаков');
     if(mode==='register'&&!$('gpd').checked) return err('gautherr','Чтобы создать кабинет, отметь согласие на обработку персональных данных');
@@ -935,6 +952,7 @@
   $('gwaitagain').onclick=waitPay;
   $('gout1').onclick=$('gout2').onclick=()=>{ if(appLoaded) return logout(); clearAuth(); show('auth'); };
   $('gpayback').onclick=backToApp;
+  $('gloadretry').onclick=()=>location.reload();
   $('gmorebtn').onclick=openMore; $('gmoretop').onclick=openMore;
   const mb=$('morebtn'); if(mb) mb.onclick=openMore;
   $('moreclose').onclick=()=>$('moreov').classList.remove('open');
