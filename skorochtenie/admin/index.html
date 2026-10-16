@@ -186,6 +186,7 @@
   const ST = { paying: 'платит', life: 'купил навсегда', cancelled: 'отменил, доступ идёт', gift: 'подарок', paid: 'оплачено', expired: 'срок вышел', none: 'без доступа' };
   const PLAN = { month: 'месяц', life: 'навсегда', year: 'год' };
   const LIVE = ['paying', 'life', 'cancelled', 'gift', 'paid'];   // статусы с доступом сейчас
+  const planOf = p => PLAN[p.plan] + (p.src === 'lava' ? ' · Lava' : '');   // оплата мимо Продамуса (sale.sh)
   const SRC = { ig: 'Instagram', 'ig-2h': 'Instagram, касание 2 ч', 'ig-20h': 'Instagram, касание 20 ч', yt: 'YouTube', sh: 'Shorts', vk: 'VK', bio: 'шапка профиля', direct: 'без метки', other: 'другое' };
 
   const $ = id => document.getElementById(id);
@@ -298,7 +299,7 @@
         + '<span class="badge b-' + u.status + '">' + ST[u.status] + (w ? ' · ' + w : '') + '</span></div>'
         + '<div class="meta">' + meta.map(m => '<span>' + esc(m) + '</span>').join('') + '</div></button>'
         + '<div class="more">'
-        + (u.pays.length ? '<p><b>Оплаты:</b> ' + u.pays.slice().sort((a, b) => b.at - a.at).map(p => d(p.at) + ' ' + rub(p.sum) + ' (' + PLAN[p.plan] + ')').join(', ') + '</p>' : '<p><b>Оплат не было</b></p>')
+        + (u.pays.length ? '<p><b>Оплаты:</b> ' + u.pays.slice().sort((a, b) => b.at - a.at).map(p => d(p.at) + ' ' + rub(p.sum) + ' (' + planOf(p) + ')').join(', ') + '</p>' : '<p><b>Оплат не было</b></p>')
         + (u.gift ? '<p><b>Подарок:</b> ' + (u.gift.forever ? 'навсегда' : 'до ' + d(u.gift.until)) + (u.gift.note ? ' · ' + esc(u.gift.note) : '') + '</p>' : '')
         + (u.account ? '<p><b>В приложении с</b> ' + d(u.account.created) + '</p>' : '')
         + '<div class="acts">' + acts.join('') + '</div><div class="lout"></div></div></div>';
@@ -313,7 +314,7 @@
       + (ms.map(m => '<tr><td>' + new Date(m + '-15T12:00:00Z').toLocaleDateString('ru-RU', { month: 'long', year: 'numeric' }) + '</td><td class="n">' + by[m].n + '</td><td class="n">' + by[m].who.size + '</td><td class="n">' + by[m].month + ' / ' + by[m].life + '</td><td class="n">' + rub(by[m].s) + '</td></tr>').join('')
         || '<tr><td colspan="5" class="hint">Оплат пока нет</td></tr>');
     $('paylist').innerHTML = '<tr><th>Дата</th><th>Почта</th><th>Тариф</th><th class="n">Сумма</th></tr>'
-      + (P.map(p => '<tr><td>' + d(p.at) + '</td><td>' + esc(p.email) + (p.own ? ' <span class="own">свой</span>' : '') + '</td><td>' + PLAN[p.plan] + '</td><td class="n">' + rub(p.sum) + '</td></tr>').join('')
+      + (P.map(p => '<tr><td>' + d(p.at) + '</td><td>' + esc(p.email) + (p.own ? ' <span class="own">свой</span>' : '') + '</td><td>' + planOf(p) + '</td><td class="n">' + rub(p.sum) + '</td></tr>').join('')
         || '<tr><td colspan="4" class="hint">Оплат пока нет</td></tr>');
   }
 
