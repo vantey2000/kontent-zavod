@@ -193,7 +193,9 @@
   'use strict';
   const API = 'https://skorochtenie-api.aivan-loginov.workers.dev';
   const EV = 'https://skorochtenie-events.aivan-loginov.workers.dev';
-  const PRICE = { month: 490, life: 2990, year: 2990 };   // year - старый годовой тариф до 16.10.2026
+  const PRICE = { month: 290, life: 990, year: 2990 };   // цены с 17.10.2026; year - старый годовой тариф до 16.10.2026
+  // продление идёт по цене, которую человек платил: оформившие месяц до 17.10 продлеваются по 490 (старая подписка кассы)
+  const renewSum = u => { const p = (u.pays || []).filter(x => x.plan === u.plan && x.src !== 'lava').sort((a, b) => b.at - a.at)[0]; return p ? p.sum : (PRICE[u.plan] || 0); };
   const STORE = 'sk_admin';
   const MSK = 3 * 3600e3, DAY = 864e5;
   const ST = { paying: 'платит', life: 'купил навсегда', cancelled: 'отменил, доступ идёт', gift: 'подарок', paid: 'оплачено', expired: 'срок вышел', none: 'без доступа' };
@@ -287,7 +289,7 @@
       [rub(sumM(month)), 'выручка за этот месяц', '', 1],
       [rub(sumM(prev)), 'за прошлый месяц'],
       [rub(P.reduce((a, p) => a + p.sum, 0)), 'выручка всего', P.length + ' оплат'],
-      [rub(soon.reduce((a, u) => a + (PRICE[u.plan] || 0), 0)), 'спишется за 7 дней', soon.length + ' чел.'],
+      [rub(soon.reduce((a, u) => a + renewSum(u), 0)), 'спишется за 7 дней', soon.length + ' чел.'],
       [trials().filter(t => t.status === 'active').length, 'на пробе сейчас', (c => 'купили после пробы ' + c.k + (c.dn ? ' · ' + c.p : ''))(conv(trials()))]
     ];
     $('cards').innerHTML = cells.map(c => '<div class="card' + (c[3] ? ' hot' : '') + '"><b>' + c[0] + '</b><span>' + c[1] + '</span>' + (c[2] ? '<em>' + c[2] + '</em>' : '') + '</div>').join('');
