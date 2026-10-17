@@ -377,11 +377,15 @@ async function api(path, { method = 'GET', body, auth = true } = {}) {
   const headers = {};
   if (body) headers['Content-Type'] = 'application/json';
   if (auth && state.auth) headers.Authorization = 'Bearer ' + state.auth.token;
+  const ctl = new AbortController();
+  const timer = setTimeout(() => ctl.abort(), c.CONFIG.apiWaitMs);   // сервер не ответил - кнопка не висит вечно, а пишет про связь
   try {
-    const r = await fetch(c.CONFIG.apiUrl + path, { method, headers, body: body ? JSON.stringify(body) : undefined });
+    const r = await fetch(c.CONFIG.apiUrl + path, { method, headers, body: body ? JSON.stringify(body) : undefined, signal: ctl.signal });
     return { status: r.status, data: await r.json().catch(() => ({})) };
   } catch {
     return { status: 0, data: { error: 'Нет связи с сервером. Проверь интернет и попробуй ещё раз' } };
+  } finally {
+    clearTimeout(timer);
   }
 }
 
@@ -449,12 +453,27 @@ $('b-pay').addEventListener('click', async () => {
     state.pending = { order: r.data.order, k: r.data.k, plan: payTier, at: Date.now() };
     persist();
     location.href = r.data.url;
+    // Касса Продамуса не пускает часть зарубежных адресов: 17.10 с VPN страница оплаты молчала, кнопка висела
+    // «Готовим оплату…», через полминуты браузер падал в «Превышено время ожидания». Не ушли на кассу за
+    // payWaitMs - останавливаем переход, возвращаем кнопку и говорим, что мешает. Ушли - pagehide снимает сторожа
+    clearTimeout(payWatch);
+    payWatch = setTimeout(() => {
+      try { window.stop(); } catch {}
+      payBtnReset();
+      showErr('pay-err', 'Страница оплаты не открылась. Чаще всего мешает включённый VPN: выключи его и нажми «Открыть доступ» ещё раз');
+    }, c.CONFIG.payWaitMs);
     return;   // кнопка остаётся «Готовим оплату…» до ухода на кассу
   }
-  b.disabled = false;
-  b.textContent = 'Открыть доступ';
+  payBtnReset();
   showErr('pay-err', r.data.error || 'Касса не ответила. Попробуй ещё раз через минуту');
 });
+let payWatch = 0;
+function payBtnReset() {
+  $('b-pay').disabled = false;
+  $('b-pay').textContent = 'Открыть доступ';
+}
+addEventListener('pagehide', () => clearTimeout(payWatch));
+addEventListener('pageshow', e => { if (e.persisted) payBtnReset(); });   // вернулся «Назад» с кассы: кнопка снова живая
 $('b-free').addEventListener('click', () => { track('free'); homeOrStart(); });   // по #pay-… приходят и без теста
 $('b-trial-pay').addEventListener('click', () => (trialGoing(c.trialState(state, Date.now())) ? runTrial() : goHome()));
 $('b-pay-back').addEventListener('click', () => (payBack === 'acct' ? showAcct() : payBack === 'result' && run ? show('result') : payBack === 'start' ? homeOrStart() : goHome()));

@@ -18,6 +18,8 @@ export const CONFIG = {
   apiUrl: 'https://skorochtenie-api.aivan-loginov.workers.dev',           // оплата и доступ (.business/scripts/skorochtenie-api)
   supportUrl: 'https://t.me/loginoff_ai',
   claimWaitMs: 90_000,                 // сколько ждать подтверждения кассы после возврата с оплаты, дальше доступ откроется при следующем входе
+  apiWaitMs: 20_000,                   // сколько ждать ответа своего сервера, дальше «Нет связи с сервером»
+  payWaitMs: 12_000,                   // сколько ждать открытия страницы кассы: из России она открывается за 1-2 секунды, с части VPN молчит
 };
 
 // Метка площадки из адреса после «#»: ivan-loginov.ru/skorochtenie/#ig → 'ig'. Контракт пути клиента:
