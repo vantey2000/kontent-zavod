@@ -581,13 +581,15 @@ document.querySelectorAll('.pw-show').forEach(b => b.addEventListener('click', (
   try { f.setSelectionRange(f.value.length, f.value.length); } catch {}
 }));
 
-function showLogin() {
+let loginBack = 'pay';   // pay - пришёл с экрана оплаты; start - по адресу входа #voyti из письма кассы
+function showLogin(back = 'pay') {
+  loginBack = back;
   showErr('login-err', '');
   hidePw('login-pw');
   show('login').then(() => $('login-email').focus());   // при переходе экран показывается кадром позже
 }
-$('b-login-open').addEventListener('click', showLogin);
-$('b-login-back').addEventListener('click', () => showPay(payBack, payMode));
+$('b-login-open').addEventListener('click', () => showLogin('pay'));
+$('b-login-back').addEventListener('click', () => (loginBack === 'start' ? homeOrStart() : showPay(payBack, payMode)));
 $('login-form').addEventListener('submit', async e => {
   e.preventDefault();
   const email = $('login-email').value.trim(), password = $('login-pw').value;
@@ -1320,7 +1322,8 @@ $('b-own').addEventListener('click', () => {
 // ---------- старт ----------
 
 // по ссылке покупки сразу оплата «навсегда» (уже купившему - раздел доступа), иначе главная или первый экран
-if (c.wantsBuy(location.hash, location.search)) showPay('start', 'buy');
+if (c.wantsLogin(location.hash, location.search)) { if (state.auth && acc().paid && !acc().trial) showAcct(); else showLogin('start'); }
+else if (c.wantsBuy(location.hash, location.search)) showPay('start', 'buy');
 else if (c.wantsPay(location.hash)) showPay('start', 'all');   // из директа: оба тарифа, «Назад» - на главную или первый экран
 else if (state.tests.length) goHome(); else show('start');
 
