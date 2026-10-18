@@ -428,6 +428,8 @@ function showPay(back, mode = 'all') {
   $('b-login-open').hidden = up;
   $('pay-refund').textContent = `Если не подойдёт, вернём деньги в течение ${refundDays} дней`;
   if (one) { $('pay-ok').checked = false; selectTier('life'); } else payTerms();
+  const pp = $('pay-pending');   // страница из кэша (до 10 минут после выкладки) может быть ещё без этой строки
+  if (pp) pp.hidden = !freshPending();
   showErr('pay-err', '');
   $('pay-consent').classList.remove('need');
   track('pay');
@@ -500,23 +502,58 @@ async function claim() {
   return 'gone';
 }
 
-async function waitForPayment() {
-  $('wait-title').textContent = 'Проверяем оплату';
-  $('wait-text').textContent = 'Касса подтверждает платёж, обычно это меньше минуты. Не закрывай страницу';
-  $('b-wait-home').hidden = true;
-  show('wait');
-  const until = Date.now() + c.CONFIG.claimWaitMs;
-  for (;;) {
-    const res = await claim();
-    if (res === 'ok') return showAcct(true);
-    if (res === 'gone') return homeOrStart();
-    if (Date.now() > until) break;
-    await new Promise(r => setTimeout(r, 3000));
+// Ждём подтверждения кассы, пока приложение открыто. Банк иногда проводит платёж минутами: 18.10.2026 покупательница
+// «Месяца» оплатила к 16:22, касса подтвердила в 16:30, а приложение через 90 секунд сдалось, отправило в поддержку,
+// и она написала Ивану. Теперь после claimWaitMs - «бывает до 15 минут» и «На главную», проверка идёт дальше и на
+// главной, до claimGiveUpMs от возврата с кассы. Вернулся из банковского приложения - проверяем сразу.
+// quiet - ушёл на кассу и вернулся не через неё (закрыл вкладку, открыл заново): экрана ожидания нет, проверка в фоне
+let waiting = false;
+async function waitForPayment({ since = Date.now(), quiet = false } = {}) {
+  if (waiting) return;
+  waiting = true;
+  const slowAt = since + c.CONFIG.claimWaitMs;
+  const stopAt = since + (quiet ? c.CONFIG.claimQuietMs : c.CONFIG.claimGiveUpMs);
+  const slow = () => {
+    $('wait-title').textContent = 'Банк ещё подтверждает платёж';
+    $('wait-text').textContent = 'Так бывает, иногда до 15 минут. Деньги не потеряются: как только касса подтвердит, доступ откроется здесь сам. Пока можно позаниматься на главной';
+    $('b-wait-home').hidden = false;
+  };
+  if (!quiet) {
+    $('wait-title').textContent = 'Проверяем оплату';
+    $('wait-text').textContent = 'Касса подтверждает платёж, обычно это меньше минуты. Не закрывай страницу';
+    $('b-wait-home').hidden = true;
+    if (Date.now() >= slowAt) slow();
+    show('wait');
   }
-  $('wait-title').textContent = 'Касса ещё не подтвердила';
-  $('wait-text').textContent = 'Если деньги списались, доступ откроется сам при следующем входе в приложение, обычно в течение нескольких минут. Не открылся за час - напиши в поддержку';
-  $('b-wait-home').hidden = false;
+  try {
+    for (;;) {
+      const res = await claim();
+      if (res === 'ok') return paidNow();
+      if (res === 'gone') return quiet ? undefined : homeOrStart();
+      const now = Date.now();
+      if (now >= stopAt) break;
+      if (!quiet && $('b-wait-home').hidden && now >= slowAt) slow();
+      await nap(now < slowAt ? 3000 : 10_000);
+    }
+    if (quiet || $('s-wait').hidden) return;
+    $('wait-title').textContent = 'Касса ещё не подтвердила';
+    $('wait-text').textContent = 'Если деньги списались, доступ откроется сам при следующем входе в приложение. Не открылся за час - напиши в поддержку';
+    $('b-wait-home').hidden = false;
+  } finally { waiting = false; }
 }
+// пауза между проверками; вкладка снова видна (вернулся из банковского приложения) - будим сразу
+const nap = ms => new Promise(resolve => {
+  const done = () => { clearTimeout(t); document.removeEventListener('visibilitychange', vis); resolve(); };
+  const vis = () => { if (!document.hidden) done(); };
+  const t = setTimeout(done, ms);
+  document.addEventListener('visibilitychange', vis);
+});
+// касса подтвердила: «Доступ открыт» с паролем, если человек ждёт или на главной; посреди тренировки не выдёргиваем
+function paidNow() {
+  if (['wait', 'home', 'start', 'pay'].some(s => !$('s-' + s).hidden)) return showAcct(true);
+}
+// Начатая оплата ещё не подтверждена: на экране оплаты просим не платить второй раз (иначе два списания)
+const freshPending = () => !!(state.pending && state.pending.plan !== 'link' && Date.now() - state.pending.at < c.CONFIG.claimQuietMs);
 // пришёл по ссылке доступа на новом телефоне без пройденного теста - сначала тест, от него растёт читалка
 const homeOrStart = () => (state.tests.length ? goHome() : show('start'));
 $('b-wait-home').addEventListener('click', homeOrStart);
@@ -1345,8 +1382,16 @@ else if (state.tests.length) goHome(); else show('start');
   if (link || back) { try { history.replaceState(null, '', location.pathname + location.hash); } catch {} }
   if (state.pending) {
     if (Date.now() - state.pending.at > 3 * 864e5) { state.pending = null; persist(); }
-    else if (link || back) return waitForPayment();
-    else if (await claim() === 'ok') return showAcct(true);
+    else if (link || back) { state.pending.back = Date.now(); persist(); return waitForPayment(); }
+    else {
+      const res = await claim();
+      if (res === 'ok') return showAcct(true);
+      // касса ещё не подтвердила. Недавно вернулся с неё (обновил страницу) - снова экран ожидания с того же места;
+      // ушёл на кассу и открыл приложение не через неё (банковское приложение, закрыл вкладку) - проверка в фоне
+      const p = state.pending;
+      if (res === 'wait' && p && p.back && Date.now() - p.back < c.CONFIG.claimGiveUpMs) return waitForPayment({ since: p.back });
+      if (res === 'wait' && p && Date.now() - p.at < c.CONFIG.claimQuietMs) waitForPayment({ since: p.at, quiet: true });
+    }
   }
   if (!state.auth) return;
   const r = await api('/api/me');
