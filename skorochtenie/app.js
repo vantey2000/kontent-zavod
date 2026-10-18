@@ -628,8 +628,40 @@ function showLogin(back = 'pay') {
   loginBack = back;
   showErr('login-err', '');
   hidePw('login-pw');
+  mailCheck();
   show('login').then(() => $('login-email').focus());   // при переходе экран показывается кадром позже
 }
+
+// «Прислать ссылку на почту» (18.10.2026): забыл пароль или открыл на новом телефоне - сервер сам присылает ссылку
+// входа, без поддержки. Кнопка появляется, только когда на сервере включены письма (GET /api/sendlink -> ready).
+// ?. - страница из кэша (до 10 минут после выкладки) может быть ещё без этих элементов
+let mailReady = null;
+async function mailCheck() {
+  if (!$('login-mail')) return;
+  if (mailReady === null) {
+    const r = await api('/api/sendlink', { auth: false });
+    if (r.status === 200) mailReady = !!r.data.ready;
+  }
+  $('login-mail').hidden = !mailReady;
+  $('login-help').hidden = !!mailReady;   // письма включены - длинная подсказка про письмо кассы и поддержку не нужна
+}
+$('b-login-mail')?.addEventListener('click', async () => {
+  const email = $('login-email').value.trim();
+  $('login-mail-ok').hidden = true;
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) { showErr('login-err', 'Впиши почту, на которую оформлена оплата'); return $('login-email').focus(); }
+  showErr('login-err', '');
+  const b = $('b-login-mail');
+  b.disabled = true;
+  const r = await api('/api/sendlink', { method: 'POST', body: { email }, auth: false });
+  if (r.status !== 200) { b.disabled = false; return showErr('login-err', r.data.error || 'Не получилось отправить. Попробуй ещё раз'); }
+  const ok = $('login-mail-ok'), sup = document.createElement('a');
+  ok.textContent = `Если на ${email} есть оплата, письмо со ссылкой придёт в течение пары минут. Загляни и в «Спам». Не пришло - напиши в `;
+  Object.assign(sup, { href: c.CONFIG.supportUrl, target: '_blank', rel: 'noopener', textContent: 'поддержку' });
+  ok.append(sup);
+  ok.hidden = false;
+  b.textContent = 'Письмо отправлено';
+  setTimeout(() => { b.disabled = false; b.textContent = 'Прислать ссылку на почту'; }, 60_000);
+});
 $('b-login-open').addEventListener('click', () => showLogin('pay'));
 // первый экран: оплатил на другом телефоне или в другом браузере - вход без теста (18.10 покупатели не находили, куда войти)
 // ?. - страница из кэша (до 10 минут после выкладки) может быть ещё без кнопки, новый скрипт не должен на этом падать

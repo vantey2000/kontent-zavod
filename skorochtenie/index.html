@@ -456,7 +456,13 @@
       <div class="pw"><input class="field" id="login-pw" type="password" autocomplete="current-password" placeholder="Пароль" required><button type="button" class="pw-show" data-pw="login-pw" aria-pressed="false" aria-label="Показать пароль">Показать</button></div>
       <button class="btn" id="b-login" type="submit">Войти</button>
       <p class="err" id="login-err" role="alert" hidden></p>
-      <p class="muted small">Пароль не задавал или забыл? Открой личную ссылку из письма кассы об оплате или напиши в <a id="login-support" target="_blank" rel="noopener">поддержку</a>: пришлём новую ссылку для входа</p>
+      <!-- 18.10.2026: ссылку входа сервер присылает сам, без Ивана. Кнопка видна, когда на сервере включены письма -->
+      <div class="stack" id="login-mail" hidden>
+        <p class="muted small">Пароль не задавал или забыл? Впиши почту выше, пришлём на неё ссылку для входа</p>
+        <button class="btn ghost" id="b-login-mail" type="button">Прислать ссылку на почту</button>
+        <p class="small" id="login-mail-ok" role="status" hidden></p>
+      </div>
+      <p class="muted small" id="login-help">Пароль не задавал или забыл? Открой личную ссылку из письма кассы об оплате или напиши в <a id="login-support" target="_blank" rel="noopener">поддержку</a>: пришлём новую ссылку для входа</p>
     </form>
   </section>
 
