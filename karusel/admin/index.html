@@ -182,7 +182,20 @@
   }
   function err(id,m){ const e=$(id); e.textContent=m||''; e.style.display=m?'block':'none'; }
 
+  // 18.10.2026: телефон возвращает вкладку из памяти без перезагрузки, и выручка висела со времени открытия.
+  // Теперь при возврате во вкладку данные старше минуты подтягиваются сами. Без таймера: он сбрасывал бы раскрытые строки
+  let loading=false, loadedAt=0;
   async function load(){
+    if(loading) return;
+    loading=true;
+    try{ await loadNow(); }finally{ loading=false; loadedAt=Date.now(); }
+  }
+  function fresh(){ if(KEY&&!$('app').hidden&&Date.now()-loadedAt>60e3) load(); }
+  document.addEventListener('visibilitychange',()=>{ if(document.visibilityState==='visible') fresh(); });
+  window.addEventListener('pageshow',e=>{ if(e.persisted) fresh(); });
+  window.addEventListener('focus',fresh);
+
+  async function loadNow(){
     err('apperr',''); $('loaded').textContent='загружаю…';
     let cursor='', got=[], n=0;
     try{
@@ -194,7 +207,12 @@
         $('loaded').textContent='загружаю… '+got.length;
       }while(cursor&&n<200);
       const rr=await api('/api/admin/ref'); openReq=(rr.status===200&&rr.j&&rr.j.open)||[];
-    }catch(e){ err('apperr','Не получилось загрузить: '+e.message); }
+    }catch(e){
+      // обрыв на середине страниц: раньше на экран шли неполные строки и выручка падала до нуля, теперь остаются прежние цифры
+      err('apperr','Не получилось загрузить: '+e.message+(rows.length?' · на экране данные с прошлой загрузки':''));
+      $('loaded').textContent='не обновилось';
+      return;
+    }
     rows=got;
     $('loaded').textContent='обновлено '+new Date().toLocaleTimeString('ru-RU',{hour:'2-digit',minute:'2-digit'});
     render();

@@ -247,7 +247,20 @@
     return { status: r.status, j, t };
   }
 
+  // 18.10.2026: телефон возвращает вкладку из памяти без перезагрузки, и выручка висела со времени открытия.
+  // Теперь при возврате во вкладку данные старше минуты подтягиваются сами. Без таймера: он схлопывал бы раскрытые строки
+  let loading = false, loadedAt = 0;
   async function load() {
+    if (loading) return;
+    loading = true;
+    try { await loadNow(); } finally { loading = false; loadedAt = Date.now(); }
+  }
+  function fresh() { if (KEY && !$('app').hidden && Date.now() - loadedAt > 60e3) load(); }
+  document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') fresh(); });
+  addEventListener('pageshow', e => { if (e.persisted) fresh(); });
+  addEventListener('focus', fresh);
+
+  async function loadNow() {
     show('apperr', ''); $('loaded').textContent = 'загружаю…';
     const today = mskDay(Date.now()), from = mskDay(Date.now() - 29 * DAY);
     const evReq = fetch(EV + '/otchet?from=' + from + '&to=' + today, { cache: 'no-store' })
