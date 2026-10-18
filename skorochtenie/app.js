@@ -537,6 +537,11 @@ function showAcct(fresh = false) {
   $('acct-up').hidden = !(a.paid && !a.forever && a.tier === 'month');   // платит за месяц - можно перейти на «навсегда»
   $('acct-up-price').textContent = c.formatRub(c.CONFIG.priceLife);
   $('b-acct-home').textContent = state.tests.length ? 'К тренировке' : 'Пройти тест';
+  // пароль не задан - главная кнопка «Сохранить пароль»: 18.10 трое из четырёх оплативших ушли «К тренировке» без пароля
+  // и остались без входа с другого телефона и из другого браузера (Instagram -> Safari)
+  const ask = !pw && !!state.auth;
+  $('b-acct-pw').className = ask ? 'btn' : 'btn ghost';
+  $('b-acct-home').className = ask ? 'btn ghost' : 'btn';
   show('acct');
 }
 $('b-acct-back').addEventListener('click', homeOrStart);
@@ -589,6 +594,9 @@ function showLogin(back = 'pay') {
   show('login').then(() => $('login-email').focus());   // при переходе экран показывается кадром позже
 }
 $('b-login-open').addEventListener('click', () => showLogin('pay'));
+// первый экран: оплатил на другом телефоне или в другом браузере - вход без теста (18.10 покупатели не находили, куда войти)
+// ?. - страница из кэша (до 10 минут после выкладки) может быть ещё без кнопки, новый скрипт не должен на этом падать
+$('b-start-login')?.addEventListener('click', () => (state.auth && acc().paid && !acc().trial ? showAcct() : showLogin('start')));
 $('b-login-back').addEventListener('click', () => (loginBack === 'start' ? homeOrStart() : showPay(payBack, payMode)));
 $('login-form').addEventListener('submit', async e => {
   e.preventDefault();
