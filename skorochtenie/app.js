@@ -558,6 +558,8 @@ const freshPending = () => !!(state.pending && state.pending.plan !== 'link' && 
 const homeOrStart = () => (state.tests.length ? goHome() : show('start'));
 $('b-wait-home').addEventListener('click', homeOrStart);
 
+// встроенный браузер Instagram или Facebook: вход живёт отдельно от Safari
+const IN_APP = /Instagram|FBAN|FBAV/.test(navigator.userAgent);
 function showAcct(fresh = false) {
   const a = acc();
   $('acct-title').textContent = fresh ? 'Доступ открыт' : a.life ? 'Доступ' : 'Подписка';
@@ -566,6 +568,10 @@ function showAcct(fresh = false) {
   const pw = !!(state.auth && state.auth.pw);
   $('acct-pw-box').hidden = pw || !state.auth;
   $('acct-pw-done').hidden = !pw;
+  // 18.10.2026: покупательница вошла по ссылке в браузере Instagram, задала пароль и написала «в браузере не работает» -
+  // открыла Safari и ждала, что вход уже там. Внутри Instagram прямо говорим, что Safari - другой браузер
+  // ?. - страница из кэша (до 10 минут после выкладки) может быть ещё без этой строки
+  if ($('acct-inapp')) $('acct-inapp').hidden = !(state.auth && IN_APP);
   $('acct-pw').value = '';
   hidePw('acct-pw');
   showErr('acct-pw-err', '');
