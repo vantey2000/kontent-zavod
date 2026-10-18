@@ -10,6 +10,8 @@ export const CONFIG = {
   programDays: 30,
   retestEveryDays: 7,
   freeReadsPerDay: 1,                  // бесплатно тест и одна читалка в день; пробы сняты, вернули первый вариант (решение Ивана 17.10.2026)
+  freeReadMinutes: 2,                  // бесплатная читалка дня: 3 -> 2 минуты (решение Ивана 19.10.2026)
+  freeDrillMinutes: 1,                 // и по минуте в день растяжки взгляда и «Запомни число», дальше замок (решение Ивана 19.10.2026)
   trialHours: 24,                      // старые пробные сутки: кто взял их 16.10, дорабатывает 24 часа, как обещали
   avgAdultWpm: 200,                    // «обычно взрослый читает про себя около 200», как в ролике
   maxHonestWpm: 1500,                  // быстрее = текст пролистан, результат не сохраняем
@@ -316,6 +318,14 @@ export function accessLine(a, fmt) {
 
 export const canFreeRead = (freeReads, key) => ((freeReads || {})[key] || 0) < CONFIG.freeReadsPerDay;
 
+// Бесплатные минутки разминки (19.10.2026): каждая раз в день, учёт { ключ дня: [упражнения] } в state.freeDrills
+export const FREE_DRILLS = ['sight', 'memory'];
+export const canFreeDrill = (freeDrills, key, kind) => FREE_DRILLS.includes(kind) && !((freeDrills || {})[key] || []).includes(kind);
+export const canFree = (state, key, kind) => (kind === 'reader' ? canFreeRead(state.freeReads, key) : canFreeDrill(state.freeDrills, key, kind));
+
+// Что из бесплатной тренировки дня ещё не потрачено сегодня: тренировка продолжается с этих шагов
+export const freeStepsLeft = (state, key) => dailySteps(1, false).filter(s => canFree(state, key, s.kind));
+
 const STEP = {
   schulte: { title: 'Таблица Шульте', hint: 'поле зрения' },
   'schulte-letters': { title: 'Шульте буквами', hint: 'буквы по алфавиту' },
@@ -333,13 +343,14 @@ const STEP = {
 };
 export const STEP_INFO = STEP;
 
-// Программа: разминка по 7-дневному циклу, читалка каждый день, текстовая тренировка по 5-дневному циклу
+// Программа: разминка по 7-дневному циклу, читалка каждый день, текстовая тренировка по 5-дневному циклу.
+// Без доступа: читалка 2 минуты и две минутки разминки по часам (timed), как на экране у Ивана - читалка, потом разминка
 export const WARMUPS = ['schulte', 'sight', 'flash', 'memory', 'schulte-letters', 'search', 'schulte-6'];
 export const DRILLS = ['blocks', 'pointer', 'column', 'hopscotch', 'flipped'];
 
 export function dailySteps(day, paid) {
   const mk = (kind, minutes) => ({ kind, minutes, ...STEP[kind] });
-  if (!paid) return [mk('reader', 3)];
+  if (!paid) return [mk('reader', CONFIG.freeReadMinutes), ...FREE_DRILLS.map(k => ({ ...mk(k, CONFIG.freeDrillMinutes), timed: true }))];
   const d = Math.max(1, Math.floor(day)) - 1;
   return [mk(WARMUPS[d % WARMUPS.length], 2), mk('reader', 5), mk(DRILLS[d % DRILLS.length], 3)];
 }

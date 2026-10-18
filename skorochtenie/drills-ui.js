@@ -1,6 +1,7 @@
 // Экраны новых упражнений: растяжка, вспышка, поиск буквы, запомни число, перевёрнутый текст.
 // Вся арифметика в drills.js. Каждый экран получает body и ctx: { onDone, record(kind, value), words, tokens, random, setStop, fmtSec,
-// seconds - время своей тренировки (нет = по числу раундов, как в программе), more() - следующий кусок текста }
+// seconds - время своей тренировки (нет = по числу раундов, как в программе), more() - следующий кусок текста,
+// onTimeUp - минуты вышли (бесплатная минутка тратится тут, а не по «Дальше»), lockNote - строка с замком после конца }
 import * as d from './drills.js';
 import { wordDelayMs, clockText } from './core.js';
 
@@ -14,25 +15,29 @@ function el(tag, cls, text) {
 const ROUNDS = { sight: 12, flash: 12, memory: 10 };
 
 // Обратный отсчёт своей тренировки: полоса и «Осталось 0:42». over() - минуты вышли: новый раунд, таблицу или текст
-// не начинаем, начатое доигрываем. Время идёт по часам, как у тренировки с секундомером
-export function countdown(seconds) {
+// не начинаем, начатое доигрываем. Время идёт по часам, как у тренировки с секундомером. onOver - один раз, когда время
+// вышло; ушёл с экрана раньше - не зовётся
+export function countdown(seconds, onOver = null) {
   const box = el('div', 'clock');
   const label = el('span', 'muted small');
   const bar = el('div', 'progress'); const barI = el('i'); bar.append(barI);
   box.append(label, bar);
   const ms = seconds * 1000, t0 = performance.now();
   const left = () => Math.max(0, ms - (performance.now() - t0));
+  let fired = false;
+  const fire = () => { if (!fired && left() <= 0) { fired = true; if (onOver) onOver(); } };
   const paint = () => {
     const l = left();
     label.textContent = l > 0 ? `Осталось ${clockText(l)}` : 'Время вышло, доделай начатое';
     barI.style.transform = `scaleX(${1 - l / ms})`;
+    fire();
   };
   paint();
   const iv = setInterval(paint, 250);
   return {
     el: box,
     over: () => left() <= 0,
-    stop() { clearInterval(iv); label.textContent = 'Время вышло'; barI.style.transform = 'scaleX(1)'; },
+    stop() { clearInterval(iv); fire(); label.textContent = 'Время вышло'; barI.style.transform = 'scaleX(1)'; },
   };
 }
 
@@ -46,12 +51,13 @@ function frame(body, ctx, kind, total) {
   const stage = el('div', 'drill-stage');
   const opts = el('div', 'drill-opts');
   const res = el('p', 'muted center drill-res');
+  const lockL = el('p', 'muted small center lock-note'); lockL.hidden = true;
   const doneB = el('button', 'btn', 'Дальше'); doneB.hidden = true;
   doneB.addEventListener('click', () => ctx.onDone && ctx.onDone());
-  body.append(info, stage, opts, res, bar, doneB);
+  body.append(info, stage, opts, res, lockL, bar, doneB);
   let round = 0;
   // своя тренировка: раунды идут, пока не вышло время, полосу раундов заменяет отсчёт сверху
-  const clock = ctx.seconds ? countdown(ctx.seconds) : null;
+  const clock = ctx.seconds ? countdown(ctx.seconds, ctx.onTimeUp) : null;
   if (clock) { body.prepend(clock.el); bar.hidden = true; }
   return {
     stage, opts, res, doneB, levelL,
@@ -63,7 +69,13 @@ function frame(body, ctx, kind, total) {
       }
       round++; roundL.textContent = `Раунд ${Math.min(round, total)} из ${total}`; barI.style.transform = `scaleX(${(round - 1) / total})`; return round <= total;
     },
-    finish(text) { if (clock) clock.stop(); barI.style.transform = 'scaleX(1)'; stage.textContent = ''; opts.textContent = ''; res.textContent = text; doneB.hidden = false; doneB.focus(); },
+    finish(text) {
+      if (clock) clock.stop();
+      barI.style.transform = 'scaleX(1)'; stage.textContent = ''; opts.textContent = ''; res.textContent = text;
+      // бесплатная минутка кончилась: замок прямо на экране упражнения, дальше по подписке
+      if (ctx.lockNote) { lockL.textContent = ''; lockL.append(el('i', 'lock'), ' ', ctx.lockNote); lockL.hidden = false; }
+      doneB.hidden = false; doneB.focus();
+    },
   };
 }
 

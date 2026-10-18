@@ -233,6 +233,11 @@
   .drill-opt.right { border-color: var(--ok); }
   .drill-opt.wrong { border-color: var(--red); }
   .drill-res { min-height: 20px; margin: 10px 0; }
+  /* бесплатная минутка кончилась: замок защёлкивается под результатом */
+  .lock-note { margin: 0 0 12px; }
+  .lock-note .lock { margin-right: 2px; vertical-align: -1px; color: var(--red); animation: lock-snap 420ms var(--ease-out) both; }
+  @keyframes lock-snap { 0% { opacity: 0; transform: translateY(-4px) scale(1.8); } 60% { opacity: 1; transform: scale(.9); } }
+  #done-trial-text .lock { margin-right: 2px; vertical-align: -1px; color: var(--muted); }
   .num { text-align: center; min-height: 70px; font: 400 clamp(30px, 10.5vw, 46px)/1.5 var(--display); font-variant-numeric: lining-nums tabular-nums; letter-spacing: .08em; }
   .num.right { color: var(--ok); }
   .num.wrong { color: var(--red); }
@@ -362,7 +367,7 @@
       <div class="card stack offer" id="r-offer">
         <span class="eyebrow" id="r-offer-eb">Программа на 30 дней</span>
         <p class="muted"><span id="r-start-l">Читалка начнёт с</span> <b id="r-start" style="color: var(--fg)"></b> и к 30-му дню дойдёт до <b id="r-goal" style="color: var(--fg)"></b> слов в минуту. Это темп тренировки, а не обещание результата: результат покажет повторный тест через 7 дней</p>
-        <p id="r-trial"><b>Читалка на твоей скорости открыта бесплатно, 3&nbsp;минуты в день.</b> Полная тренировка дня на 10&nbsp;минут и все 13 упражнений - по подписке</p>
+        <p id="r-trial"><b>Бесплатно каждый день: читалка на твоей скорости 2&nbsp;минуты, растяжка взгляда и «Запомни число» по минуте.</b> Полная тренировка дня на 10&nbsp;минут и все 13 упражнений - по подписке</p>
         <p id="r-trial-over" hidden></p>
         <button class="btn" id="b-result-next">Начать программу</button>
       </div>

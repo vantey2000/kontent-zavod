@@ -219,7 +219,7 @@ $('b-result-next').addEventListener('click', () => {
 $('b-result-plans').addEventListener('click', () => showPay('result'));
 
 // Под результатом: текст «зачем тренировать» и программа. Без доступа - «Начать программу» на оплату, бесплатная
-// читалка дня остаётся за «Продолжить бесплатно» (первый вариант, решение Ивана 17.10.2026). Начатая 16.10 пробная
+// тренировка дня (читалка и две минутки разминки) остаётся за «Продолжить бесплатно» (решения Ивана 17.10 и 19.10.2026). Начатая 16.10 пробная
 // тренировка - «Продолжить» с того же места. Доступ есть (купил или идут старые сутки) - сразу к тренировке
 function paintResultOffer(wpm) {
   const offer = !acc().paid;
@@ -703,7 +703,6 @@ function renderHome() {
   const st = c.streak(state.done, key);
   const doneToday = state.done.includes(key);
   const tr = c.trialState(state, Date.now());
-  const freeLeft = c.canFreeRead(state.freeReads, key);
 
   $('h-mode').textContent = a.trial
     ? `Полный доступ на сутки · день ${pd.day} из ${c.CONFIG.programDays}`
@@ -728,9 +727,10 @@ function renderHome() {
   }
   $('h-prog').style.setProperty('--p', String(pd.done ? 1 : pd.day / c.CONFIG.programDays));
 
-  // без доступа тренировка дня = бесплатная читалка на 3 минуты, полная тренировка под замком строкой ниже
+  // без доступа тренировка дня = читалка на 2 минуты и две минутки разминки (каждая раз в день), полная тренировка под замком строкой ниже
   const steps = c.trainSteps(pd.day, a.paid, state.train);
-  const own = steps.some(s => s.timed);   // своя тренировка вместо программы
+  const left = a.paid ? steps : c.freeStepsLeft(state, key);
+  const own = a.paid && steps.some(s => s.timed);   // своя тренировка вместо программы (у бесплатных минуток тоже timed)
   $('h-title').textContent = own ? 'Своя тренировка' : 'Тренировка дня';
   const planB = $('b-plan');
   planB.textContent = '';
@@ -739,8 +739,9 @@ function renderHome() {
   const list = $('h-steps');
   list.textContent = '';
   steps.forEach((s, i) => {
-    const row = el('div', 'step' + (doneToday ? ' done' : ''));
-    row.append(el('span', 'n', doneToday ? '✓' : String(i + 1)));
+    const used = a.paid ? doneToday : !c.canFree(state, key, s.kind);   // бесплатно галочка у каждого потраченного шага
+    const row = el('div', 'step' + (used ? ' done' : ''));
+    row.append(el('span', 'n', used ? '✓' : String(i + 1)));
     const t = el('div', 't');
     t.append(el('div', null, s.title), el('div', 'muted small', `${s.minutes} мин · ${s.kind === 'reader' ? speedToday() + ' слов/мин' : s.hint}`));
     row.append(t);
@@ -752,19 +753,19 @@ function renderHome() {
     n.append(el('i', 'lock'));
     row.append(n);
     const t = el('div', 't');
-    t.append(el('div', null, 'Разминка и текстовая тренировка'), el('div', 'muted small', 'полная тренировка дня, 10 минут, 13 упражнений по программе'));
+    t.append(el('div', null, 'Разминка и текстовая тренировка целиком'), el('div', 'muted small', 'полная тренировка дня, 10 минут, 13 упражнений по программе'));
     row.append(t);
     list.append(row);
   }
 
   const train = $('b-train');
   const note = $('h-train-note');
-  if (!a.paid && !freeLeft) {
+  if (!a.paid && !left.length) {
     train.textContent = 'Открыть полную тренировку';
-    note.textContent = 'Бесплатная читалка на сегодня уже была, следующая завтра';
-  } else if (!a.paid && !doneToday) {
-    train.textContent = 'Начать · 3 минуты';
-    note.textContent = 'В бесплатном режиме одна читалка в день';
+    note.textContent = 'Бесплатная тренировка на сегодня уже была, следующая завтра';
+  } else if (!a.paid) {
+    train.textContent = `${left.length < steps.length ? 'Продолжить' : 'Начать'} · ${c.pluralMinutes(c.stepsMinutes(left))}`;
+    note.textContent = 'Бесплатно раз в день: читалка 2 минуты, растяжка взгляда и «Запомни число» по минуте';
   } else if (doneToday) {
     train.textContent = 'Повторить ещё раз';
     note.textContent = 'Тренировка дня сделана';
@@ -781,7 +782,7 @@ function renderHome() {
   const B = state.best;
   const sec = v => (v == null ? null : `${fmtSec(v)} с`);
   const tiles = [
-    { k: 'reader', ic: 'Aa', nm: 'Читалка', ds: `слово за словом, ${speedToday()} сл/мин`, free: true },
+    { k: 'reader', ic: 'Aa', nm: 'Читалка', ds: `слово за словом, ${speedToday()} сл/мин` },
     { k: 'schulte', ic: '25', nm: 'Таблица Шульте', ds: sec(B.schulte) ? `лучшее время ${sec(B.schulte)}` : 'поле зрения' },
     { k: 'schulte-letters', ic: 'аб', nm: 'Шульте буквами', ds: sec(B['schulte-letters']) ? `лучшее время ${sec(B['schulte-letters'])}` : 'буквы по алфавиту' },
     { k: 'schulte-6', ic: '36', nm: 'Шульте 6x6', ds: sec(B['schulte-6']) ? `лучшее время ${sec(B['schulte-6'])}` : '36 чисел' },
@@ -796,13 +797,14 @@ function renderHome() {
     { k: 'flipped', ic: '∀', nm: 'Перевёрнутый текст', ds: B.flipped ? `${fmtSec(B.flipped)} с на 100 слов` : 'вверх ногами' },
     { k: 'lib', ic: '¶', nm: 'Библиотека', ds: `Чехов и Тургенев, ${LIBRARY.length} текстов` },
     { k: 'own', ic: '✎', nm: 'Свой текст', ds: 'статьи, книги, письма' },
-    { k: 'test', ic: '◷', nm: 'Тест скорости', ds: rt.available ? 'можно пройти сейчас' : `повторный через ${c.pluralDays(rt.inDays)}`, free: true, wide: true },
+    { k: 'test', ic: '◷', nm: 'Тест скорости', ds: rt.available ? 'можно пройти сейчас' : `повторный через ${c.pluralDays(rt.inDays)}`, wide: true },
   ];
   const box = $('h-tiles');
   box.textContent = '';
   box.classList.toggle('enter', entering);
   for (const [n, t] of tiles.entries()) {
-    const locked = (!t.free && !a.paid) || (t.k === 'reader' && !a.paid && !freeLeft);
+    // без доступа открыты тест и бесплатные шаги дня (читалка, растяжка, «Запомни число»), пока не потрачены сегодня
+    const locked = !a.paid && t.k !== 'test' && !(steps.some(s => s.kind === t.k) && c.canFree(state, key, t.k));
     const b = el('button', 'tile' + (locked ? ' locked' : ''));
     b.dataset.tile = t.k;
     if (t.wide) b.style.gridColumn = '1 / -1';
@@ -909,7 +911,8 @@ function openTile(k, locked, rt) {
   if (k === 'test') return rt.available ? startTest() : null;
   if (k === 'lib') return showLib();
   if (k === 'own') return show('own');
-  if (k === 'reader' && !acc().paid) return openExercise(k, { minutes: 3, ramp: true, onDone: () => { useFreeRead(); goHome(); } });
+  if (k === 'reader' && !acc().paid) return openExercise(k, { minutes: c.CONFIG.freeReadMinutes, ramp: true, onDone: () => { useFreeRead(); goHome(); } });
+  if (!acc().paid) return openExercise(k, { ...freeDrill(k), onDone: goHome });
   openExercise(k, { minutes: 3, tables: 1, onDone: goHome });
 }
 
@@ -919,28 +922,48 @@ function useFreeRead() {
   persist();
 }
 
+// Бесплатная минутка разминки (19.10.2026): идёт по часам, тратится, когда минута вышла (ушёл раньше - не потрачена),
+// после конца на экране замок. «Чик, замочек, дальше только по подписке» - слова Ивана
+const FREE_LOCK_NOTE = 'Бесплатная минута вышла, следующая завтра. Дольше и все 13 упражнений - по подписке';
+function freeDrill(kind) {
+  const minutes = c.CONFIG.freeDrillMinutes;
+  return { minutes, seconds: minutes * 60, lockNote: FREE_LOCK_NOTE, onTimeUp: () => useFreeDrill(kind) };
+}
+
+function useFreeDrill(kind) {
+  const key = today();
+  const used = state.freeDrills[key] || (state.freeDrills[key] = []);
+  if (!used.includes(kind)) used.push(kind);
+  persist();
+}
+
 // ---------- тренировка дня ----------
 
 let session = null;
 let lastRamp = null;   // чем кончился разгон бесплатной читалки: { from, to } для экрана «Тренировка сделана»
 
+// Без доступа тренировка идёт с непотраченных сегодня бесплатных шагов: бросил на середине - продолжит с того же места
 function startTraining() {
   const a = acc();
-  if (!a.paid && !c.canFreeRead(state.freeReads, today())) { track('lock'); return showPay('home'); }
+  const steps = a.paid ? c.trainSteps(day().day, true, state.train) : c.freeStepsLeft(state, today());
+  if (!steps.length) { track('lock'); return showPay('home'); }
   lastRamp = null;
-  session = { steps: c.trainSteps(day().day, a.paid, state.train), i: 0, ramp: !a.paid };
+  session = { steps, i: 0, free: !a.paid };
   runStep();
 }
 
 function runStep() {
   const s = session.steps[session.i];
+  const free = session.free;
   openExercise(s.kind, {
     minutes: s.minutes,
     tables: s.kind === 'schulte-6' ? 1 : 2,
-    seconds: s.timed ? s.minutes * 60 : 0,   // своя тренировка: раундовые упражнения идут по часам
+    seconds: s.timed ? s.minutes * 60 : 0,   // своя тренировка и бесплатные минутки: раундовые упражнения идут по часам
     stepLabel: `Шаг ${session.i + 1} из ${session.steps.length}`,
-    ramp: session.ramp && s.kind === 'reader',   // бесплатная читалка дня разгоняется, программа идёт своим темпом
+    ramp: free && s.kind === 'reader',   // бесплатная читалка дня разгоняется, программа идёт своим темпом
+    ...(free && s.kind !== 'reader' ? freeDrill(s.kind) : {}),
     onDone: () => {
+      if (free && s.kind === 'reader') useFreeRead();   // читалка дня потрачена, когда дочитана до конца
       session.i++;
       if (session.i < session.steps.length) runStep(); else finishDay();
     },
@@ -952,7 +975,6 @@ function finishDay() {
   const fresh = !state.done.includes(key);   // повтор тренировки в тот же день вехой не считается
   if (fresh) state.done.push(key);
   state.readerLog[key] = speedToday();
-  if (!acc().paid) useFreeRead();   // бесплатный режим: читалка дня потрачена только когда пройдена до конца
   persist();
   session = null;
   const st = c.streak(state.done, key);
@@ -966,10 +988,16 @@ function finishDay() {
   m.drawPath(chk.querySelector('circle'), { len: 2 * Math.PI * 44, ms: 450 });
   m.drawPath(chk.querySelector('.tick'), { len: 54, ms: 350, delay: 300 });
   if (fresh && c.isMilestone(st)) m.confetti();
-  // на пробе после тренировки дня - самый честный момент предложить оставить доступ
+  // на пробе после тренировки дня - самый честный момент предложить оставить доступ; без доступа - замок на полной тренировке
   const a = acc();
-  $('done-trial').hidden = !a.trial;
-  if (a.trial) $('done-trial-text').textContent = `Это был день ${day().day} из ${c.CONFIG.programDays}. Пробный доступ закончится через ${c.leftText(a.until - Date.now())}: оставь его, и завтра программа продолжится`;
+  $('done-trial').hidden = a.paid && !a.trial;
+  $('b-done-keep').textContent = a.trial ? 'Оставить доступ' : 'Открыть доступ';
+  const dt = $('done-trial-text');
+  if (a.trial) dt.textContent = `Это был день ${day().day} из ${c.CONFIG.programDays}. Пробный доступ закончится через ${c.leftText(a.until - Date.now())}: оставь его, и завтра программа продолжится`;
+  else if (!a.paid) {
+    dt.textContent = '';
+    dt.append(el('i', 'lock'), ' ', 'Бесплатная тренировка на сегодня пройдена, следующая завтра. Полная тренировка дня на 10 минут и все 13 упражнений - по подписке');
+  }
 }
 $('b-done-keep').addEventListener('click', () => showPay('home'));
 
@@ -1129,6 +1157,8 @@ function drillCtx(kind, opts) {
     words: words(),
     tokens: p ? p.tokens : [],
     seconds: opts.seconds || 0,
+    onTimeUp: opts.onTimeUp || null,
+    lockNote: opts.lockNote || null,
     more: () => takePassage(kind === 'search' ? 70 : 120).tokens,   // следующий текст, пока не вышло время своей тренировки
     random: Math.random,
     fmtSec,
