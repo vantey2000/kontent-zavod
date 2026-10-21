@@ -50,8 +50,17 @@ function show(name, { instant = false } = {}) {
     window.scrollTo(0, 0);
   };
   const done = ready && !instant ? m.transition(swap) : (swap(), Promise.resolve());
-  if (name === 'start') startDemo();
+  if (name === 'start') { paintStart(); startDemo(); }
   return done;   // выполняется, когда экран уже показан: фокус и замеры ставить после него
+}
+
+// Оплатил и вошёл, а теста в этом браузере нет: первый экран не обещает «бесплатно» и не зовёт «войти»,
+// а прямо говорит, что тренажёр откроется после теста (21.10 покупательница вошла по ссылке из письма,
+// увидела только «Пройти тест» и написала, что тренажёров нет). ?. - страница из кэша может быть без этих строк
+function paintStart() {
+  const paid = !!(state.auth && acc().paid && !acc().trial);
+  if ($('start-paid')) { $('start-paid').hidden = !paid; $('start-free').hidden = paid; }
+  if ($('b-start-login')) $('b-start-login').textContent = paid ? 'Моя подписка' : 'Уже оплатил? Войти';
 }
 
 // Опорная буква слова встаёт на засечку сцены; длинное слово ужимается, чтобы влезть по обе стороны
@@ -580,6 +589,7 @@ function showAcct(fresh = false) {
   $('acct-up').hidden = !(a.paid && !a.forever && a.tier === 'month');   // платит за месяц - можно перейти на «навсегда»
   $('acct-up-price').textContent = c.formatRub(c.CONFIG.priceLife);
   $('b-acct-home').textContent = state.tests.length ? 'К тренировке' : 'Пройти тест';
+  if ($('acct-test-note')) $('acct-test-note').hidden = !!state.tests.length;   // без теста кнопка «Пройти тест» не похожа на вход в тренажёр
   // пароль не задан - главная кнопка «Сохранить пароль»: 18.10 трое из четырёх оплативших ушли «К тренировке» без пароля
   // и остались без входа с другого телефона и из другого браузера (Instagram -> Safari)
   const ask = !pw && !!state.auth;
@@ -1467,6 +1477,7 @@ else if (state.tests.length) goHome(); else show('start');
   else if (r.status === 200) applyAccess(r.data);
   else return;
   if (!$('s-home').hidden) renderHome();
+  if (!$('s-start').hidden) paintStart();
 })();
 // «Открыл» уходит после полной загрузки, уже с нарисованным первым экраном: учёт в фоне, не на пути человека
 // Проба, о которой сервер не узнал (не было связи или взята до учёта 16.10), уходит тогда же

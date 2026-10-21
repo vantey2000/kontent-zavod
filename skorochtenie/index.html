@@ -314,7 +314,8 @@
       <div class="hero-word" id="demo" aria-hidden="true"><span class="dword" id="demo-word" style="left: calc(38% - 1.2em)">чи<span class="o">т</span>аешь</span></div>
       <div class="stack">
         <button class="btn" id="b-start">Пройти тест</button>
-        <p class="muted small center">Бесплатно. Без регистрации</p>
+        <p class="muted small center" id="start-free">Бесплатно. Без регистрации</p>
+        <p class="small center" id="start-paid" hidden><b>Доступ открыт.</b> Тренажёр откроется сразу после теста: от твоей скорости программа возьмёт стартовый темп</p>
         <button class="link" id="b-start-login" style="justify-self: center">Уже оплатил? Войти</button>
       </div>
     </div>
@@ -445,6 +446,7 @@
         <p class="muted small">Один раз, без повторных списаний. Автопродление месяца отключим сами сразу после оплаты</p>
         <button class="btn ghost" id="b-acct-up">Перейти на «Навсегда»</button>
       </div>
+      <p class="small" id="acct-test-note" hidden><b>Тренажёр откроется сразу после теста скорости.</b> Минута и 4 вопроса: от твоей скорости программа возьмёт стартовый темп</p>
       <button class="btn" id="b-acct-home">К тренировке</button>
       <button class="link" id="b-acct-cancel" style="justify-self: center; color: var(--muted); font-weight: 400" hidden>Отменить подписку</button>
       <p class="err center" id="acct-err" role="alert" hidden></p>
