@@ -219,6 +219,7 @@ function closeSheet() {
 }
 function setView(v) {
   VIEW = v; store.set('view', v);
+  if (v === 'week') stripAnchor = true;
   if (v === 'today') scrollNow = true;
   document.querySelectorAll('.tab').forEach((b) => b.classList.toggle('on', b.dataset.v === v));
   document.querySelectorAll('.view').forEach((s) => s.classList.toggle('on', s.id === 'v-' + v));
@@ -352,7 +353,10 @@ function ydayLink() {                     // «Сегодня» сверху: к
   if (!h) return '';
   return '<button class="yday" data-day="' + h.date + '" data-goweek="1"><span>Вчера</span><b>сделано ' + h.done + ' из ' + h.total + '</b><i>→</i></button>';
 }
+let stripAnchor = true;                     // открыли «Неделю»: сегодня первым слева, прошлые спрятаны левее
 function renderWeek() {
+  const old = document.querySelector('.strip');
+  const keep = old && !stripAnchor ? old.scrollLeft : null;  // обновление данных и касание дня не сбивают прокрутку
   const today = localToday();
   const past = (DATA.history || []).filter((d) => d.date < today).slice(-14);
   const days = DATA.days.filter((d) => d.date >= today).slice(0, 14);
@@ -387,12 +391,15 @@ function renderWeek() {
     html += '<div class="h2">' + (SEL ? dayLabel(SEL) : '') + '<span>' + list.length + ' дел' + (sel ? ' · занято ' + String(Math.round(sel.load / 60 * 10) / 10).replace('.', ',') + ' ч' : '') + '</span></div>';
     if (!list.length) html += '<div class="empty"><b>Свободный день</b>Гибкие дела бот поставит сюда сам, если будет место</div>';
     html += '<div class="agenda">' + list.map(rowHtml).join('') + '</div>';
-    if (SEL === today && past.length) html += '<div class="dyn">Прошлые дни слева: листай полоску дней вправо</div>';
+    if (SEL === today && past.length) html += '<div class="dyn">Прошлые дни спрятаны левее сегодняшнего: потяни полоску дней вправо</div>';
   }
   $('#v-week').innerHTML = html;
-  const selEl = document.querySelector('.day.sel');
   const strip = document.querySelector('.strip');
-  if (selEl && strip) strip.scrollLeft = Math.max(0, selEl.offsetLeft - strip.offsetLeft - (strip.clientWidth - selEl.clientWidth) / 2);
+  if (!strip) return;
+  if (keep !== null) { strip.scrollLeft = keep; return; }
+  const first = (h && document.querySelector('.day.sel')) || document.querySelector('.day.today') || document.querySelector('.day.sel');
+  if (first) strip.scrollLeft += first.getBoundingClientRect().left - strip.getBoundingClientRect().left - 16;
+  stripAnchor = false;
 }
 const HSTATE = { done: 'сделано', missed: 'не сделано', cancelled: 'удалено', gone: 'убрано' };
 function histRow(e, date) {
