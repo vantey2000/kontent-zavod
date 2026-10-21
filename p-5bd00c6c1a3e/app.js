@@ -87,12 +87,31 @@ function send(action) {
     render();
   }
   if (canSendData()) { TG.sendData(JSON.stringify(action)); return; }       // окно закроется, бот ответит в чате
-  const p = { done: 'done', cancel: 'del', tmrw: 'tmrw', reopen: 'open' }[action.op];
-  const url = 'https://t.me/' + BOT + (p ? '?start=' + p + '-' + action.id : '');
+  const p = deepParam(action);
+  const url = 'https://t.me/' + BOT + (p ? '?start=' + p : '');
   if (TG) TG.openTelegramLink(url); else location.href = url;
 }
+function deepParam(a) {
+  const op = { done: 'done', cancel: 'del', tmrw: 'tmrw', reopen: 'open', idea_del: 'idel', idea_task: 'itask', remind: 'rem', unremind: 'unrem' }[a.op];
+  if (!op) return '';
+  let w = '';
+  if (a.before) w = '-b' + a.before;
+  if (a.at) w = '-a' + a.at.slice(2, 4) + a.at.slice(5, 7) + a.at.slice(8, 10) + a.at.slice(11, 13) + a.at.slice(14, 16);
+  return op + '-' + a.id + w;
+}
+const GONE = ['done', 'cancel', 'tmrw', 'idea_del', 'idea_task'];
+function alertsOf(e) {
+  let list = (e.alerts || []).slice();
+  pending().filter((p) => p.id === e.id && (p.op === 'remind' || p.op === 'unremind')).forEach((p) => {
+    const al = p.before ? { before: p.before } : { at: p.at };
+    const same = (x) => (x.before && x.before === al.before) || (x.at && x.at === al.at);
+    list = list.filter((x) => !same(x));
+    if (p.op === 'remind') list.push(al);
+  });
+  return list;
+}
 function overlay(e) {
-  const p = pending().filter((x) => x.id === e.id).pop();
+  const p = pending().filter((x) => x.id === e.id && (GONE.includes(x.op) || x.op === 'reopen')).pop();
   if (!p) return e;
   if (p.op === 'done') return Object.assign({}, e, { done: true });
   if (p.op === 'reopen') return Object.assign({}, e, { done: false });
@@ -125,7 +144,7 @@ function localToday() { const d = new Date(); return d.getFullYear() + '-' + Str
 function dayObj(date) { return DATA.days.find((d) => d.date === date); }
 function entries(day) { return (day ? day.entries : []).map(overlay).filter(Boolean); }
 function listItems(name) {
-  const gone = new Set(pending().filter((p) => p.op !== 'reopen').map((p) => p.id));
+  const gone = new Set(pending().filter((p) => GONE.includes(p.op)).map((p) => p.id));
   return (DATA[name] || []).map((x) => Object.assign({}, x, { gone: gone.has(x.id) }));
 }
 function dayLabel(date) {
@@ -266,6 +285,7 @@ function render() {
   if (VIEW === 'today') renderToday();
   if (VIEW === 'week') renderWeek();
   if (VIEW === 'lists') renderLists();
+  if (VIEW === 'ideas') renderIdeas();
 }
 
 // ── шторки ──────────────────────────────────────────────────
@@ -273,6 +293,24 @@ function findItem(id) {
   for (const d of DATA.days) { const e = d.entries.find((x) => x.id === id); if (e) return Object.assign({ date: d.date }, overlay(e) || e); }
   for (const n of ['now', 'buy', 'inbox', 'stuck']) { const e = (DATA[n] || []).find((x) => x.id === id); if (e) return Object.assign({ kind: n === 'stuck' ? 'flex' : n }, e); }
   return null;
+}
+const tgHint = () => (canSendData() ? '' : '<div class="hint">Откроется чат с ботом: нажми внизу «Запустить», и бот всё сделает</div>');
+function pad(n) { return String(n).padStart(2, '0'); }
+function localISO(d) { return d.getFullYear() + '-' + pad(d.getMonth() + 1) + '-' + pad(d.getDate()) + 'T' + pad(d.getHours()) + ':' + pad(d.getMinutes()); }
+function remBlock(e) {
+  const al = alertsOf(e);
+  const has = (n) => al.some((x) => x.before === n);
+  const timed = e.s !== undefined;
+  let html = '<div class="rsec"><div class="rl">🔔 Напомнить</div><div class="chips">';
+  if (timed) [[5, 'за 5 мин'], [15, 'за 15 мин'], [60, 'за 1 час']].forEach(([n, t]) => { html += '<button class="chip' + (has(n) ? ' on' : '') + '" data-rem="' + n + '">' + t + '</button>'; });
+  html += '<button class="chip" data-remopen="1">Своё время</button></div>';
+  const custom = al.filter((x) => x.at);
+  if (custom.length) html += '<div class="chips">' + custom.map((x) => '<button class="chip on" data-unat="' + x.at + '">' + dayLabel(x.at.slice(0, 10)) + ' ' + x.at.slice(11) + ' ✕</button>').join('') + '</div>';
+  let def = new Date(Date.now() + 3600e3);
+  if (timed && e.date) { const st = new Date(e.date + 'T' + hm(e.s)); st.setMinutes(st.getMinutes() - 30); if (st > new Date()) def = st; }
+  html += '<div class="rbox" id="remBox" hidden><input type="datetime-local" id="remAt" value="' + localISO(def) + '"><button class="btn" data-remat="1">Поставить</button></div>';
+  if (e.rem && e.rem.length) html += '<div class="rnow">Уже стоят: ' + e.rem.map(esc).join(', ') + '</div>';
+  return html + '</div>';
 }
 function taskSheet(id) {
   const e = findItem(id);
@@ -283,12 +321,31 @@ function taskSheet(id) {
     ? '<button class="btn pri" data-act="reopen">↩ Вернуть в работу</button>'
     : '<button class="btn pri" data-act="done">✓ Сделано</button><button class="btn" data-act="tmrw">→ ' + (e.date && e.date > localToday() ? 'На день позже' : 'На завтра') + '</button><button class="btn warn" data-act="cancel">✕ Удалить</button>';
   openSheet('<h3>' + esc(e.title) + '</h3><div class="meta">' + meta + '</div><div class="acts" data-task="' + e.id + '">' + acts + '</div>' +
-    (canSendData() ? '' : '<div class="hint">Действие уйдёт боту через Telegram, он подтвердит в чате</div>'));
+    (e.done ? '' : '<div data-task="' + e.id + '">' + remBlock(e) + '</div>') + tgHint());
 }
 function addSheet() {
   openSheet('<h3>Новое дело</h3><textarea id="addTxt" placeholder="Например: завтра в 15 стоматолог, ехать 40 минут. Купить лампочки"></textarea>' +
     '<div class="acts"><button class="btn pri" data-act="say">Добавить</button></div><div class="hint">Пиши как говоришь боту: можно несколько дел сразу. Голосом удобнее прямо в чате</div>');
   setTimeout(() => { const t = $('#addTxt'); if (t) t.focus(); }, 250);
+}
+function addIdeaSheet() {
+  openSheet('<h3>Новая идея</h3><textarea id="ideaTxt" placeholder="Что пришло в голову"></textarea>' +
+    '<div class="acts"><button class="btn pri" data-act="idea">Записать</button></div><div class="hint">Голосом тоже можно: скажи боту «идея: …»</div>');
+  setTimeout(() => { const t = $('#ideaTxt'); if (t) t.focus(); }, 250);
+}
+function ideaSheet(id) {
+  const x = (DATA.ideas || []).find((i) => i.id === id);
+  if (!x) return;
+  openSheet('<div class="meta">💡 идея от ' + esc(x.date) + '</div><h3 style="margin-top:8px;white-space:pre-wrap">' + esc(x.text) + '</h3>' +
+    '<div class="acts" data-task="' + x.id + '"><button class="btn pri" data-act="idea_task">📥 Сделать делом</button><button class="btn warn" data-act="idea_del" style="grid-column:1/-1">🗑 Удалить</button></div>' + tgHint());
+}
+function renderIdeas() {
+  const gone = new Set(pending().filter((p) => p.op === 'idea_del' || p.op === 'idea_task').map((p) => p.id));
+  const list = (DATA.ideas || []).filter((x) => !gone.has(x.id));
+  let html = '<div class="h2">💡 Идеи<span>' + list.length + '</span></div>';
+  if (!list.length) html += '<div class="empty"><b>Идей пока нет</b>Нажми «+» или скажи боту «идея: …», и она появится здесь</div>';
+  html += '<div class="ideas">' + list.map((x) => '<button class="idea" data-idea="' + x.id + '"><span class="it">' + esc(x.text) + '</span><span class="id">' + esc(x.date) + '</span></button>').join('') + '</div>';
+  $('#v-ideas').innerHTML = html;
 }
 
 // ── события ─────────────────────────────────────────────────
@@ -296,25 +353,46 @@ document.addEventListener('click', (ev) => {
   const t = ev.target.closest('button');
   if (!t) return;
   if (t.classList.contains('tab')) return setView(t.dataset.v);
-  if (t.id === 'fab') return addSheet();
+  if (t.id === 'fab') return VIEW === 'ideas' ? addIdeaSheet() : addSheet();
   if (t.dataset.day) { SEL = t.dataset.day; return renderWeek(); }
+  if (t.dataset.idea) return ideaSheet(t.dataset.idea);
   if (t.dataset.done) { send({ op: 'done', id: t.dataset.done }); return toast('Отмечено'); }
+  const box = t.closest('[data-task]');
+  const tid = box ? box.dataset.task : null;
+  if (t.dataset.remopen) { const r = $('#remBox'); if (r) r.hidden = !r.hidden; return; }
+  if (t.dataset.rem) {
+    const n = +t.dataset.rem;
+    const on = t.classList.contains('on');
+    closeSheet();
+    send({ op: on ? 'unremind' : 'remind', id: tid, before: n });
+    return toast(on ? 'Снимаю напоминание' : 'Ставлю напоминание ' + t.textContent);
+  }
+  if (t.dataset.unat) { closeSheet(); send({ op: 'unremind', id: tid, at: t.dataset.unat }); return toast('Снимаю напоминание'); }
+  if (t.dataset.remat) {
+    const v = ($('#remAt').value || '').slice(0, 16);
+    if (!v || new Date(v) <= new Date()) return toast('Выбери время в будущем');
+    closeSheet();
+    send({ op: 'remind', id: tid, at: v });
+    return toast('Напомню ' + dayLabel(v.slice(0, 10)) + ' в ' + v.slice(11));
+  }
   if (t.dataset.act) {
     const act = t.dataset.act;
-    if (act === 'say') {
-      const text = ($('#addTxt').value || '').trim();
-      if (!text) return toast('Напиши, что сделать');
+    if (act === 'say' || act === 'idea') {
+      const field = act === 'say' ? '#addTxt' : '#ideaTxt';
+      const text = ($(field).value || '').trim();
+      if (!text) return toast(act === 'say' ? 'Напиши, что сделать' : 'Напиши идею');
       closeSheet();
-      if (canSendData()) return send({ op: 'say', text });
-      if (navigator.clipboard) navigator.clipboard.writeText(text).catch(() => {});
+      if (canSendData()) return send({ op: act, text });
+      const msg = act === 'idea' ? 'идея: ' + text : text;
+      if (navigator.clipboard) navigator.clipboard.writeText(msg).catch(() => {});
       toast('Текст скопирован, вставь его в чат с ботом');
-      return setTimeout(() => send({ op: 'say', text }), 900);
+      return setTimeout(() => send({ op: 'say', text: msg }), 900);
     }
     if (act === 'cancel' && !t.classList.contains('arm')) { t.classList.add('arm'); t.textContent = 'Точно удалить?'; return; }
-    const id = t.closest('[data-task]').dataset.task;
+    if (act === 'idea_del' && !t.classList.contains('arm')) { t.classList.add('arm'); t.textContent = 'Точно удалить идею?'; return; }
     closeSheet();
-    send({ op: act, id });
-    return toast({ done: 'Отмечено', tmrw: 'Переношу на завтра', cancel: 'Удаляю', reopen: 'Возвращаю' }[act]);
+    send({ op: act, id: tid });
+    return toast({ done: 'Отмечено', tmrw: 'Переношу', cancel: 'Удаляю', reopen: 'Возвращаю', idea_del: 'Удаляю идею', idea_task: 'Переношу в дела' }[act]);
   }
   if (t.dataset.group) {
     const ids = t.dataset.group.split(',');
