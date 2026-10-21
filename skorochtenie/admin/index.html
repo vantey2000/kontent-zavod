@@ -193,7 +193,7 @@
   'use strict';
   const API = 'https://skorochtenie-api.aivan-loginov.workers.dev';
   const EV = 'https://skorochtenie-events.aivan-loginov.workers.dev';
-  const PRICE = { month: 290, life: 990, year: 2990 };   // цены с 17.10.2026; year - старый годовой тариф до 16.10.2026
+  const PRICE = { month: 490, life: 1490, year: 2990 };   // цены с 21.10.2026; year - старый годовой тариф до 16.10.2026
   // продление идёт по цене, которую человек платил: оформившие месяц до 17.10 продлеваются по 490 (старая подписка кассы)
   const renewSum = u => { const p = (u.pays || []).filter(x => x.plan === u.plan && x.src !== 'lava').sort((a, b) => b.at - a.at)[0]; return p ? p.sum : (PRICE[u.plan] || 0); };
   const STORE = 'sk_admin';

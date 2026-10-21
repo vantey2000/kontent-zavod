@@ -4,14 +4,13 @@ export const CONFIG = {
   appName: 'Скорочтение',              // имя выбрал Иван 16.10.2026 (было рабочее «Темп»)
   tagline: 'тренажёр для мозга',
   programName: 'Скорочтение за 30 дней',
-  priceLife: 990,                      // «Навсегда»: разовая оплата, без автосписаний (с 16.10.2026 вместо года; 2 990 -> 990 решение Ивана 17.10.2026)
-  priceMonth: 290,                     // «Месяц»: подписка с автосписанием каждые 30 дней (490 -> 290 с 17.10.2026, новая подписка кассы 3103578)
+  priceLife: 1490,                     // «Навсегда»: разовая оплата, без автосписаний (с 16.10.2026 вместо года; 2 990 -> 990 с 17.10, 990 -> 1 490 решение Ивана 21.10.2026)
+  priceMonth: 490,                     // «Месяц»: подписка с автосписанием каждые 30 дней (490 -> 290 с 17.10, 290 -> 490 с 21.10.2026, снова подписка кассы 3100552)
   refundDays: 14,
   programDays: 30,
   retestEveryDays: 7,
   freeReadsPerDay: 1,                  // бесплатно тест и одна читалка в день; пробы сняты, вернули первый вариант (решение Ивана 17.10.2026)
-  freeReadMinutes: 2,                  // бесплатная читалка дня: 3 -> 2 минуты (решение Ивана 19.10.2026)
-  freeDrillMinutes: 1,                 // и по минуте в день растяжки взгляда и «Запомни число», дальше замок (решение Ивана 19.10.2026)
+  freeReadMinutes: 2,                  // бесплатная читалка дня: 3 -> 2 минуты (решение Ивана 19.10.2026), других бесплатных упражнений нет с 21.10
   trialHours: 24,                      // старые пробные сутки: кто взял их 16.10, дорабатывает 24 часа, как обещали
   avgAdultWpm: 200,                    // «обычно взрослый читает про себя около 200», как в ролике
   maxHonestWpm: 1500,                  // быстрее = текст пролистан, результат не сохраняем
@@ -151,53 +150,6 @@ export function readerSpeed(baseWpm, day) {
 
 export const goalSpeed = baseWpm => readerSpeed(baseWpm, CONFIG.programDays);
 
-// Разгон бесплатной читалки (просьба Ивана 17.10.2026): эффект ролика-теста, где темп шёл 250 → 750 слов в минуту.
-// Старт - скорость читалки на сегодня, финиш - 1000 слов в минуту у всех (Иван: «пускай предел будет не 750, а 1000»),
-// это и верх ползунка. Скорость растёт с каждым словом в одно и то же число раз: большую часть времени темп посильный, рывок в конце
-export const RAMP_TOP = 1000;
-export function rampTo(start) {
-  return Math.max(RAMP_TOP, Math.round(Math.max(1, start)));
-}
-
-// Скорость на доле прочитанного p (0..1), шаг 10 слов в минуту
-export function rampSpeed(from, to, p) {
-  const q = Math.min(1, Math.max(0, Number(p) || 0));
-  return Math.round((from * Math.pow(to / from, q)) / 10) * 10;
-}
-
-// Разгон после ручного ползунка (слово Ивана 17.10.2026: «передвинул на скорость выше - ползунок не останавливается,
-// всё равно растёт дальше»): base = { p, v } - где и на какую скорость человек поставил ползунок; от этой точки
-// скорость снова растёт к to и приходит к нему на последнем слове. Без касания base = { p: 0, v: старт }
-export function rampAt(base, to, p) {
-  const q = base.p >= 1 ? 1 : (Number(p) - base.p) / (1 - base.p);
-  return rampSpeed(base.v, Math.max(to, base.v), q);
-}
-
-// Сколько слов взять, чтобы разгон from → to занял minutes минут: время слова 60/скорость, скорость растёт геометрически
-export function rampWords(from, to, minutes) {
-  const r = to / from;
-  if (!(r > 1.0001)) return Math.round(from * minutes);
-  return Math.round((minutes * from * Math.log(r)) / (1 - 1 / r));
-}
-
-// Сколько первых слов текста уложить в разгон на minutes минут с паузами читалки (точка, запятая, длинное слово
-// длятся дольше, в среднем на четверть): без этой подгонки «3 минуты» шли бы около четырёх и финиш наступал позже
-export function rampFit(tokens, from, to, minutes) {
-  const limit = minutes * 60000;
-  const time = k => {
-    let ms = 0;
-    for (let i = 0; i < k; i++) ms += wordDelayMs(tokens[i], rampSpeed(from, to, k > 1 ? i / (k - 1) : 1));
-    return ms;
-  };
-  let lo = 1, hi = tokens.length;
-  if (hi <= 1 || time(hi) <= limit) return hi;
-  while (lo < hi) {                       // самое большое k, у которого разгон не длиннее minutes
-    const mid = Math.ceil((lo + hi) / 2);
-    if (time(mid) <= limit) lo = mid; else hi = mid - 1;
-  }
-  return lo;
-}
-
 // Даты: ключ дня по локальному времени, разница считается по календарю, а не по миллисекундам
 const pad = n => String(n).padStart(2, '0');
 export const dateKey = d => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
@@ -318,10 +270,8 @@ export function accessLine(a, fmt) {
 
 export const canFreeRead = (freeReads, key) => ((freeReads || {})[key] || 0) < CONFIG.freeReadsPerDay;
 
-// Бесплатные минутки разминки (19.10.2026): каждая раз в день, учёт { ключ дня: [упражнения] } в state.freeDrills
-export const FREE_DRILLS = ['sight', 'memory'];
-export const canFreeDrill = (freeDrills, key, kind) => FREE_DRILLS.includes(kind) && !((freeDrills || {})[key] || []).includes(kind);
-export const canFree = (state, key, kind) => (kind === 'reader' ? canFreeRead(state.freeReads, key) : canFreeDrill(state.freeDrills, key, kind));
+// Бесплатно только читалка дня (минутки растяжки и «Запомни число» сняты 21.10.2026, решение Ивана)
+export const canFree = (state, key, kind) => kind === 'reader' && canFreeRead(state.freeReads, key);
 
 // Что из бесплатной тренировки дня ещё не потрачено сегодня: тренировка продолжается с этих шагов
 export const freeStepsLeft = (state, key) => dailySteps(1, false).filter(s => canFree(state, key, s.kind));
@@ -344,13 +294,13 @@ const STEP = {
 export const STEP_INFO = STEP;
 
 // Программа: разминка по 7-дневному циклу, читалка каждый день, текстовая тренировка по 5-дневному циклу.
-// Без доступа: читалка 2 минуты и две минутки разминки по часам (timed), как на экране у Ивана - читалка, потом разминка
+// Без доступа: одна читалка на 2 минуты
 export const WARMUPS = ['schulte', 'sight', 'flash', 'memory', 'schulte-letters', 'search', 'schulte-6'];
 export const DRILLS = ['blocks', 'pointer', 'column', 'hopscotch', 'flipped'];
 
 export function dailySteps(day, paid) {
   const mk = (kind, minutes) => ({ kind, minutes, ...STEP[kind] });
-  if (!paid) return [mk('reader', CONFIG.freeReadMinutes), ...FREE_DRILLS.map(k => ({ ...mk(k, CONFIG.freeDrillMinutes), timed: true }))];
+  if (!paid) return [mk('reader', CONFIG.freeReadMinutes)];
   const d = Math.max(1, Math.floor(day)) - 1;
   return [mk(WARMUPS[d % WARMUPS.length], 2), mk('reader', 5), mk(DRILLS[d % DRILLS.length], 3)];
 }

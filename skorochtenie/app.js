@@ -228,7 +228,7 @@ $('b-result-next').addEventListener('click', () => {
 $('b-result-plans').addEventListener('click', () => showPay('result'));
 
 // Под результатом: текст «зачем тренировать» и программа. Без доступа - «Начать программу» на оплату, бесплатная
-// тренировка дня (читалка и две минутки разминки) остаётся за «Продолжить бесплатно» (решения Ивана 17.10 и 19.10.2026). Начатая 16.10 пробная
+// тренировка дня (одна читалка, решение Ивана 21.10.2026) остаётся за «Продолжить бесплатно». Начатая 16.10 пробная
 // тренировка - «Продолжить» с того же места. Доступ есть (купил или идут старые сутки) - сразу к тренировке
 function paintResultOffer(wpm) {
   const offer = !acc().paid;
@@ -737,10 +737,10 @@ function renderHome() {
   }
   $('h-prog').style.setProperty('--p', String(pd.done ? 1 : pd.day / c.CONFIG.programDays));
 
-  // без доступа тренировка дня = читалка на 2 минуты и две минутки разминки (каждая раз в день), полная тренировка под замком строкой ниже
+  // без доступа тренировка дня = читалка на 2 минуты раз в день, полная тренировка под замком строкой ниже
   const steps = c.trainSteps(pd.day, a.paid, state.train);
   const left = a.paid ? steps : c.freeStepsLeft(state, key);
-  const own = a.paid && steps.some(s => s.timed);   // своя тренировка вместо программы (у бесплатных минуток тоже timed)
+  const own = a.paid && steps.some(s => s.timed);   // своя тренировка вместо программы
   $('h-title').textContent = own ? 'Своя тренировка' : 'Тренировка дня';
   const planB = $('b-plan');
   planB.textContent = '';
@@ -775,7 +775,7 @@ function renderHome() {
     note.textContent = 'Бесплатная тренировка на сегодня уже была, следующая завтра';
   } else if (!a.paid) {
     train.textContent = `${left.length < steps.length ? 'Продолжить' : 'Начать'} · ${c.pluralMinutes(c.stepsMinutes(left))}`;
-    note.textContent = 'Бесплатно раз в день: читалка 2 минуты, растяжка взгляда и «Запомни число» по минуте';
+    note.textContent = 'Бесплатно раз в день: читалка 2 минуты';
   } else if (doneToday) {
     train.textContent = 'Повторить ещё раз';
     note.textContent = 'Тренировка дня сделана';
@@ -813,7 +813,7 @@ function renderHome() {
   box.textContent = '';
   box.classList.toggle('enter', entering);
   for (const [n, t] of tiles.entries()) {
-    // без доступа открыты тест и бесплатные шаги дня (читалка, растяжка, «Запомни число»), пока не потрачены сегодня
+    // без доступа открыты тест и бесплатная читалка дня, пока не потрачена сегодня
     const locked = !a.paid && t.k !== 'test' && !(steps.some(s => s.kind === t.k) && c.canFree(state, key, t.k));
     const b = el('button', 'tile' + (locked ? ' locked' : ''));
     b.dataset.tile = t.k;
@@ -921,8 +921,7 @@ function openTile(k, locked, rt) {
   if (k === 'test') return rt.available ? startTest() : null;
   if (k === 'lib') return showLib();
   if (k === 'own') return show('own');
-  if (k === 'reader' && !acc().paid) return openExercise(k, { minutes: c.CONFIG.freeReadMinutes, ramp: true, onDone: () => { useFreeRead(); goHome(); } });
-  if (!acc().paid) return openExercise(k, { ...freeDrill(k), onDone: goHome });
+  if (k === 'reader' && !acc().paid) return openExercise(k, { minutes: c.CONFIG.freeReadMinutes, onDone: () => { useFreeRead(); goHome(); } });
   openExercise(k, { minutes: 3, tables: 1, onDone: goHome });
 }
 
@@ -932,32 +931,15 @@ function useFreeRead() {
   persist();
 }
 
-// Бесплатная минутка разминки (19.10.2026): идёт по часам, тратится, когда минута вышла (ушёл раньше - не потрачена),
-// после конца на экране замок. «Чик, замочек, дальше только по подписке» - слова Ивана
-const FREE_LOCK_NOTE = 'Бесплатная минута вышла, следующая завтра. Дольше и все 13 упражнений - по подписке';
-function freeDrill(kind) {
-  const minutes = c.CONFIG.freeDrillMinutes;
-  return { minutes, seconds: minutes * 60, lockNote: FREE_LOCK_NOTE, onTimeUp: () => useFreeDrill(kind) };
-}
-
-function useFreeDrill(kind) {
-  const key = today();
-  const used = state.freeDrills[key] || (state.freeDrills[key] = []);
-  if (!used.includes(kind)) used.push(kind);
-  persist();
-}
-
 // ---------- тренировка дня ----------
 
 let session = null;
-let lastRamp = null;   // чем кончился разгон бесплатной читалки: { from, to } для экрана «Тренировка сделана»
 
-// Без доступа тренировка идёт с непотраченных сегодня бесплатных шагов: бросил на середине - продолжит с того же места
+// Без доступа тренировка дня - бесплатная читалка, пока она не потрачена сегодня
 function startTraining() {
   const a = acc();
   const steps = a.paid ? c.trainSteps(day().day, true, state.train) : c.freeStepsLeft(state, today());
   if (!steps.length) { track('lock'); return showPay('home'); }
-  lastRamp = null;
   session = { steps, i: 0, free: !a.paid };
   runStep();
 }
@@ -968,10 +950,8 @@ function runStep() {
   openExercise(s.kind, {
     minutes: s.minutes,
     tables: s.kind === 'schulte-6' ? 1 : 2,
-    seconds: s.timed ? s.minutes * 60 : 0,   // своя тренировка и бесплатные минутки: раундовые упражнения идут по часам
+    seconds: s.timed ? s.minutes * 60 : 0,   // своя тренировка: раундовые упражнения идут по часам
     stepLabel: `Шаг ${session.i + 1} из ${session.steps.length}`,
-    ramp: free && s.kind === 'reader',   // бесплатная читалка дня разгоняется, программа идёт своим темпом
-    ...(free && s.kind !== 'reader' ? freeDrill(s.kind) : {}),
     onDone: () => {
       if (free && s.kind === 'reader') useFreeRead();   // читалка дня потрачена, когда дочитана до конца
       session.i++;
@@ -989,9 +969,6 @@ function finishDay() {
   session = null;
   const st = c.streak(state.done, key);
   $('done-streak').textContent = `${c.pluralDays(st)} подряд. Возвращайся завтра, чтобы не прервать серию`;
-  $('done-ramp').hidden = !lastRamp;
-  if (lastRamp) $('done-ramp').textContent = `Читалка разогналась с ${lastRamp.from} до ${lastRamp.to} слов в минуту`;
-  lastRamp = null;
   show('done');
   // кольцо и галочка рисуются штрихом; конфетти только на вехах серии 7, 14 и 30
   const chk = $('done-check');
@@ -1144,14 +1121,10 @@ function openExercise(kind, opts) {
   if (SCHULTE[kind]) return schulte(body, { ...opts, kind, ...SCHULTE[kind] });
   if (DRILL_UI[kind]) return DRILL_UI[kind](body, drillCtx(kind, opts));
   if (kind === 'reader') {
-    // бесплатная читалка разгоняется, как ролик-тест: от скорости на сегодня до 750 (core.rampTo), текста ровно на minutes
-    const ramp = opts.ramp && !opts.tokens ? { from: speed, to: c.rampTo(speed) } : null;
-    // в разгоне текста берём столько, чтобы с паузами на точках и запятых вышло ровно minutes (core.rampFit)
-    const n = ramp ? c.rampFit(c.passage(LIBRARY, state.bookmark, c.rampWords(ramp.from, ramp.to, opts.minutes)).tokens, ramp.from, ramp.to, opts.minutes) : speed * opts.minutes;
-    const p = opts.tokens ? { tokens: opts.tokens } : takePassage(n);
+    // скорость стоит на месте: скорость читалки на сегодня, сдвинуть можно только ползунком (разгон до 1000 снят 21.10.2026)
+    const p = opts.tokens ? { tokens: opts.tokens } : takePassage(speed * opts.minutes);
     if (!opts.title && p.title) $('ex-title').textContent = `Читалка · ${p.author}, «${p.title}»`;
-    if (ramp) $('ex-hint').textContent = `Динамическая сама разгоняется от ${ramp.from} до ${ramp.to} слов в минуту. Фиксированная держит скорость с ползунка`;
-    return timed(body, { mode: 'reader', tokens: p.tokens, wpm: speed, ramp, limitMs: ramp ? opts.minutes * 60000 : 0, onDone: opts.onDone });
+    return timed(body, { mode: 'reader', tokens: p.tokens, wpm: speed, onDone: opts.onDone });
   }
   const factor = { blocks: 0.8, pointer: 0.7, column: 0.8, hopscotch: 0.7 }[kind] || 0.7;
   const s = round10(speed * factor);
@@ -1167,9 +1140,7 @@ function drillCtx(kind, opts) {
     words: words(),
     tokens: p ? p.tokens : [],
     seconds: opts.seconds || 0,
-    onTimeUp: opts.onTimeUp || null,
-    lockNote: opts.lockNote || null,
-    more: () => takePassage(kind === 'search' ? 70 : 120).tokens,   // следующий текст, пока не вышло время своей тренировки
+    more:() => takePassage(kind === 'search' ? 70 : 120).tokens,   // следующий текст, пока не вышло время своей тренировки
     random: Math.random,
     fmtSec,
     onDone: () => { if (atDone) atDone(); opts.onDone && opts.onDone(); },
@@ -1184,7 +1155,7 @@ let skipEx = null;
 $('b-ex-skip').addEventListener('click', () => { const f = skipEx; skipEx = null; stopActive(); stopActive = () => {}; if (f) f(); });
 
 // Читалка, блоки и указка: один движок с паузой, скоростью и прогрессом
-function timed(body, { mode, tokens, wpm, ramp = null, limitMs = 0, onDone }) {
+function timed(body, { mode, tokens, wpm, onDone }) {
   // единицы показа: слово, блок, строка колонки или остановка указки по точкам
   let hops = null;
   if (mode === 'hopscotch') {
@@ -1238,45 +1209,14 @@ function timed(body, { mode, tokens, wpm, ramp = null, limitMs = 0, onDone }) {
   const pauseB = el('button', 'btn', 'Пауза');
   const row = el('div', 'row'); if (mode === 'reader' || mode === 'blocks') row.append(back10); row.append(pauseB);
   const doneB = el('button', 'btn', 'Дальше'); doneB.hidden = true;
-  // под полосой прогресса два режима (просьба Ивана 17.10.2026): «Динамическая» разгоняется сама, по умолчанию,
-  // «Фиксированная» держит скорость, которую человек поставил ползунком. Только у читалки с разгоном
-  const modeSeg = ramp ? el('div', 'seg speed-mode') : null;
-  if (modeSeg) {
-    modeSeg.setAttribute('role', 'radiogroup');
-    modeSeg.setAttribute('aria-label', 'Скорость читалки');
-    for (const [k, t] of [['dyn', 'Динамическая'], ['fix', 'Фиксированная']]) {
-      const b = el('button', null, t);
-      b.type = 'button';
-      b.setAttribute('role', 'radio');
-      b.dataset.speed = k;
-      b.addEventListener('click', () => setDyn(k === 'dyn'));
-      modeSeg.append(b);
-    }
-  }
-  const controls = el('div', 'controls'); controls.append(...[bar, modeSeg, rangeBox, row, doneB].filter(Boolean));
+  const controls = el('div', 'controls'); controls.append(bar, rangeBox, row, doneB);
   controls.style.marginTop = '14px';
   body.append(controls);
 
-  // в динамике скорость ведёт сама читалка и ползунок едет за ней. Человек сдвинул ползунок выше или ниже - скорость
-  // встаёт туда и дальше всё равно растёт сама к финишу (слова Ивана 17.10.2026: «ползунок как в первом варианте»,
-  // «передвинул на скорость выше - не останавливается, всё равно продолжает расти»). В фиксированной - стоит
-  let dyn = !!ramp;
-  let base = ramp ? { p: 0, v: ramp.from } : null;
-  let elapsed = 0;   // время показа слов без пауз: читалка с разгоном кончается по тексту или через limitMs
-  const progress = () => i / Math.max(1, units.length - 1);
-  const setLabel = () => { label.textContent = dyn ? `Разгон: ${speed} слов/мин, финиш на ${ramp.to}` : `Скорость ${speed} слов/мин`; };
-  function setDyn(d) {
-    dyn = d;
-    if (d) base = { p: Math.min(1, progress()), v: speed };   // вернулся в динамику - разгон дальше с текущей скорости
-    modeSeg.querySelectorAll('[data-speed]').forEach(b => b.setAttribute('aria-checked', String((b.dataset.speed === 'dyn') === d)));
-    setLabel();
-  }
-  if (modeSeg) setDyn(true); else setLabel();
-  range.addEventListener('input', () => {
-    speed = Number(range.value);
-    if (dyn) base = { p: Math.min(1, progress()), v: speed };
-    setLabel();
-  });
+  // скорость держится та, что на ползунке: сама не растёт (разгон «Динамическая | Фиксированная» снят 21.10.2026)
+  const setLabel = () => { label.textContent = `Скорость ${speed} слов/мин`; };
+  setLabel();
+  range.addEventListener('input', () => { speed = Number(range.value); setLabel(); });
 
   const place = tok => placeWord(word, stage, tok, WORD_PX);
 
@@ -1313,21 +1253,17 @@ function timed(body, { mode, tokens, wpm, ramp = null, limitMs = 0, onDone }) {
   function tick() {
     timer = null;
     if (paused || finished) return;
-    if (i >= units.length || (limitMs && elapsed >= limitMs)) return finish();
+    if (i >= units.length) return finish();
     const u = units[i];
-    if (dyn) { speed = c.rampAt(base, ramp.to, progress()); range.value = speed; setLabel(); }
     showUnit(u);
     i++;
+    barI.style.transform = `scaleX(${i / units.length})`;
     const ms = u.reduce((s, t) => s + c.wordDelayMs(t, speed), 0);
-    elapsed += ms;
-    barI.style.transform = `scaleX(${limitMs ? Math.min(1, Math.max(i / units.length, elapsed / limitMs)) : i / units.length})`;
     timer = setTimeout(tick, ms);
   }
 
   function finish() {
     finished = true;
-    // итог разгона; если человек сам сбавил ниже старта, «разогналась» не пишем
-    if (ramp) { lastRamp = speed > ramp.from ? { from: ramp.from, to: speed } : null; label.textContent = `Финиш: ${speed} слов/мин. Старт был на ${ramp.from}`; }
     if (word) word.textContent = '';
     if (chunkEl) chunkEl.textContent = 'Готово';
     pauseB.hidden = true; back10.hidden = true;
