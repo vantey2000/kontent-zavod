@@ -56,6 +56,14 @@ button:focus-visible,textarea:focus-visible{outline:2px solid var(--accent);outl
 .sync{font-family:var(--f-mono);font-size:11px;letter-spacing:.04em;color:var(--muted);margin-top:8px;display:flex;align-items:center;gap:6px}
 .sync i{width:6px;height:6px;border-radius:50%;background:var(--mint);display:inline-block}
 .sync.stale i{background:var(--amber)}
+.synctg{font-family:var(--f-mono);font-size:11px;color:var(--accent);text-decoration:underline;text-underline-offset:2px;margin-left:4px}
+.synctg[hidden]{display:none}
+
+/* вчера на «Сегодня» */
+.yday{width:100%;display:flex;align-items:center;gap:10px;background:var(--surface);border-radius:14px;padding:10px 14px;margin-bottom:10px;text-align:left}
+.yday span{font-family:var(--f-mono);font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
+.yday b{font-weight:600;font-size:14px;flex:1}
+.yday i{font-style:normal;color:var(--muted)}
 
 /* виды */
 .view{display:none;padding-top:16px;padding-bottom:96px}
@@ -115,6 +123,23 @@ button:focus-visible,textarea:focus-visible{outline:2px solid var(--accent);outl
 .day.sel{background:var(--ink);color:var(--bg)}
 .day.sel .w{color:inherit;opacity:.7}
 .day.today .d{color:var(--signal)} .day.sel.today .d{color:var(--signal)}
+/* прошлые дни: полоска = доля сделанного */
+.day.past{background:transparent;border:1px solid var(--rule)}
+.day.past .d{color:var(--muted)}
+.day.past.sel{background:var(--ink);border-color:var(--ink)} .day.past.sel .d{color:var(--bg)}
+.day .bar i.dn{background:var(--mint)}
+.day .cnt{font-family:var(--f-mono);font-size:10px;color:var(--muted);margin-top:2px}
+.day.sel .cnt{color:inherit;opacity:.75}
+.sep{flex:none;width:1px;margin:10px 0;background:var(--rule)}
+.dyn{margin-top:14px;padding:12px 14px;border-radius:14px;border:1px dashed var(--rule);font-size:14px;color:var(--muted);line-height:1.4}
+.dyn b{color:var(--ink)}
+/* история: значок состояния вместо цветной точки */
+.row.hist .hk{width:18px;height:18px;border-radius:50%;flex:none;display:grid;place-items:center;border:2px solid var(--rule)}
+.row.st-done .hk{background:var(--mint);border-color:var(--mint)}
+.row.st-done .hk::after{content:"";width:8px;height:4px;border-left:2px solid #fff;border-bottom:2px solid #fff;transform:rotate(-45deg) translate(1px,-1px)}
+.row.st-missed .hk{border-color:var(--amber)}
+.row.st-missed .sub{color:var(--amber)}
+.row.st-cancelled,.row.st-gone{opacity:.45} .row.st-cancelled .ttl,.row.st-gone .ttl{text-decoration:line-through}
 .agenda{display:flex;flex-direction:column;gap:6px;margin-top:6px}
 .row{display:flex;align-items:center;gap:12px;background:var(--surface);border-radius:14px;padding:12px 14px;text-align:left;width:100%}
 .row .tm{font-family:var(--f-mono);font-size:13px;width:46px;flex:none;color:var(--muted)}
@@ -158,6 +183,16 @@ button:focus-visible,textarea:focus-visible{outline:2px solid var(--accent);outl
 .btn.pri{background:var(--ink);color:var(--bg);grid-column:1/-1}
 .btn.warn{color:var(--signal)}
 .btn.warn.arm{background:var(--signal);color:#fff}
+.btn.wide{grid-column:1/-1}
+/* правка дела */
+.fl{display:block;font-family:var(--f-display);font-weight:500;font-size:13px;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);margin-top:16px}
+textarea.ed{min-height:72px;margin-top:8px}
+.frow{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.inp{width:100%;min-width:0;margin-top:8px;border-radius:12px;border:1px solid var(--rule);background:var(--bg);color:var(--ink);font:inherit;font-size:16px;padding:11px 10px;min-height:46px;-webkit-appearance:none;appearance:none}
+.tbox{position:relative}
+.tbox .inp{padding-right:40px}
+.clr{position:absolute;right:4px;top:12px;width:36px;height:38px;border-radius:10px;color:var(--muted);font-size:15px}
+#edDur{margin-top:8px}
 textarea{width:100%;min-height:96px;border-radius:14px;border:1px solid var(--rule);background:var(--bg);color:var(--ink);font:inherit;padding:12px;resize:none;margin-top:12px}
 .hint{font-size:13px;color:var(--muted);margin-top:8px;line-height:1.4}
 
@@ -202,7 +237,7 @@ textarea{width:100%;min-height:96px;border-radius:14px;border:1px solid var(--ru
         <b id="ringTxt">0/0</b>
       </div>
     </header>
-    <div class="sync" id="sync"><i></i><span id="syncTxt">загружаю…</span></div>
+    <div class="sync" id="sync"><i></i><span id="syncTxt">загружаю…</span><button class="synctg" id="syncTg" hidden>через Telegram</button></div>
 
     <section class="view on" id="v-today"><div class="skel"></div></section>
     <section class="view" id="v-week"></section>

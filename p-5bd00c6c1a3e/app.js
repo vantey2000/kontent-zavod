@@ -39,31 +39,63 @@ const canSendData = () => !!(TG && TG.sendData && !(TG.initDataUnsafe && TG.init
 function haptic(kind) { try { TG && TG.HapticFeedback.impactOccurred(kind || 'light'); } catch (e) { /* нет */ } }
 
 // ── ключ и данные ───────────────────────────────────────────
+// Данные лежат в двух местах одним шифротекстом: ящик planer-relay (бот кладёт через секунду после
+// правки) и data.json на сайте (выкладка до минуты). Берём оба и показываем более свежий
+const RELAY = 'https://planer-relay.aivan-loginov.workers.dev';
 function password() {
   const k = new URLSearchParams(location.search).get('k');
   if (k) store.set('k', k);
   return k || store.get('k');
 }
 const b64 = (s) => Uint8Array.from(atob(s), (c) => c.charCodeAt(0));
-async function decrypt(blob, pass) {
+let KEY = null, KEY_FOR = '', RKEY = '';
+async function aesKey(pass, salt) {
+  if (KEY && KEY_FOR === pass + '|' + salt) return KEY;            // PBKDF2 тяжёлый: считаем один раз
   const base = await crypto.subtle.importKey('raw', new TextEncoder().encode(pass), 'PBKDF2', false, ['deriveKey']);
-  const key = await crypto.subtle.deriveKey({ name: 'PBKDF2', salt: b64(blob.salt), iterations: 310000, hash: 'SHA-256' },
+  KEY = await crypto.subtle.deriveKey({ name: 'PBKDF2', salt: b64(salt), iterations: 310000, hash: 'SHA-256' },
     base, { name: 'AES-GCM', length: 256 }, false, ['decrypt']);
+  KEY_FOR = pass + '|' + salt;
+  return KEY;
+}
+async function relayKey(pass) {                                     // ключ ящика: пароль туда не уходит
+  if (!RKEY) {
+    const h = await crypto.subtle.digest('SHA-256', new TextEncoder().encode('planer-relay|' + pass));
+    RKEY = Array.from(new Uint8Array(h), (b) => b.toString(16).padStart(2, '0')).join('');
+  }
+  return RKEY;
+}
+async function decrypt(blob, pass) {
+  const key = await aesKey(pass, blob.salt);
   const plain = await crypto.subtle.decrypt({ name: 'AES-GCM', iv: b64(blob.iv) }, key, b64(blob.ct));
   return JSON.parse(new TextDecoder().decode(plain));
 }
+async function fetchBlob(url, ms) {
+  const ctl = new AbortController();
+  const t = setTimeout(() => ctl.abort(), ms);
+  try {
+    const r = await fetch(url, { cache: 'no-store', signal: ctl.signal });
+    if (!r.ok) throw new Error('HTTP ' + r.status);
+    return await r.json();
+  } finally { clearTimeout(t); }
+}
 function lock(text) { $('#lockTxt').textContent = text; $('#lock').classList.add('on'); }
-async function load(quiet) {
+let loading = null;
+function load(quiet) { if (!loading) loading = doLoad(quiet).finally(() => { loading = null; }); return loading; }
+async function doLoad(quiet) {
   const pass = password();
   if (!pass) return lock('Открой планер кнопкой «📱 Планер» в чате с ботом @' + BOT);
-  try {
-    const r = await fetch('data.json?t=' + Date.now(), { cache: 'no-store' });
-    if (!r.ok) throw new Error('HTTP ' + r.status);
-    const blob = await r.json();
-    DATA = await decrypt(blob, pass);
+  const tries = await Promise.allSettled([
+    fetchBlob(RELAY + '/data?t=' + Date.now(), 6000).then((b) => decrypt(b, pass)),
+    fetchBlob('data.json?t=' + Date.now(), 15000).then((b) => decrypt(b, pass)),
+  ]);
+  const got = tries.filter((x) => x.status === 'fulfilled' && x.value && x.value.updated).map((x) => x.value);
+  if (got.length) {
+    got.sort((a, b) => Date.parse(b.updated) - Date.parse(a.updated));
+    if (!DATA || Date.parse(got[0].updated) >= Date.parse(DATA.updated)) DATA = got[0];
     store.set('cache', DATA);
-  } catch (e) {
-    if (e && e.name === 'OperationError') return lock('Ключ не подошёл. Открой планер заново кнопкой в чате с ботом');
+  } else {
+    const site = tries[1].reason;
+    if (site && site.name === 'OperationError') return lock('Ключ не подошёл. Открой планер заново кнопкой в чате с ботом');
     DATA = DATA || store.get('cache');
     if (!DATA) return lock('Нет связи с сайтом. Проверь интернет и открой ещё раз');
     if (!quiet) toast('Нет связи, показываю сохранённое');
@@ -71,22 +103,72 @@ async function load(quiet) {
   render();
 }
 
-// ── действия: ответ бота станет правдой, а до тех пор отметка живёт здесь ──
+// ── действия: фоном через ящик, ответ бота станет правдой, а до тех пор отметка живёт здесь ──
+// Касание получает номер cid и уходит в очередь outbox. Очередь отправляется в ящик planer-relay
+// (Telegram не открывается), нет сети - ждёт и уходит сама. Отметка снимается, когда в данных
+// появился cid (бот выполнил). Запасной путь без ящика - прежний: sendData или ссылка на бота
+const newCid = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
+const outbox = () => store.get('outbox') || [];
 function pending() {
   const list = store.get('pending') || [];
-  const fresh = list.filter((p) => !DATA || p.at > Date.parse(DATA.updated));
+  const acked = new Set((DATA && DATA.acked) || []);
+  const upd = DATA ? Date.parse(DATA.updated) : 0;
+  const waiting = new Set(outbox().map((x) => x.cid));
+  const fresh = list.filter((p) => {
+    if (waiting.has(p.cid)) return true;                                    // ещё не ушло в ящик
+    if (p.cid && acked.has(p.cid)) return false;                            // бот выполнил
+    if (!p.relay && DATA && upd > p.ts) return false;                       // старый путь через Telegram
+    return Date.now() - p.ts < 15 * 60e3;                                   // не висеть вечно
+  });
   if (fresh.length !== list.length) store.set('pending', fresh);
   return fresh;
 }
 function send(action) {
   haptic('medium');
-  if (action.op !== 'say') {
+  const a = Object.assign({ cid: newCid(), ts: Date.now(), relay: true }, action);
+  if (a.op !== 'say') {
     const list = store.get('pending') || [];
-    list.push(Object.assign({ at: Date.now() }, action));
+    list.push(a);
     store.set('pending', list);
-    render();
   }
-  if (canSendData()) { TG.sendData(JSON.stringify(action)); return; }       // окно закроется, бот ответит в чате
+  const box = outbox();
+  box.push(a);
+  store.set('outbox', box);
+  render();
+  flush();
+}
+const actOf = (a) => { const x = Object.assign({}, a); delete x.cid; delete x.ts; delete x.relay; return x; };
+let flushing = false, failSince = 0;
+async function flush() {
+  if (flushing || !outbox().length) return;
+  flushing = true;
+  try {
+    const key = await relayKey(password() || '');
+    for (const a of outbox()) {
+      let r;
+      try {
+        r = await fetch(RELAY + '/act', { method: 'POST', headers: { 'Content-Type': 'text/plain' }, keepalive: true,
+          body: JSON.stringify({ key, cid: a.cid, act: actOf(a) }) });
+      } catch (e) { r = null; }
+      if (!r || r.status >= 500) { failSince = failSince || Date.now(); break; }   // нет сети: попробуем позже
+      failSince = 0;
+      store.set('outbox', outbox().filter((x) => x.cid !== a.cid));
+      if (r.status !== 200) {                                                       // ящик не принял: отметку снять
+        store.set('pending', (store.get('pending') || []).filter((x) => x.cid !== a.cid));
+        toast(r.status === 401 ? 'Ключ ящика не подошёл, открой планер кнопкой в чате' : 'Бот не понял команду');
+      }
+    }
+  } finally { flushing = false; }
+  if (DATA) renderHead();
+  burst();
+}
+let burstT = [];
+function burst() {                         // бот забирает команду за ~5 секунд: подтянуть свежие данные пару раз
+  burstT.forEach(clearTimeout);
+  burstT = [3000, 6500, 11000, 20000, 40000].map((ms) => setTimeout(() => { if (pending().length) load(true); }, ms));
+}
+function legacy(action) {                  // запасной путь: окно закроется или откроется чат с ботом
+  if (canSendData()) { TG.sendData(JSON.stringify(action)); return; }
   const p = deepParam(action);
   const url = 'https://t.me/' + BOT + (p ? '?start=' + p : '');
   if (TG) TG.openTelegramLink(url); else location.href = url;
@@ -110,11 +192,17 @@ function alertsOf(e) {
   });
   return list;
 }
+const toMin = (s) => +s.slice(0, 2) * 60 + +s.slice(3, 5);
+const movedEdit = (p) => p.op === 'edit' && p.start;                       // правка со своим временем: место известно
 function overlay(e) {
+  let out = e;
+  pending().filter((x) => x.id === e.id && x.op === 'edit').forEach((p) => {
+    out = Object.assign({}, out, p.title ? { title: p.title } : {}, p.dur ? { dur: p.dur } : {}, { pend: true });
+  });
   const p = pending().filter((x) => x.id === e.id && (GONE.includes(x.op) || x.op === 'reopen')).pop();
-  if (!p) return e;
-  if (p.op === 'done') return Object.assign({}, e, { done: true });
-  if (p.op === 'reopen') return Object.assign({}, e, { done: false });
+  if (!p) return out;
+  if (p.op === 'done') return Object.assign({}, out, { done: true });
+  if (p.op === 'reopen') return Object.assign({}, out, { done: false });
   return null;                                                           // удалено или уехало на завтра
 }
 
@@ -143,10 +231,28 @@ const CTX = { focus: 'фокус', admin: 'рутина', call: 'звонок', 
 const KIND = { hard: 'точное время', flex: 'гибкое', small: 'мелочь', now: 'на 2 минуты', buy: 'покупка', inbox: 'без даты' };
 function localToday() { const d = new Date(); return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0'); }
 function dayObj(date) { return DATA.days.find((d) => d.date === date); }
-function entries(day) { return (day ? day.entries : []).map(overlay).filter(Boolean); }
+function findRaw(id) {
+  for (const d of DATA.days) { const e = d.entries.find((x) => x.id === id); if (e) return Object.assign({ date: d.date }, e); }
+  for (const n of ['now', 'buy', 'inbox', 'stuck']) { const e = (DATA[n] || []).find((x) => x.id === id); if (e) return Object.assign({ kind: n === 'stuck' ? 'flex' : n }, e); }
+  return null;
+}
+function entries(day) {
+  if (!day) return [];
+  const moved = new Map();                                     // последняя правка со временем по каждому делу
+  pending().filter(movedEdit).forEach((p) => moved.set(p.id, p));
+  const list = day.entries.filter((e) => !moved.has(e.id)).map(overlay).filter(Boolean);
+  moved.forEach((p) => {
+    if (p.date !== day.date) return;
+    const src = findRaw(p.id) || { title: '' };
+    const s = toMin(p.start);
+    const e = overlay(Object.assign({}, src, { id: p.id, kind: 'hard', s, e: s + (p.dur || src.dur || 30), part: '', star: false, travel: 0 }));
+    if (e) list.push(e);
+  });
+  return list.sort((a, b) => a.s - b.s);
+}
 function listItems(name) {
-  const gone = new Set(pending().filter((p) => GONE.includes(p.op)).map((p) => p.id));
-  return (DATA[name] || []).map((x) => Object.assign({}, x, { gone: gone.has(x.id) }));
+  const gone = new Set(pending().filter((p) => GONE.includes(p.op) || (p.op === 'edit' && p.date)).map((p) => p.id));
+  return (DATA[name] || []).map((x) => Object.assign({}, overlay(x) || x, { gone: gone.has(x.id) }));
 }
 function dayLabel(date) {
   const t = localToday();
@@ -154,6 +260,7 @@ function dayLabel(date) {
   const diff = Math.round((d - new Date(t + 'T12:00')) / 864e5);
   if (diff === 0) return 'сегодня';
   if (diff === 1) return 'завтра';
+  if (diff === -1) return 'вчера';
   return WDS[d.getDay()] + ' ' + d.getDate() + ' ' + MON[d.getMonth()];
 }
 
@@ -169,8 +276,13 @@ function renderHead() {
   $('#ringArc').style.strokeDashoffset = String(150.8 * (1 - (total ? done / total : 0)));
   const up = new Date(DATA.updated);
   const p = pending().length;
-  $('#syncTxt').textContent = p ? 'отправлено боту, жду подтверждения' : 'обновлено ' + hm(up.getHours() * 60 + up.getMinutes()) + (dayLabel(DATA.today) !== 'сегодня' ? ', ' + dayLabel(DATA.today) : '');
-  $('#sync').classList.toggle('stale', !!p);
+  const ob = outbox().length;
+  const off = ob && failSince && Date.now() - failSince > 15000;
+  $('#syncTxt').textContent = off ? 'нет связи, отправлю сам, как появится сеть'
+    : ob ? 'отправляю…' : p ? 'бот выполняет…'
+      : 'обновлено ' + hm(up.getHours() * 60 + up.getMinutes()) + (dayLabel(DATA.today) !== 'сегодня' ? ', ' + dayLabel(DATA.today) : '');
+  $('#sync').classList.toggle('stale', !!p || !!ob);
+  $('#syncTg').hidden = !off;
 }
 
 function nextCard(list, nowM, isToday) {
@@ -199,7 +311,7 @@ function renderToday() {
   a = Math.max(0, Math.floor(a / 60) * 60); b = Math.min(24 * 60, Math.ceil(b / 60) * 60);
   const ppm = 1.3;
   const y = (m) => (m - a) * ppm;
-  let html = nextCard(list, nowM, true);
+  let html = ydayLink() + nextCard(list, nowM, true);
   if (!list.length) html += '<div class="empty"><b>Сегодня свободно</b>Скажи боту, что надо сделать, и дело встанет сюда</div>';
   html += '<div class="tl" style="height:' + Math.round(y(b) + 10) + 'px">';
   for (let m = a; m <= b; m += 60) html += '<div class="hr" style="top:' + y(m) + 'px"><span>' + hm(m) + '</span></div>';
@@ -234,10 +346,25 @@ function renderToday() {
   }
 }
 
+function ydayLink() {                     // «Сегодня» сверху: как прошёл вчерашний день, касание открывает его
+  const y = new Date(localToday() + 'T12:00'); y.setDate(y.getDate() - 1);
+  const h = (DATA.history || []).find((d) => d.date === localISO(y).slice(0, 10));
+  if (!h) return '';
+  return '<button class="yday" data-day="' + h.date + '" data-goweek="1"><span>Вчера</span><b>сделано ' + h.done + ' из ' + h.total + '</b><i>→</i></button>';
+}
 function renderWeek() {
-  const days = DATA.days.filter((d) => d.date >= localToday()).slice(0, 14);
-  if (!SEL || !days.find((d) => d.date === SEL)) SEL = days.length ? days[0].date : null;
+  const today = localToday();
+  const past = (DATA.history || []).filter((d) => d.date < today).slice(-14);
+  const days = DATA.days.filter((d) => d.date >= today).slice(0, 14);
+  if (!SEL || !(days.find((d) => d.date === SEL) || past.find((d) => d.date === SEL))) SEL = days.length ? days[0].date : null;
   let html = '<div class="strip">';
+  past.forEach((d) => {
+    const dt = new Date(d.date + 'T12:00');
+    const pct = d.total ? Math.round(100 * d.done / d.total) : 0;
+    html += '<button class="day past' + (d.date === SEL ? ' sel' : '') + '" data-day="' + d.date + '"><span class="w">' + WDS[dt.getDay()] +
+      '</span><span class="d">' + dt.getDate() + '</span><span class="bar"><i class="dn" style="width:' + pct + '%"></i></span><span class="cnt">' + d.done + '/' + d.total + '</span></button>';
+  });
+  if (past.length) html += '<span class="sep" aria-hidden="true"></span>';
   days.forEach((d, i) => {
     const dt = new Date(d.date + 'T12:00');
     const pct = Math.min(100, Math.round(100 * d.load / Math.max(1, d.cap)));
@@ -245,15 +372,34 @@ function renderWeek() {
       '</span><span class="d">' + dt.getDate() + '</span><span class="bar"><i class="' + (pct >= 100 ? 'full' : '') + '" style="width:' + pct + '%"></i></span></button>';
   });
   html += '</div>';
-  const sel = dayObj(SEL);
-  const list = entries(sel);
-  html += '<div class="h2">' + (SEL ? dayLabel(SEL) : '') + '<span>' + list.length + ' дел' + (sel ? ' · занято ' + String(Math.round(sel.load / 60 * 10) / 10).replace('.', ',') + ' ч' : '') + '</span></div>';
-  if (!list.length) html += '<div class="empty"><b>Свободный день</b>Гибкие дела бот поставит сюда сам, если будет место</div>';
-  html += '<div class="agenda">' + list.map(rowHtml).join('') + '</div>';
+  const h = past.find((d) => d.date === SEL);
+  if (h) {
+    const wk = past.slice(-7);
+    const dn = wk.reduce((n, d) => n + d.done, 0), tt = wk.reduce((n, d) => n + d.total, 0);
+    html += '<div class="h2">' + dayLabel(h.date) + '<span>сделано ' + h.done + ' из ' + h.total + '</span></div>';
+    if (!h.entries.length) html += '<div class="empty"><b>Пустой день</b>В плане ничего не стояло и ничего не отмечено</div>';
+    html += '<div class="agenda">' + h.entries.map((e) => histRow(e, h.date)).join('') + '</div>';
+    html += '<div class="dyn">' + (wk.length > 1 ? 'Последние ' + wk.length + ' дн.' : 'За этот день') + ': сделано <b>' + dn + '</b> из ' + tt +
+      (tt ? ' · ' + Math.round(100 * dn / tt) + '%' : '') + '</div>';
+  } else {
+    const sel = dayObj(SEL);
+    const list = entries(sel);
+    html += '<div class="h2">' + (SEL ? dayLabel(SEL) : '') + '<span>' + list.length + ' дел' + (sel ? ' · занято ' + String(Math.round(sel.load / 60 * 10) / 10).replace('.', ',') + ' ч' : '') + '</span></div>';
+    if (!list.length) html += '<div class="empty"><b>Свободный день</b>Гибкие дела бот поставит сюда сам, если будет место</div>';
+    html += '<div class="agenda">' + list.map(rowHtml).join('') + '</div>';
+    if (SEL === today && past.length) html += '<div class="dyn">Прошлые дни слева: листай полоску дней вправо</div>';
+  }
   $('#v-week').innerHTML = html;
   const selEl = document.querySelector('.day.sel');
   const strip = document.querySelector('.strip');
   if (selEl && strip) strip.scrollLeft = Math.max(0, selEl.offsetLeft - strip.offsetLeft - (strip.clientWidth - selEl.clientWidth) / 2);
+}
+const HSTATE = { done: 'сделано', missed: 'не сделано', cancelled: 'удалено', gone: 'убрано' };
+function histRow(e, date) {
+  const when = e.extra ? 'отмечено в ' + hm(e.s) + ', вне плана дня' : (e.kind === 'hard' ? 'точное время' : hm(e.s) + '-' + hm(e.e)) + (e.part ? ' · часть ' + e.part : '');
+  const note = e.note && e.state !== 'cancelled' ? ' · ' + esc(e.note) : '';
+  return '<button class="row hist st-' + e.state + '" data-hid="' + e.id + '" data-hdate="' + date + '"><span class="tm">' + hm(e.s) +
+    '</span><span class="hk" aria-label="' + HSTATE[e.state] + '"></span><span class="ttl">' + esc(e.title) + '<div class="sub">' + when + note + '</div></span></button>';
 }
 function rowHtml(e) {
   const tm = e.kind === 'hard' ? hm(e.s) : hm(e.s);
@@ -292,11 +438,12 @@ function render() {
 
 // ── шторки ──────────────────────────────────────────────────
 function findItem(id) {
+  const mv = pending().filter((p) => movedEdit(p) && p.id === id).pop();   // правка со временем ещё едет к боту
+  if (mv) { const e = entries(dayObj(mv.date)).find((x) => x.id === id); if (e) return Object.assign({ date: mv.date }, e); }
   for (const d of DATA.days) { const e = d.entries.find((x) => x.id === id); if (e) return Object.assign({ date: d.date }, overlay(e) || e); }
-  for (const n of ['now', 'buy', 'inbox', 'stuck']) { const e = (DATA[n] || []).find((x) => x.id === id); if (e) return Object.assign({ kind: n === 'stuck' ? 'flex' : n }, e); }
+  for (const n of ['now', 'buy', 'inbox', 'stuck']) { const e = (DATA[n] || []).find((x) => x.id === id); if (e) return Object.assign({ kind: n === 'stuck' ? 'flex' : n }, overlay(e) || e); }
   return null;
 }
-const tgHint = () => (canSendData() ? '' : '<div class="hint">Откроется чат с ботом: нажми внизу «Запустить», и бот всё сделает</div>');
 function pad(n) { return String(n).padStart(2, '0'); }
 function localISO(d) { return d.getFullYear() + '-' + pad(d.getMonth() + 1) + '-' + pad(d.getDate()) + 'T' + pad(d.getHours()) + ':' + pad(d.getMinutes()); }
 function remBlock(e) {
@@ -321,9 +468,66 @@ function taskSheet(id) {
   if (e.date) meta = dayLabel(e.date) + ', ' + (e.kind === 'hard' ? 'в ' + hm(e.s) : hm(e.s) + '-' + hm(e.e)) + ' · ' + meta;
   const acts = e.done
     ? '<button class="btn pri" data-act="reopen">↩ Вернуть в работу</button>'
-    : '<button class="btn pri" data-act="done">✓ Сделано</button><button class="btn" data-act="tmrw">→ ' + (e.date && e.date > localToday() ? 'На день позже' : 'На завтра') + '</button><button class="btn warn" data-act="cancel">✕ Удалить</button>';
+    : '<button class="btn pri" data-act="done">✓ Сделано</button><button class="btn" data-act="edit">✏️ Изменить</button><button class="btn" data-act="tmrw">→ ' +
+      (e.date && e.date > localToday() ? 'На день позже' : 'На завтра') + '</button><button class="btn warn wide" data-act="cancel">✕ Удалить</button>';
   openSheet('<h3>' + esc(e.title) + '</h3><div class="meta">' + meta + '</div><div class="acts" data-task="' + e.id + '">' + acts + '</div>' +
-    (e.done ? '' : '<div data-task="' + e.id + '">' + remBlock(e) + '</div>') + tgHint());
+    (e.done ? '' : '<div data-task="' + e.id + '">' + remBlock(e) + '</div>'));
+}
+// ── правка дела: текст, день, своё время, длительность ──
+let EDIT = null;
+const durTxt = (n) => (n < 60 ? n + ' мин' : n % 60 ? String(Math.round(n / 6) / 10).replace('.', ',') + ' ч' : n / 60 + ' ч');
+function editSheet(id) {
+  const e = findItem(id);
+  if (!e) return;
+  const hard = e.kind === 'hard';
+  const timed = e.s !== undefined && e.date;
+  const dur = e.dur || (timed ? e.e - e.s : 0) || 30;
+  EDIT = { id: e.id, title: e.title, date: timed ? e.date : '', time: hard ? hm(e.s) : '', dur };
+  const durs = [5, 15, 30, 45, 60, 90, 120, 180, 240];
+  if (!durs.includes(dur)) { durs.push(dur); durs.sort((x, y) => x - y); }
+  const now = hard ? 'Очистишь время (✕) - бот сам подберёт окно в этот день'
+    : (timed ? 'Сейчас бот поставил на ' + hm(e.s) + '-' + hm(e.e) + '. ' : '') + 'Поставишь время - дело встанет ровно на него, бот его больше не двигает';
+  openSheet('<h3>Изменить дело</h3>' +
+    '<label class="fl" for="edTitle">Текст</label><textarea id="edTitle" class="ed" maxlength="200">' + esc(e.title) + '</textarea>' +
+    '<div class="frow"><div><label class="fl" for="edDate">День</label><input type="date" id="edDate" class="inp" min="' + localToday() + '" value="' + EDIT.date + '"></div>' +
+    '<div><label class="fl" for="edTime">Время</label><div class="tbox"><input type="time" id="edTime" class="inp" value="' + EDIT.time + '">' +
+    '<button class="clr" data-clr="1" aria-label="Без точного времени">✕</button></div></div></div>' +
+    '<div class="hint">' + now + '</div>' +
+    '<label class="fl">Сколько займёт</label><div class="chips" id="edDur">' +
+    durs.map((n) => '<button class="chip' + (n === dur ? ' on' : '') + '" data-dur="' + n + '">' + durTxt(n) + '</button>').join('') + '</div>' +
+    '<div class="acts" data-task="' + e.id + '"><button class="btn pri" data-act="save">Сохранить</button></div>');
+  grow($('#edTitle'));
+}
+function grow(el) { el.style.height = 'auto'; el.style.height = Math.min(220, el.scrollHeight + 2) + 'px'; }   // текст виден целиком
+document.addEventListener('input', (ev) => { if (ev.target.classList && ev.target.classList.contains('ed')) grow(ev.target); });
+function saveEdit() {
+  if (!EDIT) return;
+  const title = ($('#edTitle').value || '').replace(/\s+/g, ' ').trim();
+  let date = $('#edDate').value || '';
+  const time = ($('#edTime').value || '').slice(0, 5);
+  const on = document.querySelector('#edDur .chip.on');
+  const dur = on ? +on.dataset.dur : EDIT.dur;
+  if (!title) return toast('Напиши, что за дело');
+  if (time && !date) date = localToday();
+  if (date && date < localToday()) return toast('Выбери сегодня или позже');
+  const act = { op: 'edit', id: EDIT.id };
+  if (title !== EDIT.title) act.title = title;
+  if (dur !== EDIT.dur) act.dur = dur;
+  if (date !== EDIT.date || time !== EDIT.time) { act.date = date; act.start = time; }
+  if (Object.keys(act).length === 2) { closeSheet(); return toast('Ничего не поменялось'); }
+  closeSheet();
+  send(act);
+  toast('Сохраняю' + (act.start ? ': ' + dayLabel(act.date) + ' в ' + act.start : ''));
+}
+function histSheet(id, date) {
+  const h = (DATA.history || []).find((d) => d.date === date);
+  const e = h && h.entries.find((x) => x.id === id);
+  if (!e) return;
+  const cur = findItem(id);
+  if (cur && !cur.done && e.state === 'missed') return taskSheet(id);   // ещё открыто: можно отметить или поправить
+  const when = e.extra ? 'отмечено в ' + hm(e.s) : (e.kind === 'hard' ? 'в ' + hm(e.s) : hm(e.s) + '-' + hm(e.e));
+  openSheet('<h3>' + esc(e.title) + '</h3><div class="meta">' + dayLabel(date) + ', ' + when + ' · ' + HSTATE[e.state] + (e.note ? ' · ' + esc(e.note) : '') + '</div>' +
+    '<div class="hint">Прошлый день: здесь видно, как он прошёл. Дело, которое ещё в работе, открывается в плане</div>');
 }
 function addSheet() {
   openSheet('<h3>Новое дело</h3><textarea id="addTxt" placeholder="Например: завтра в 15 стоматолог, ехать 40 минут. Купить лампочки"></textarea>' +
@@ -339,7 +543,7 @@ function ideaSheet(id) {
   const x = (DATA.ideas || []).find((i) => i.id === id);
   if (!x) return;
   openSheet('<div class="meta">💡 идея от ' + esc(x.date) + '</div><h3 style="margin-top:8px;white-space:pre-wrap">' + esc(x.text) + '</h3>' +
-    '<div class="acts" data-task="' + x.id + '"><button class="btn pri" data-act="idea_task">📥 Сделать делом</button><button class="btn warn" data-act="idea_del" style="grid-column:1/-1">🗑 Удалить</button></div>' + tgHint());
+    '<div class="acts" data-task="' + x.id + '"><button class="btn pri" data-act="idea_task">📥 Сделать делом</button><button class="btn warn" data-act="idea_del" style="grid-column:1/-1">🗑 Удалить</button></div>');
 }
 function renderIdeas() {
   const gone = new Set(pending().filter((p) => p.op === 'idea_del' || p.op === 'idea_task').map((p) => p.id));
@@ -354,9 +558,14 @@ function renderIdeas() {
 document.addEventListener('click', (ev) => {
   const t = ev.target.closest('button');
   if (!t) return;
-  if (t.classList.contains('tab')) return setView(t.dataset.v);
+  if (t.classList.contains('tab')) { if (t.dataset.v === 'week') SEL = null; return setView(t.dataset.v); }   // «Неделя» открывается на сегодня
   if (t.id === 'fab') return VIEW === 'ideas' ? addIdeaSheet() : addSheet();
+  if (t.id === 'syncTg') return viaTelegram();
+  if (t.dataset.goweek) { SEL = t.dataset.day; return setView('week'); }
   if (t.dataset.day) { SEL = t.dataset.day; return renderWeek(); }
+  if (t.dataset.hid) return histSheet(t.dataset.hid, t.dataset.hdate);
+  if (t.dataset.dur) { document.querySelectorAll('#edDur .chip').forEach((c) => c.classList.toggle('on', c === t)); return; }
+  if (t.dataset.clr) { $('#edTime').value = ''; return; }
   if (t.dataset.idea) return ideaSheet(t.dataset.idea);
   if (t.dataset.done) { send({ op: 'done', id: t.dataset.done }); return toast('Отмечено'); }
   const box = t.closest('[data-task]');
@@ -384,12 +593,11 @@ document.addEventListener('click', (ev) => {
       const text = ($(field).value || '').trim();
       if (!text) return toast(act === 'say' ? 'Напиши, что сделать' : 'Напиши идею');
       closeSheet();
-      if (canSendData()) return send({ op: act, text });
-      const msg = act === 'idea' ? 'идея: ' + text : text;
-      if (navigator.clipboard) navigator.clipboard.writeText(msg).catch(() => {});
-      toast('Текст скопирован, вставь его в чат с ботом');
-      return setTimeout(() => send({ op: 'say', text: msg }), 900);
+      send({ op: act, text });
+      return toast(act === 'say' ? 'Отправил боту, дело встанет в план через минуту' : 'Записываю идею');
     }
+    if (act === 'edit') return editSheet(tid);
+    if (act === 'save') return saveEdit();
     if (act === 'cancel' && !t.classList.contains('arm')) { t.classList.add('arm'); t.textContent = 'Точно удалить?'; return; }
     if (act === 'idea_del' && !t.classList.contains('arm')) { t.classList.add('arm'); t.textContent = 'Точно удалить идею?'; return; }
     closeSheet();
@@ -407,9 +615,18 @@ document.addEventListener('click', (ev) => {
   }
   if (t.dataset.id) return taskSheet(t.dataset.id);
 });
+function viaTelegram() {                   // нет связи с ящиком: первую команду из очереди можно отдать через чат
+  const a = outbox()[0];
+  if (!a) return;
+  if (!canSendData() && !deepParam(a)) return toast('Эта правка уйдёт, когда появится связь');
+  store.set('outbox', outbox().slice(1));
+  store.set('pending', (store.get('pending') || []).map((x) => (x.cid === a.cid ? Object.assign({}, x, { relay: false, ts: Date.now() }) : x)));
+  legacy(actOf(a));
+}
 $('#scrim').addEventListener('click', closeSheet);
-document.addEventListener('visibilitychange', () => { if (!document.hidden) load(true); });
+document.addEventListener('visibilitychange', () => { if (!document.hidden) { flush(); load(true); } });
 setInterval(() => { if (!document.hidden) load(true); }, 60000);
+setInterval(() => { if (outbox().length) flush(); if (DATA) renderHead(); }, 10000);
 
 (async () => {
   TG = await waitTG();
@@ -422,4 +639,5 @@ setInterval(() => { if (!document.hidden) load(true); }, 60000);
   applyTheme();
   setView(VIEW);
   load();
+  flush();
 })();
