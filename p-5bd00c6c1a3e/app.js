@@ -139,6 +139,7 @@ function setView(v) {
 }
 
 // ── отрисовка ───────────────────────────────────────────────
+const CTX = { focus: 'фокус', admin: 'рутина', call: 'звонок', errand: 'в городе', creative: 'творчество' };
 const KIND = { hard: 'точное время', flex: 'гибкое', small: 'мелочь', now: 'на 2 минуты', buy: 'покупка', inbox: 'без даты' };
 function localToday() { const d = new Date(); return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0'); }
 function dayObj(date) { return DATA.days.find((d) => d.date === date); }
@@ -215,6 +216,7 @@ function renderToday() {
     const tags = [];
     if (g.star) tags.push('★ главное');
     if (g.part) tags.push('часть ' + g.part);
+    if (g.ctx && CTX[g.ctx]) tags.push(CTX[g.ctx]);
     if (g.kind === 'hard' && g.travel) tags.push('выйти в ' + hm(g.s - g.travel));
     const name = g.kind === 'small' ? 'Мелочи: ' + g.items.map((x) => (x.done ? '✓ ' : '') + esc(x.title)).join(', ') : esc(g.title);
     const time = g.kind === 'hard' ? hm(g.s) : hm(g.s) + '-' + hm(g.e);
@@ -255,7 +257,7 @@ function renderWeek() {
 }
 function rowHtml(e) {
   const tm = e.kind === 'hard' ? hm(e.s) : hm(e.s);
-  const sub = e.kind === 'hard' ? 'точное время' + (e.travel ? ', выйти в ' + hm(e.s - e.travel) : '') : hm(e.s) + '-' + hm(e.e) + (e.part ? ' · часть ' + e.part : '') + (e.star ? ' · главное' : '');
+  const sub = e.kind === 'hard' ? 'точное время' + (e.travel ? ', выйти в ' + hm(e.s - e.travel) : '') : hm(e.s) + '-' + hm(e.e) + (e.part ? ' · часть ' + e.part : '') + (e.star ? ' · главное' : '') + (e.ctx && CTX[e.ctx] ? ' · ' + CTX[e.ctx] : '');
   return '<button class="row ' + e.kind + (e.done ? ' done' : '') + '" data-id="' + e.id + '"><span class="tm">' + tm + '</span><span class="k"></span><span class="ttl">' +
     esc(e.title) + '<div class="sub">' + sub + '</div></span></button>';
 }
