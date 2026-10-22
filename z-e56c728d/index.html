@@ -1,0 +1,150 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="robots" content="noindex, nofollow">
+<meta name="theme-color" content="#120c0f">
+<title>Заголовок для рилса</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Golos+Text:wght@500;600;700&family=Rubik:wght@900&display=swap">
+<style>
+:root { --bg: #120c0f; --panel: #1c1418; --line: #33252c; --fg: #f6ecf1; --muted: #b49ea9; --accent: #ff7aa6; --accent-ink: #2a0614; --warn: #ff5a6a; --ok: #6fe0a6; --yellow: #ffd600; color-scheme: dark; }
+* { box-sizing: border-box; }
+[hidden] { display: none !important; }
+html, body { margin: 0; height: 100%; background: var(--bg); color: var(--fg); font: 500 15px/1.4 "Golos Text", system-ui, -apple-system, sans-serif; -webkit-tap-highlight-color: transparent; }
+button, input, textarea, select { font: inherit; color: inherit; }
+.app { display: grid; grid-template-columns: minmax(0, 1fr); min-height: 100%; padding: env(safe-area-inset-top, 0px) max(12px, env(safe-area-inset-right, 0px)) calc(12px + env(safe-area-inset-bottom, 0px)) max(12px, env(safe-area-inset-left, 0px)); gap: 10px; max-width: 1100px; margin: 0 auto; }
+@media (min-width: 900px) { .app { grid-template-columns: minmax(0, 420px) minmax(0, 1fr); align-items: start; padding-top: 20px; } .stagecol { position: sticky; top: 16px; } }
+header { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding-top: 10px; grid-column: 1 / -1; }
+header h1 { font-size: 17px; margin: 0; font-weight: 700; }
+.btn { border: 1px solid var(--line); background: var(--panel); border-radius: 12px; padding: 10px 14px; font-weight: 600; cursor: pointer; }
+.btn:focus-visible, .seg button:focus-visible, .chip:focus-visible, textarea:focus-visible, input:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.btn.primary { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); }
+.btn:disabled { opacity: .5; cursor: default; }
+.stagecol { display: grid; gap: 8px; }
+.stage { position: relative; width: 100%; max-width: min(100%, calc(46vh * 9 / 16)); margin: 0 auto; aspect-ratio: 9 / 16; border-radius: 16px; overflow: hidden; background: #000; touch-action: none; }
+@media (min-width: 900px) { .stage { max-width: 100%; } }
+.stage canvas { width: 100%; height: 100%; display: block; }
+.toggles { display: flex; gap: 6px; justify-content: center; overflow-x: auto; }
+.toggles .chip { flex: none; font-size: 12px; padding: 6px 10px; }
+.chip { border: 1px solid var(--line); background: var(--panel); border-radius: 999px; padding: 7px 11px; font-size: 13px; font-weight: 600; cursor: pointer; }
+.chip[aria-pressed="true"] { background: var(--yellow); color: #1a1400; border-color: var(--yellow); }
+.status { text-align: center; font-size: 13px; color: var(--muted); min-height: 18px; }
+.status.bad { color: var(--warn); } .status.good { color: var(--ok); }
+.panel { background: var(--panel); border: 1px solid var(--line); border-radius: 16px; padding: 10px; display: grid; gap: 10px; min-width: 0; }
+.seg { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 4px; }
+@media (min-width: 520px) { .seg { grid-template-columns: repeat(6, minmax(0, 1fr)); } }
+.seg button { border: 0; border-radius: 10px; padding: 9px 4px; background: #261b20; font-size: 13px; font-weight: 600; cursor: pointer; }
+.seg button[aria-selected="true"] { background: var(--fg); color: var(--bg); }
+.tab { display: grid; gap: 10px; min-width: 0; }
+.grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(96px, 1fr)); gap: 8px; }
+.card { border: 2px solid transparent; background: #0f0a0c; border-radius: 12px; padding: 4px; cursor: pointer; display: grid; gap: 4px; text-align: center; font-size: 12px; font-weight: 600; }
+.card canvas { width: 100%; aspect-ratio: 3 / 2; display: block; border-radius: 8px; background: #2a1e24; }
+.card[aria-pressed="true"] { border-color: var(--accent); }
+textarea { width: 100%; resize: vertical; min-height: 110px; border-radius: 12px; border: 1px solid var(--line); background: #0f0a0c; padding: 10px; font-weight: 700; font-size: 16px; line-height: 1.35; }
+label.row { display: grid; gap: 6px; font-size: 13px; color: var(--muted); }
+input[type=range] { width: 100%; accent-color: var(--accent); }
+.fgroup h3 { margin: 4px 0 6px; font-size: 12px; letter-spacing: .05em; text-transform: uppercase; color: var(--muted); }
+.flist { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 6px; }
+.fbtn { border: 2px solid var(--line); background: #0f0a0c; border-radius: 10px; padding: 8px 10px; text-align: left; cursor: pointer; display: grid; gap: 2px; min-width: 0; }
+.fbtn .s { font-size: 22px; line-height: 1.15; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.fbtn .n { font-size: 11px; color: var(--muted); }
+.fbtn[aria-pressed="true"] { border-color: var(--accent); }
+.pals { display: grid; grid-template-columns: repeat(auto-fill, minmax(92px, 1fr)); gap: 6px; }
+.pal { border: 2px solid var(--line); background: #0f0a0c; border-radius: 10px; padding: 8px; cursor: pointer; display: grid; gap: 6px; font-size: 12px; font-weight: 600; }
+.pal i { display: block; height: 22px; border-radius: 6px; }
+.pal[aria-pressed="true"] { border-color: var(--accent); }
+.custom { display: flex; gap: 12px; flex-wrap: wrap; align-items: center; font-size: 13px; color: var(--muted); }
+.custom input[type=color] { width: 44px; height: 32px; border: 0; background: none; padding: 0; }
+.anims { display: grid; grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); gap: 6px; }
+.out { display: grid; gap: 6px; position: sticky; bottom: calc(8px + env(safe-area-inset-bottom, 0px)); z-index: 5; background: var(--panel); border: 1px solid var(--line); border-radius: 16px; padding: 10px; box-shadow: 0 -10px 30px rgba(0,0,0,.45); }
+@media (min-width: 900px) { .out { grid-column: 2; position: static; box-shadow: none; } }
+.bar { height: 8px; border-radius: 99px; background: #2a1e24; overflow: hidden; }
+.bar i { display: block; height: 100%; width: 0; background: var(--accent); transition: width .15s; }
+.done { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.hint { font-size: 12px; color: var(--muted); margin: 0; }
+.err { color: var(--warn); font-size: 13px; margin: 0; }
+@media (prefers-reduced-motion: reduce) { .bar i { transition: none; } }
+</style>
+</head>
+<body>
+<div class="app">
+  <header>
+    <h1>Заголовок для рилса</h1>
+    <label class="btn primary" for="file">Загрузить видео</label>
+    <input id="file" type="file" accept="video/*" hidden>
+  </header>
+
+  <div class="stagecol">
+    <div class="stage" id="stage"><canvas id="cv" width="1080" height="1920" aria-label="Превью рилса с заголовком"></canvas></div>
+    <div class="toggles">
+      <button class="chip" id="tZones" type="button" aria-pressed="true">Рамки Instagram</button>
+      <button class="chip" id="tGrid" type="button" aria-pressed="false">Сетка 3:4</button>
+      <button class="chip" id="tPlay" type="button" aria-pressed="false">Пауза</button>
+      <button class="chip" id="tCenter" type="button" aria-pressed="false">По центру</button>
+    </div>
+    <p class="status" id="status" role="status">Двигай заголовок пальцем, двумя пальцами меняй размер</p>
+  </div>
+
+  <div class="panel">
+    <div class="seg" role="tablist" aria-label="Настройки заголовка">
+      <button role="tab" aria-selected="true" data-tab="look" type="button">Оформление</button>
+      <button role="tab" aria-selected="false" data-tab="text" type="button">Текст</button>
+      <button role="tab" aria-selected="false" data-tab="font" type="button">Шрифт</button>
+      <button role="tab" aria-selected="false" data-tab="color" type="button">Цвет</button>
+      <button role="tab" aria-selected="false" data-tab="anim" type="button">Появление</button>
+      <button role="tab" aria-selected="false" data-tab="time" type="button">Время</button>
+    </div>
+
+    <div class="tab" data-pane="look"><div class="grid" id="looks"></div></div>
+
+    <div class="tab" data-pane="text" hidden>
+      <label class="row" for="txt">Каждая строка поля = строка заголовка (до 5 строк)</label>
+      <textarea id="txt" rows="4">САМЫЙ ТОПОВЫЙ
+ДОМАШНИЙ
+ДЕВАЙС
+ДЛЯ ЛИЦА</textarea>
+      <label class="row" for="size">Размер заголовка <span id="sizeV"></span></label>
+      <input id="size" type="range" min="40" max="160" value="100">
+    </div>
+
+    <div class="tab" data-pane="font" hidden>
+      <p class="hint">Шрифт меняется у текущего оформления. Вернуть родной: нажми оформление ещё раз</p>
+      <div id="fonts"></div>
+    </div>
+
+    <div class="tab" data-pane="color" hidden>
+      <div class="pals" id="pals"></div>
+      <div class="custom">
+        <label>Светлые строки <input type="color" id="cL" value="#f29bbb"></label>
+        <label>Тёмные строки <input type="color" id="cD" value="#8a0f33"></label>
+      </div>
+    </div>
+
+    <div class="tab" data-pane="anim" hidden><div class="anims" id="anims"></div></div>
+
+    <div class="tab" data-pane="time" hidden>
+      <label class="row" for="tIn">Появляется на <span id="tInV"></span></label>
+      <input id="tIn" type="range" min="0" max="100" value="0" step="1">
+      <label class="row" for="tOut">Исчезает на <span id="tOutV"></span></label>
+      <input id="tOut" type="range" min="0" max="100" value="100" step="1">
+    </div>
+  </div>
+
+  <div class="out">
+    <button class="btn primary" id="make" type="button">Собрать видео</button>
+    <div class="bar" id="bar" hidden><i id="barI"></i></div>
+    <div class="done" id="done" hidden>
+      <button class="btn primary" id="share" type="button">Поделиться</button>
+      <button class="btn" id="save" type="button">Скачать</button>
+    </div>
+    <p class="hint" id="outHint">Без звука: музыку добавишь в Instagram</p>
+    <p class="err" id="outErr" hidden></p>
+  </div>
+</div>
+<script src="mp4-muxer.min.js"></script>
+<script src="app.js"></script>
+</body>
+</html>

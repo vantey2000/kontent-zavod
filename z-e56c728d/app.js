@@ -1,0 +1,921 @@
+// Движок «надутых» букв: маска текста -> карта высот -> нормали -> свет и фактура
+const ENGINE = (() => {
+  const INF = 1e20;
+
+  // одномерное преобразование расстояний (Felzenszwalb)
+  function dt1d(f, n, d, v, z) {
+    let k = 0; v[0] = 0; z[0] = -INF; z[1] = INF;
+    for (let q = 1; q < n; q++) {
+      let s = ((f[q] + q * q) - (f[v[k]] + v[k] * v[k])) / (2 * q - 2 * v[k]);
+      while (s <= z[k]) { k--; s = ((f[q] + q * q) - (f[v[k]] + v[k] * v[k])) / (2 * q - 2 * v[k]); }
+      k++; v[k] = q; z[k] = s; z[k + 1] = INF;
+    }
+    k = 0;
+    for (let q = 0; q < n; q++) {
+      while (z[k + 1] < q) k++;
+      d[q] = (q - v[k]) * (q - v[k]) + f[v[k]];
+    }
+  }
+
+  // расстояние от каждой точки внутри буквы до края
+  function edt(alpha, w, h) {
+    const n = Math.max(w, h);
+    const f = new Float64Array(n), d = new Float64Array(n), v = new Int32Array(n), z = new Float64Array(n + 1);
+    const g = new Float64Array(w * h);
+    for (let i = 0; i < w * h; i++) g[i] = alpha[i] > 127 ? INF : 0;
+    for (let x = 0; x < w; x++) {
+      for (let y = 0; y < h; y++) f[y] = g[y * w + x];
+      dt1d(f, h, d, v, z);
+      for (let y = 0; y < h; y++) g[y * w + x] = d[y];
+    }
+    for (let y = 0; y < h; y++) {
+      for (let x = 0; x < w; x++) f[x] = g[y * w + x];
+      dt1d(f, w, d, v, z);
+      for (let x = 0; x < w; x++) g[y * w + x] = Math.sqrt(d[x]);
+    }
+    return g;
+  }
+
+  // быстрое размытие: три прохода коробочного фильтра
+  function blur(src, w, h, r) {
+    if (r < 1) return src;
+    let a = Float32Array.from(src), b = new Float32Array(w * h);
+    for (let pass = 0; pass < 3; pass++) {
+      for (let y = 0; y < h; y++) {
+        let acc = 0; const row = y * w;
+        for (let x = -r; x <= r; x++) acc += a[row + Math.min(w - 1, Math.max(0, x))];
+        for (let x = 0; x < w; x++) {
+          b[row + x] = acc / (2 * r + 1);
+          acc += a[row + Math.min(w - 1, x + r + 1)] - a[row + Math.max(0, x - r)];
+        }
+      }
+      for (let x = 0; x < w; x++) {
+        let acc = 0;
+        for (let y = -r; y <= r; y++) acc += b[Math.min(h - 1, Math.max(0, y)) * w + x];
+        for (let y = 0; y < h; y++) {
+          a[y * w + x] = acc / (2 * r + 1);
+          acc += b[Math.min(h - 1, y + r + 1) * w + x] - b[Math.max(0, y - r) * w + x];
+        }
+      }
+    }
+    return a;
+  }
+
+  // детерминированный шум, чтобы кадр не «кипел» от рендера к рендеру
+  function hash(x, y) {
+    let n = (x * 374761393 + y * 668265263) | 0;
+    n = (n ^ (n >>> 13)) * 1274126177 | 0;
+    return ((n ^ (n >>> 16)) >>> 0) / 4294967295;
+  }
+
+  function hex(c) {
+    const s = c.replace('#', '');
+    return [parseInt(s.slice(0, 2), 16), parseInt(s.slice(2, 4), 16), parseInt(s.slice(4, 6), 16)];
+  }
+
+  // маска строки: буквы с ручным трекингом и «раздутием» обводкой
+  function mask(o) {
+    const size = o.size, pad = Math.round(size * 0.35);
+    const c = document.createElement('canvas'), x = c.getContext('2d');
+    const font = `${o.weight || 400} ${size}px "${o.font}", sans-serif`;
+    x.font = font;
+    const chars = [...o.text];
+    const tr = (o.tracking || 0) * size;
+    const adv = chars.map(ch => x.measureText(ch).width);
+    const tw = adv.reduce((s, a) => s + a, 0) + tr * (chars.length - 1);
+    c.width = Math.ceil(tw + pad * 2); c.height = Math.ceil(size * 1.25 + pad * 2);
+    x.font = font; x.textBaseline = 'alphabetic';
+    x.fillStyle = '#fff'; x.strokeStyle = '#fff';
+    x.lineJoin = 'round'; x.lineWidth = (o.fatten || 0) * size;
+    let cx = pad; const by = pad + size * 0.95;
+    chars.forEach((ch, i) => {
+      x.fillText(ch, cx, by);
+      if (x.lineWidth > 0) x.strokeText(ch, cx, by);
+      cx += adv[i] + tr;
+    });
+    return { c, x, w: c.width, h: c.height, pad };
+  }
+
+  const V = (a, b, c) => { const l = Math.hypot(a, b, c); return [a / l, b / l, c / l]; };
+  const LIGHT = V(-0.3, -0.62, 0.75);
+  const HALF = V(LIGHT[0], LIGHT[1], LIGHT[2] + 1);
+  const mix = (a, b, t) => a + (b - a) * t;
+
+  // как красится одна точка поверхности в каждом материале
+  const SHADE = {
+    velvet(n, base, hi, px, py) {
+      const dif = Math.max(0, n[0] * LIGHT[0] + n[1] * LIGHT[1] + n[2] * LIGHT[2]);
+      const rim = Math.pow(1 - n[2], 1.4);
+      const fib = 0.9 + 0.2 * (0.55 * hash(px >> 1, py >> 1) + 0.45 * hash(px, py));
+      const k = (0.3 + 0.9 * dif) * fib;
+      return [0, 1, 2].map(i => base[i] * k + hi[i] * rim * 0.42 * (0.25 + 0.75 * dif));
+    },
+    gloss(n, base, hi) {
+      const dif = Math.max(0, n[0] * LIGHT[0] + n[1] * LIGHT[1] + n[2] * LIGHT[2]);
+      const sp = Math.pow(Math.max(0, n[0] * HALF[0] + n[1] * HALF[1] + n[2] * HALF[2]), 60);
+      const rim = Math.pow(1 - n[2], 2.2);
+      return [0, 1, 2].map(i => base[i] * (0.38 + 0.72 * dif) + hi[i] * rim * 0.35 + 255 * sp * 0.95);
+    },
+    chrome(n, base) {
+      const ry = 2 * n[2] * n[1];
+      let e;
+      if (ry < -0.05) e = mix(235, 255, Math.min(1, -ry));
+      else if (ry < 0.12) e = mix(70, 30, (ry + 0.05) / 0.17);
+      else e = mix(120, 215, Math.min(1, (ry - 0.12) / 0.6));
+      const sp = Math.pow(Math.max(0, n[0] * HALF[0] + n[1] * HALF[1] + n[2] * HALF[2]), 90);
+      return [0, 1, 2].map(i => e * (0.75 + 0.25 * base[i] / 255) + 255 * sp);
+    }
+  };
+
+  // надутая строка в выбранном материале
+  function puffy(o) {
+    const m = o.shape === 'heart' ? heartMask(o) : mask(o), w = m.w, h = m.h;
+    const src = m.x.getImageData(0, 0, w, h).data;
+    const a = new Uint8ClampedArray(w * h);
+    for (let i = 0; i < w * h; i++) a[i] = src[i * 4 + 3];
+    const R = (o.puff || 0.12) * o.size;
+    const d = edt(a, w, h), hm = new Float32Array(w * h);
+    for (let i = 0; i < w * h; i++) {
+      const t = Math.min(1, d[i] / R);
+      hm[i] = R * Math.sqrt(1 - (1 - t) * (1 - t));
+    }
+    const H = blur(hm, w, h, Math.max(1, Math.round(o.size * (o.style === 'chrome' ? 0.035 : 0.025))));
+    const out = m.x.createImageData(w, h), px = out.data;
+    const base = hex(o.color), hi = hex(o.sheen || '#ffffff');
+    const shade = SHADE[o.style] || SHADE.velvet;
+    const fuzz = o.style === 'velvet' ? Math.max(1, Math.round(o.size * 0.012)) : 0;
+    for (let y = 1; y < h - 1; y++) for (let x = 1; x < w - 1; x++) {
+      const i = y * w + x;
+      let al = a[i];
+      if (fuzz && d[i] < fuzz * 2 + 1) {
+        const jx = Math.round((hash(x, y) - 0.5) * 2 * fuzz), jy = Math.round((hash(y, x) - 0.5) * 2 * fuzz);
+        const xx = Math.min(w - 1, Math.max(0, x + jx)), yy = Math.min(h - 1, Math.max(0, y + jy));
+        al = Math.min(al, a[yy * w + xx] + 40);
+      }
+      if (!al) continue;
+      const n = V(-(H[i + 1] - H[i - 1]) * 0.5, -(H[i + w] - H[i - w]) * 0.5, 1);
+      const c = shade(n, base, hi, x, y);
+      px[i * 4] = c[0]; px[i * 4 + 1] = c[1]; px[i * 4 + 2] = c[2]; px[i * 4 + 3] = al;
+    }
+    m.x.clearRect(0, 0, w, h); m.x.putImageData(out, 0, 0);
+    return m;
+  }
+
+  // сердечко-декор в том же материале, что и буквы
+  function heartMask(o) {
+    const s = o.size, pad = Math.round(s * 0.35);
+    const c = document.createElement('canvas'), x = c.getContext('2d');
+    c.width = c.height = Math.ceil(s + pad * 2);
+    x.fillStyle = '#fff';
+    x.translate(pad, pad); x.scale(s / 100, s / 100);
+    x.beginPath();
+    x.moveTo(50, 88);
+    x.bezierCurveTo(14, 64, 0, 44, 6, 26);
+    x.bezierCurveTo(12, 8, 38, 4, 50, 24);
+    x.bezierCurveTo(62, 4, 88, 8, 94, 26);
+    x.bezierCurveTo(100, 44, 86, 64, 50, 88);
+    x.fill();
+    x.setTransform(1, 0, 0, 1, 0, 0);
+    return { c, x, w: c.width, h: c.height, pad };
+  }
+
+  // плоские стили: стикер, 3D-блок, неон, простой
+  function flat(o) {
+    const m = mask(Object.assign({}, o, { fatten: 0 }));
+    const { x, w, h, pad } = m, s = o.size;
+    const chars = [...o.text], tr = (o.tracking || 0) * s;
+    x.clearRect(0, 0, w, h);
+    x.font = `${o.weight || 400} ${s}px "${o.font}", sans-serif`; x.lineJoin = 'round';
+    const adv = chars.map(ch => x.measureText(ch).width);
+    const each = (fn) => { let cx = pad; chars.forEach((ch, i) => { fn(ch, cx, pad + s * 0.95); cx += adv[i] + tr; }); };
+    const edge = o.edge || '#111111';
+    if (o.style === 'sticker') {
+      x.strokeStyle = edge; x.lineWidth = s * 0.24;
+      each((ch, cx, cy) => x.strokeText(ch, cx, cy));
+      x.fillStyle = o.color; each((ch, cx, cy) => x.fillText(ch, cx, cy));
+    } else if (o.style === 'extrude') {
+      const depth = Math.round(s * 0.11);
+      x.fillStyle = edge;
+      for (let k = depth; k > 0; k--) each((ch, cx, cy) => x.fillText(ch, cx + k * 0.6, cy + k));
+      x.fillStyle = o.color; each((ch, cx, cy) => x.fillText(ch, cx, cy));
+      x.strokeStyle = edge; x.lineWidth = s * 0.03;
+      each((ch, cx, cy) => x.strokeText(ch, cx, cy));
+    } else if (o.style === 'neon') {
+      x.strokeStyle = o.color; x.lineWidth = s * 0.07;
+      for (const b of [s * 0.45, s * 0.22, s * 0.08]) {
+        x.shadowColor = o.color; x.shadowBlur = b;
+        each((ch, cx, cy) => x.strokeText(ch, cx, cy));
+      }
+      x.shadowBlur = 0; x.strokeStyle = '#ffffff'; x.lineWidth = s * 0.025;
+      each((ch, cx, cy) => x.strokeText(ch, cx, cy));
+    } else {
+      x.fillStyle = o.color; each((ch, cx, cy) => x.fillText(ch, cx, cy));
+    }
+    return m;
+  }
+
+  const PUFFY = new Set(['velvet', 'gloss', 'chrome']);
+  const line = (o) => PUFFY.has(o.style) ? puffy(o) : flat(o);
+
+  // тень запекается в картинку строки один раз, чтобы кадры рисовались быстро
+  function bake(m, o, shadow) {
+    if (!shadow) return { c: m.c, w: m.w, h: m.h, pad: m.pad };
+    const e = Math.ceil(o.size * 0.2);
+    const c = document.createElement('canvas'); c.width = m.w + e * 2; c.height = m.h + e * 2;
+    const x = c.getContext('2d');
+    x.shadowColor = 'rgba(25,0,10,.5)'; x.shadowBlur = o.size * 0.09; x.shadowOffsetY = o.size * 0.05;
+    x.drawImage(m.c, e, e);
+    return { c, w: c.width, h: c.height, pad: m.pad + e };
+  }
+
+  // раскладка заголовка: картинки строк и их места относительно центра блока
+  function layout(t) {
+    const parts = [];
+    let y = 0;
+    t.lines.forEach(l => {
+      const o = Object.assign({ font: t.font, weight: t.weight, style: t.style, tracking: t.tracking, fatten: t.fatten, puff: t.puff }, l);
+      let m = line(o);
+      const maxW = (t.maxW || 960) - (o.heart ? o.size * 1.25 : 0), tw = m.w - m.pad * 2;
+      if (tw > maxW) { o.size = Math.floor(o.size * maxW / tw); m = line(o); }
+      const b = bake(m, o, t.shadow !== false && o.style !== 'neon');
+      const part = { c: b.c, x: -b.w / 2, y: y - b.pad, w: b.w, h: b.h, tw: m.w - m.pad * 2, size: o.size, top: y };
+      if (o.heart) {
+        const hm = puffy({ shape: 'heart', size: o.size * 0.62, color: o.heart, sheen: '#ffffff', style: 'gloss', puff: 0.22 });
+        part.heart = { c: hm.c, x: part.tw / 2 - hm.pad + o.size * 0.08, y: y + o.size * 0.3 - hm.pad };
+      }
+      parts.push(part);
+      y += o.size * (t.leading || 0.86);
+    });
+    const last = parts[parts.length - 1];
+    const height = last ? last.top + last.size * 1.05 : 0;
+    parts.forEach(p => { p.y -= height / 2; p.top -= height / 2; if (p.heart) p.heart.y -= height / 2; });
+    const width = parts.reduce((s, p) => Math.max(s, p.tw + (p.heart ? p.size * 0.9 : 0)), 0);
+    return { parts, width, height };
+  }
+
+  const clamp = (v) => Math.max(0, Math.min(1, v));
+  const outCubic = (p) => 1 - Math.pow(1 - p, 3);
+  const outBack = (p) => { const c = 1.9; return 1 + (c + 1) * Math.pow(p - 1, 3) + c * Math.pow(p - 1, 2); };
+  const outBounce = (p) => {
+    const n = 7.5625, d = 2.75;
+    if (p < 1 / d) return n * p * p;
+    if (p < 2 / d) return n * (p -= 1.5 / d) * p + 0.75;
+    if (p < 2.5 / d) return n * (p -= 2.25 / d) * p + 0.9375;
+    return n * (p -= 2.625 / d) * p + 0.984375;
+  };
+
+  // как строка i выглядит в момент t (секунды от появления заголовка)
+  function motion(anim, i, t) {
+    if (anim === 'pop' || anim === 'pulse') {
+      const p = clamp((t - i * 0.09) / 0.5);
+      return { k: p ? outBack(p) : 0, dx: 0, dy: 0, a: clamp(p * 3) };
+    }
+    if (anim === 'drop') {
+      const p = clamp((t - i * 0.12) / 0.7);
+      return { k: 1, dx: 0, dy: -(1 - outBounce(p)) * 900, a: p > 0 ? 1 : 0 };
+    }
+    if (anim === 'lines') {
+      const p = clamp((t - i * 0.14) / 0.45);
+      return { k: 1, dx: (i % 2 ? 1 : -1) * (1 - outCubic(p)) * 1200, dy: 0, a: p > 0 ? 1 : 0 };
+    }
+    return { k: 1, dx: 0, dy: 0, a: 1 };
+  }
+
+  // кадр заголовка: o = { cx, cy, scale, anim, t, left } (left = сколько секунд до исчезновения)
+  function draw(ctx, L, o) {
+    const S = o.scale || 1, t = o.t == null ? 99 : o.t;
+    let fade = 1;
+    if (o.left != null && o.left < 0.3) fade = clamp(o.left / 0.3);
+    if (fade <= 0) return;
+    const breathe = o.anim === 'pulse' && t > 0.6 ? 1 + 0.035 * Math.sin((t - 0.6) * Math.PI * 1.6) : 1;
+    L.parts.forEach((p, i) => {
+      const m = motion(o.anim, i, t);
+      if (!m.a || !m.k) return;
+      const pcy = p.y + p.h / 2;
+      ctx.save();
+      ctx.globalAlpha = m.a * fade;
+      ctx.translate(o.cx, o.cy);
+      ctx.scale(S * breathe, S * breathe);
+      ctx.translate(m.dx, pcy + m.dy);
+      ctx.scale(m.k, m.k);
+      ctx.drawImage(p.c, -p.w / 2, -p.h / 2);
+      if (p.heart) ctx.drawImage(p.heart.c, p.heart.x, p.heart.y - pcy);
+      ctx.restore();
+    });
+  }
+
+  // где буквы лежат в кадре: для проверки рамок и перетаскивания
+  function box(L, cx, cy, S) {
+    const rects = [];
+    L.parts.forEach(p => {
+      const y0 = cy + (p.top + p.size * 0.14) * S, y1 = cy + (p.top + p.size * 1.02) * S;
+      rects.push({ x0: cx - p.tw / 2 * S, x1: cx + p.tw / 2 * S, y0, y1 });
+      if (p.heart) rects.push({ x0: cx + (p.tw / 2) * S, x1: cx + (p.tw / 2 + p.size * 0.62) * S, y0: cy + (p.top + p.size * 0.3) * S, y1: cy + (p.top + p.size * 0.9) * S });
+    });
+    return rects.length ? rects : null;
+  }
+
+  // загрузка шрифтов с русскими буквами: без образца браузер тянет только латиницу
+  async function ready(specs) {
+    await Promise.all(specs.map(f => document.fonts.load(f, 'АБВГДЕЖЗИЙЯя AZ').catch(() => null)));
+  }
+
+  return { layout, draw, box, ready };
+})();
+
+// шрифты с кириллицей (проверены по каталогу Google Fonts 22.10.2026) и самый жирный вес каждого
+const FONT_GROUPS = [
+  ['Пухлые и жирные', [['Rubik', 900], ['Nunito', 1000], ['M PLUS Rounded 1c', 900], ['Unbounded', 900], ['Dela Gothic One', 400], ['Rubik Mono One', 400], ['Oi', 400], ['Climate Crisis', 400], ['Russo One', 400], ['Days One', 400], ['Seymour One', 400]]],
+  ['Игривые', [['Rubik Bubbles', 400], ['Comfortaa', 700], ['Balsamiq Sans', 700], ['Shantell Sans', 800], ['Kablammo', 400], ['Train One', 400], ['Rampart One', 400], ['Rubik Doodle Shadow', 400], ['Rubik Puddles', 400]]],
+  ['Рукописные', [['Lobster', 400], ['Pacifico', 400], ['Caveat', 700], ['Marck Script', 400], ['Bad Script', 400], ['Great Vibes', 400], ['Amatic SC', 700], ['Comforter Brush', 400]]],
+  ['Ретро и пиксель', [['Press Start 2P', 400], ['Pixelify Sans', 700], ['Tektur', 800], ['Handjet', 700], ['Rubik 80s Fade', 400], ['Stalinist One', 400], ['Rubik Iso', 400]]],
+  ['Граффити и гранж', [['Rubik Spray Paint', 400], ['Rubik Wet Paint', 400], ['Rubik Glitch', 400], ['Rubik Burned', 400], ['Rubik Dirt', 400], ['Rubik Storm', 400], ['Rubik Marker Hatch', 400]]],
+  ['Нежные и дорогие', [['Yeseva One', 400], ['Forum', 400], ['Poiret One', 400], ['Playfair Display', 900], ['Cormorant', 700], ['Ruslan Display', 400]]]
+];
+const FONT_W = {};
+FONT_GROUPS.forEach(([, list]) => list.forEach(([f, w]) => { FONT_W[f] = w; }));
+
+// палитры: светлая строка, тёмная строка, сердечко
+const PALETTES = [
+  { id: 'pink', name: 'Розовый', l: '#f29bbb', d: '#8a0f33', h: '#ff6fa8' },
+  { id: 'lilac', name: 'Конфета', l: '#ff3d9a', d: '#6c2bff', h: '#ff8cc6' },
+  { id: 'mint', name: 'Мята', l: '#a8f0d4', d: '#0b6b50', h: '#5fe0b0' },
+  { id: 'sky', name: 'Небо', l: '#a9d8ff', d: '#1c3fa0', h: '#7cc0ff' },
+  { id: 'lemon', name: 'Лимон', l: '#ffd400', d: '#141414', h: '#ffd400' },
+  { id: 'fire', name: 'Огонь', l: '#fff3e0', d: '#ff5a1f', h: '#ff8a5c' },
+  { id: 'choco', name: 'Шоколад', l: '#f3d2b3', d: '#5b2a12', h: '#e8a77a' },
+  { id: 'neon', name: 'Неон', l: '#ff4fd8', d: '#38f3ff', h: '#ff4fd8' },
+  { id: 'red', name: 'Красный', l: '#ffffff', d: '#e3122d', h: '#ff4d6a' },
+  { id: 'bw', name: 'Чёрно-белый', l: '#ffffff', d: '#141414', h: '#ffffff' }
+];
+
+// готовые оформления: материал + шрифт + размеры строк + какая строка светлая, какая тёмная
+const STYLES = [
+  { id: 'barhat', name: 'Бархат', style: 'velvet', font: 'Rubik', tracking: -0.035, fatten: 0.05, puff: 0.2, leading: 0.84, sizes: [112, 176, 176, 140], roles: 'lddl', pal: 'pink', heart: true },
+  { id: 'sharik', name: 'Шарик', style: 'gloss', font: 'Nunito', tracking: -0.03, fatten: 0.06, puff: 0.14, leading: 0.86, sizes: [112, 176, 176, 140], roles: 'lddl', pal: 'lilac' },
+  { id: 'zefir', name: 'Зефир', style: 'velvet', font: 'M PLUS Rounded 1c', tracking: -0.03, fatten: 0.05, puff: 0.2, leading: 0.86, sizes: [112, 170, 170, 136], roles: 'lddl', pal: 'mint', heart: true },
+  { id: 'karamel', name: 'Карамель', style: 'gloss', font: 'Unbounded', tracking: -0.04, fatten: 0.03, puff: 0.12, leading: 0.9, sizes: [84, 128, 136, 104], roles: 'lddl', pal: 'fire' },
+  { id: 'sticker', name: 'Стикер', style: 'sticker', font: 'Rubik Mono One', tracking: -0.02, leading: 1.0, sizes: [82, 120, 140, 96], roles: 'dlld', pal: 'lemon' },
+  { id: 'blok', name: '3D-блок', style: 'extrude', font: 'Dela Gothic One', tracking: 0, leading: 1.02, sizes: [96, 150, 168, 112], roles: 'lddl', pal: 'fire' },
+  { id: 'neon', name: 'Неон', style: 'neon', font: 'Lobster', tracking: 0, leading: 0.98, shadow: false, sizes: [110, 170, 170, 130], roles: 'lddl', pal: 'neon' },
+  { id: 'ruka', name: 'Рукописный', style: 'sticker', font: 'Pacifico', tracking: 0, leading: 1.05, sizes: [100, 150, 150, 120], roles: 'dldl', pal: 'red' },
+  { id: 'piksel', name: 'Пиксель', style: 'extrude', font: 'Press Start 2P', tracking: 0, leading: 1.25, sizes: [58, 86, 96, 72], roles: 'lddl', pal: 'lemon' },
+  { id: 'graffiti', name: 'Граффити', style: 'plain', font: 'Rubik Spray Paint', tracking: -0.02, leading: 0.95, sizes: [110, 165, 165, 130], roles: 'lddl', pal: 'red' }
+];
+
+function pal(id) { return PALETTES.find(p => p.id === id) || PALETTES[0]; }
+
+function shadeHex(hex, k) {
+  const n = parseInt(hex.slice(1), 16), r = n >> 16, g = (n >> 8) & 255, b = n & 255;
+  const f = (c) => Math.round(k >= 0 ? c + (255 - c) * k : c * (1 + k));
+  return '#' + [f(r), f(g), f(b)].map(v => v.toString(16).padStart(2, '0')).join('');
+}
+
+// собрать заголовок: оформление + текст + выбор шрифта и цвета
+function buildTitle(st, text, o) {
+  const p = Object.assign({}, pal(o.pal || st.pal));
+  if (o.colorL) p.l = o.colorL;
+  if (o.colorD) p.d = o.colorD;
+  const font = o.font || st.font;
+  const lines = text.map((s, i) => {
+    const role = st.roles[i % st.roles.length];
+    const color = role === 'l' ? p.l : p.d;
+    const other = role === 'l' ? p.d : p.l;
+    const edge = st.edge || (st.style === 'extrude' ? shadeHex(p.d, -0.7) : other);
+    return { text: s, size: st.sizes[i % st.sizes.length], color, sheen: shadeHex(color, 0.55), edge };
+  });
+  if (st.heart && lines.length) lines[lines.length - 1].heart = p.h;
+  return { font, weight: FONT_W[font] || 400, style: st.style, tracking: st.tracking, fatten: st.fatten, puff: st.puff, leading: st.leading, shadow: st.shadow, lines, maxW: 800 };
+}
+
+// безопасные рамки рилса 1080×1920. Верх и края по требованиям Meta (14% сверху, 6% с боков),
+// кнопки справа и подпись снизу по раскладке ленты Reels, строгая рамка Meta для рекламы (35% снизу)
+const ZONES = [
+  { id: 'top', name: 'шапку Reels', x: 0, y: 0, w: 1080, h: 269 },
+  { id: 'rail', name: 'кнопки лайков', x: 940, y: 1000, w: 140, h: 560 },
+  { id: 'bottom', name: 'ник и подпись', x: 0, y: 1560, w: 1080, h: 360 },
+  { id: 'left', name: 'левый край', x: 0, y: 269, w: 65, h: 1291 },
+  { id: 'right', name: 'правый край', x: 1015, y: 269, w: 65, h: 731 }
+];
+const AD_FRAME = { x: 65, y: 269, w: 950, h: 979 };
+const GRID = { y0: 240, y1: 1680 };
+
+const hit = (r, z) => r.x0 < z.x + z.w && r.x1 > z.x && r.y0 < z.y + z.h && r.y1 > z.y;
+
+// rects = прямоугольники каждой строки и сердечка
+function zoneCheck(rects) {
+  const rs = rects || [];
+  const bad = ZONES.filter(z => rs.some(r => hit(r, z)));
+  const inAd = rs.every(r => r.x0 >= AD_FRAME.x && r.x1 <= AD_FRAME.x + AD_FRAME.w && r.y0 >= AD_FRAME.y && r.y1 <= AD_FRAME.y + AD_FRAME.h);
+  const inGrid = rs.every(r => r.y0 >= GRID.y0 && r.y1 <= GRID.y1);
+  return { bad, inAd, inGrid };
+}
+
+function pill(x, text, tx, ty, color) {
+  x.font = '600 26px "Golos Text", system-ui, sans-serif';
+  const w = x.measureText(text).width + 24;
+  x.fillStyle = color; x.beginPath();
+  if (x.roundRect) x.roundRect(tx, ty, w, 40, 20); else x.rect(tx, ty, w, 40);
+  x.fill();
+  x.fillStyle = '#1a1400'; x.fillText(text, tx + 12, ty + 29);
+}
+
+function drawZones(x, show, b) {
+  if (!show.zones && !show.grid) return;
+  const chk = zoneCheck(b);
+  x.save();
+  if (show.zones) {
+    ZONES.forEach(z => {
+      const bad = chk.bad.includes(z);
+      x.fillStyle = bad ? 'rgba(255,40,60,.38)' : 'rgba(255,214,0,.26)';
+      x.fillRect(z.x, z.y, z.w, z.h);
+      x.strokeStyle = bad ? '#ff2a3c' : '#ffd600'; x.lineWidth = 3;
+      x.strokeRect(z.x + 1.5, z.y + 1.5, z.w - 3, z.h - 3);
+    });
+    // схема интерфейса: кнопки справа, аватар и строки подписи снизу
+    x.fillStyle = 'rgba(255,255,255,.55)';
+    [1090, 1220, 1350, 1470].forEach(cy => { x.beginPath(); x.arc(1024, cy, 30, 0, Math.PI * 2); x.fill(); });
+    x.beginPath(); x.arc(80, 1640, 38, 0, Math.PI * 2); x.fill();
+    x.fillRect(136, 1622, 260, 30); x.fillRect(40, 1700, 760, 26); x.fillRect(40, 1746, 560, 26); x.fillRect(40, 1806, 420, 26);
+    pill(x, 'Шапка Reels', 24, 200, '#ffd600');
+    pill(x, 'Ник, подпись, музыка', 24, 1572, '#ffd600');
+    x.save(); x.translate(946, 1552); x.rotate(-Math.PI / 2); pill(x, 'Лайки, комменты', 0, 0, '#ffd600'); x.restore();
+    x.setLineDash([18, 14]); x.strokeStyle = 'rgba(255,214,0,.9)'; x.lineWidth = 3;
+    x.strokeRect(AD_FRAME.x, AD_FRAME.y, AD_FRAME.w, AD_FRAME.h);
+    x.setLineDash([]);
+    pill(x, 'Пунктир: строгая рамка для рекламы', AD_FRAME.x + 12, AD_FRAME.y + 14, 'rgba(255,214,0,.85)');
+  }
+  if (show.grid) {
+    x.fillStyle = 'rgba(0,0,0,.45)';
+    x.fillRect(0, 0, 1080, GRID.y0); x.fillRect(0, GRID.y1, 1080, 1920 - GRID.y1);
+    x.setLineDash([10, 10]); x.strokeStyle = '#7fe3ff'; x.lineWidth = 3;
+    x.strokeRect(1.5, GRID.y0, 1077, GRID.y1 - GRID.y0); x.setLineDash([]);
+    pill(x, 'Видно в сетке профиля 3:4', 300, GRID.y0 + 12, '#7fe3ff');
+  }
+  x.restore();
+  return chk;
+}
+
+// сборка MP4 1080×1920 без звука прямо в браузере
+const EXPORT = (() => {
+  const W = 1080, H = 1920, FPS = 30;
+  const sleep = (ms) => new Promise(r => setTimeout(r, ms));
+
+  // перемотка на кадр: ждём, пока браузер реально покажет новый кадр
+  function seek(v, t) {
+    return new Promise(res => {
+      let done = false, seeked = false;
+      const fin = () => { if (!done) { done = true; res(); } };
+      if (v.requestVideoFrameCallback) v.requestVideoFrameCallback(() => { if (seeked) fin(); else setTimeout(fin, 0); });
+      v.addEventListener('seeked', () => { seeked = true; setTimeout(fin, 40); }, { once: true });
+      setTimeout(fin, 2000);
+      v.currentTime = t;
+    });
+  }
+
+  // Safari не сообщает цветовое пространство и длительность кадра, а упаковщику они нужны
+  const CS = { primaries: 'bt709', transfer: 'bt709', matrix: 'bt709', fullRange: false };
+  function sink(muxer) {
+    return (chunk, meta) => {
+      if (meta && meta.decoderConfig && !meta.decoderConfig.colorSpace) meta = Object.assign({}, meta, { decoderConfig: Object.assign({}, meta.decoderConfig, { colorSpace: CS }) });
+      const data = new Uint8Array(chunk.byteLength); chunk.copyTo(data);
+      muxer.addVideoChunkRaw(data, chunk.type, chunk.timestamp, chunk.duration > 0 ? chunk.duration : Math.round(1e6 / FPS), meta);
+    };
+  }
+
+  async function pickCodec() {
+    if (!('VideoEncoder' in window)) return null;
+    for (const codec of ['avc1.640028', 'avc1.4d0028', 'avc1.42e028', 'avc1.640032', 'avc1.4d0032']) {
+      const cfg = { codec, width: W, height: H, bitrate: 10000000, framerate: FPS, avc: { format: 'avc' } };
+      try { const s = await VideoEncoder.isConfigSupported(cfg); if (s.supported) return cfg; } catch (e) {}
+    }
+    return null;
+  }
+
+  // основной путь: WebCodecs покадрово, ровно 30 кадров в секунду
+  async function webcodecs(cfg, v, paint, onProgress) {
+    const cv = document.createElement('canvas'); cv.width = W; cv.height = H;
+    const x = cv.getContext('2d');
+    const target = new Mp4Muxer.ArrayBufferTarget();
+    const muxer = new Mp4Muxer.Muxer({ target, video: { codec: 'avc', width: W, height: H, frameRate: FPS }, fastStart: 'in-memory', firstTimestampBehavior: 'offset' });
+    let fail = null;
+    const enc = new VideoEncoder({ output: sink(muxer), error: (e) => { fail = e; } });
+    enc.configure(cfg);
+    const n = Math.max(1, Math.floor(v.duration * FPS));
+    v.pause();
+    for (let i = 0; i < n; i++) {
+      if (fail) throw fail;
+      const t = i / FPS;
+      await seek(v, Math.min((i + 0.5) / FPS, v.duration - 0.001));
+      paint(x, t);
+      const frame = new VideoFrame(cv, { timestamp: Math.round(t * 1e6), duration: Math.round(1e6 / FPS) });
+      enc.encode(frame, { keyFrame: i % (FPS * 2) === 0 });
+      frame.close();
+      while (enc.encodeQueueSize > 6) await sleep(4);
+      onProgress((i + 1) / n);
+    }
+    await enc.flush();
+    if (fail) throw fail;
+    muxer.finalize();
+    return new Blob([target.buffer], { type: 'video/mp4' });
+  }
+
+  // быстрый путь: ролик проигрывается один раз, каждый показанный кадр сразу кодируется
+  async function playthrough(cfg, v, paint, onProgress) {
+    const cv = document.createElement('canvas'); cv.width = W; cv.height = H;
+    const x = cv.getContext('2d');
+    const target = new Mp4Muxer.ArrayBufferTarget();
+    const muxer = new Mp4Muxer.Muxer({ target, video: { codec: 'avc', width: W, height: H }, fastStart: 'in-memory', firstTimestampBehavior: 'offset' });
+    let fail = null, last = -1, count = 0;
+    const enc = new VideoEncoder({ output: sink(muxer), error: (e) => { fail = e; } });
+    enc.configure(cfg);
+    v.pause(); v.loop = false; await seek(v, 0);
+    const finished = new Promise((res, rej) => {
+      const onFrame = (now, meta) => {
+        if (fail) return rej(fail);
+        const t = meta.mediaTime;
+        if (t > last + 0.001) {
+          last = t;
+          paint(x, t);
+          const frame = new VideoFrame(cv, { timestamp: Math.round(t * 1e6), duration: Math.round(1e6 / FPS) });
+          enc.encode(frame, { keyFrame: count % 60 === 0 });
+          frame.close(); count++;
+          onProgress(Math.min(1, t / v.duration));
+        }
+        if (!v.ended) v.requestVideoFrameCallback(onFrame);
+      };
+      v.requestVideoFrameCallback(onFrame);
+      v.addEventListener('ended', () => setTimeout(res, 80), { once: true });
+    });
+    v.playbackRate = 0.5; // вдвое медленнее: телефон успевает нарисовать каждый кадр
+    await v.play();
+    try { await finished; } finally { v.playbackRate = 1; v.loop = true; }
+    await enc.flush();
+    if (fail) throw fail;
+    if (count < 2) throw new Error('браузер не отдал кадры видео');
+    muxer.finalize();
+    return new Blob([target.buffer], { type: 'video/mp4' });
+  }
+
+  // запасной путь: запись холста в реальном времени (если браузер не умеет WebCodecs)
+  async function recorder(v, paint, onProgress) {
+    const type = ['video/mp4;codecs=avc1', 'video/mp4', 'video/webm;codecs=vp9', 'video/webm'].find(t => window.MediaRecorder && MediaRecorder.isTypeSupported(t));
+    if (!type) throw new Error('Этот браузер не умеет собирать видео. Открой страницу в Safari или Chrome');
+    const cv = document.createElement('canvas'); cv.width = W; cv.height = H;
+    const x = cv.getContext('2d');
+    const rec = new MediaRecorder(cv.captureStream(FPS), { mimeType: type, videoBitsPerSecond: 10000000 });
+    const parts = [];
+    rec.ondataavailable = (e) => { if (e.data.size) parts.push(e.data); };
+    const stopped = new Promise(r => { rec.onstop = r; });
+    v.loop = false; v.currentTime = 0; await seek(v, 0);
+    rec.start(250);
+    await v.play();
+    await new Promise(res => {
+      const tick = () => {
+        paint(x, v.currentTime); onProgress(v.currentTime / v.duration);
+        if (v.ended || v.currentTime >= v.duration - 0.02) return res();
+        requestAnimationFrame(tick);
+      };
+      tick();
+    });
+    rec.stop(); await stopped; v.loop = true;
+    return new Blob(parts, { type: type.split(';')[0] });
+  }
+
+  async function run(v, paint, onProgress) {
+    const cfg = await pickCodec();
+    const fast = cfg && v.requestVideoFrameCallback;
+    const blob = fast ? await playthrough(cfg, v, paint, onProgress) : cfg ? await webcodecs(cfg, v, paint, onProgress) : await recorder(v, paint, onProgress);
+    return { blob, ext: blob.type.includes('webm') ? 'webm' : 'mp4', way: (fast ? 'play ' : cfg ? 'seek ' : 'recorder ') + (cfg ? cfg.codec : '') };
+  }
+
+  return { run, W, H };
+})();
+
+// шрифты: полный файл грузится только для выбранного, превью в списке идут урезанными копиями под своим именем
+const FONTS = (() => {
+  const GF = 'https://fonts.googleapis.com/css2?';
+  const fam = (f, w) => 'family=' + f.replace(/ /g, '+') + (w && w !== 400 ? ':wght@' + w : '');
+  const loaded = new Map();
+
+  function loadFont(f) {
+    if (loaded.has(f)) return loaded.get(f);
+    const w = FONT_W[f] || 400;
+    const p = new Promise(res => {
+      const l = document.createElement('link');
+      l.rel = 'stylesheet'; l.href = GF + fam(f, w) + '&display=block';
+      l.onload = () => res(); l.onerror = () => res();
+      document.head.appendChild(l);
+    }).then(() => ENGINE.ready([`${w} 100px "${f}"`]));
+    loaded.set(f, p);
+    return p;
+  }
+
+  // урезанные копии под именем «П-<шрифт>»: не мешают полному файлу того же шрифта
+  async function previews(list, text) {
+    const chars = Array.from(new Set(text.split(''))).join('');
+    const chunks = [];
+    for (let i = 0; i < list.length; i += 12) chunks.push(list.slice(i, i + 12));
+    await Promise.all(chunks.map(async ch => {
+      try {
+        const url = GF + ch.map(f => fam(f, FONT_W[f])).join('&') + '&text=' + encodeURIComponent(chars) + '&display=swap';
+        const css = await (await fetch(url)).text();
+        const st = document.createElement('style');
+        st.textContent = css.replace(/font-family:\s*'([^']+)'/g, (m, n) => "font-family: 'П-" + n + "'");
+        document.head.appendChild(st);
+      } catch (e) { /* без превью список всё равно работает */ }
+    }));
+  }
+
+  return { loadFont, previews };
+})();
+
+// состояние экрана, превью и общий рисовальщик кадра (превью и экспорт рисуют одно и то же)
+const $ = (id) => document.getElementById(id);
+const DEF = { look: 'barhat', font: null, pal: null, cL: null, cD: null, anim: 'pop', text: 'САМЫЙ ТОПОВЫЙ\nДОМАШНИЙ\nДЕВАЙС\nДЛЯ ЛИЦА', scale: 1, cx: 540, cy: 1180, tIn: 0, tOut: null, zones: true, grid: false };
+let S = Object.assign({}, DEF);
+try { const saved = JSON.parse(localStorage.getItem('zag-state') || 'null'); if (saved) S = Object.assign(S, saved, { tIn: 0, tOut: null }); } catch (e) {}
+const persist = () => { try { localStorage.setItem('zag-state', JSON.stringify(S)); } catch (e) {} };
+
+const cv = $('cv'), ctx = cv.getContext('2d');
+const video = document.createElement('video');
+video.muted = true; video.playsInline = true; video.loop = true; video.preload = 'auto';
+video.setAttribute('playsinline', ''); video.setAttribute('muted', '');
+const demo = new Image(); demo.src = 'demo.jpg';
+let hasVideo = false, exporting = false, paused = false, L = null, snapGuide = false;
+let lastStatus = '', fakeStart = performance.now();
+
+const look = () => STYLES.find(s => s.id === S.look) || STYLES[0];
+const lines = () => S.text.split('\n').map(s => s.trim()).filter(Boolean).slice(0, 5);
+const dur = () => (hasVideo && isFinite(video.duration) ? video.duration : 4);
+const tOut = () => (S.tOut == null ? dur() : Math.min(S.tOut, dur()));
+
+function cover(x, src, sw, sh) {
+  if (!sw || !sh) { x.fillStyle = '#000'; x.fillRect(0, 0, 1080, 1920); return; }
+  const k = Math.max(1080 / sw, 1920 / sh), dw = sw * k, dh = sh * k;
+  x.drawImage(src, (1080 - dw) / 2, (1920 - dh) / 2, dw, dh);
+}
+
+// один кадр: фон + заголовок в момент time (секунды ролика)
+function paint(x, time) {
+  if (hasVideo) cover(x, video, video.videoWidth, video.videoHeight);
+  else cover(x, demo, demo.naturalWidth, demo.naturalHeight);
+  if (!L || time < S.tIn || time > tOut()) return;
+  const left = tOut() < dur() - 0.05 ? tOut() - time : null;
+  ENGINE.draw(x, L, { cx: S.cx, cy: S.cy, scale: S.scale, anim: S.anim, t: time - S.tIn, left });
+}
+
+let rebuildTimer = 0, rebuildN = 0;
+function rebuild(delay) {
+  clearTimeout(rebuildTimer);
+  rebuildTimer = setTimeout(async () => {
+    const n = ++rebuildN, st = look(), font = S.font || st.font;
+    await FONTS.loadFont(font);
+    if (n !== rebuildN) return;
+    const opts = { font, pal: S.pal, colorL: S.cL, colorD: S.cD };
+    L = lines().length ? ENGINE.layout(buildTitle(st, lines(), opts)) : null;
+    hideDone();
+  }, delay == null ? 120 : delay);
+}
+
+function setStatus(text, cls) {
+  if (text === lastStatus) return;
+  lastStatus = text; const el = $('status'); el.textContent = text; el.className = 'status' + (cls ? ' ' + cls : '');
+}
+
+function previewTime() {
+  if (hasVideo) return video.currentTime;
+  return ((performance.now() - fakeStart) / 1000) % dur();
+}
+
+function loop() {
+  requestAnimationFrame(loop);
+  if (exporting) return;
+  const time = paused && !hasVideo ? 99 : previewTime();
+  paint(ctx, time);
+  const b = L ? ENGINE.box(L, S.cx, S.cy, S.scale) : null;
+  const chk = drawZones(ctx, { zones: S.zones, grid: S.grid }, b);
+  if (snapGuide) { ctx.fillStyle = '#7fe3ff'; ctx.fillRect(539, 0, 2, 1920); }
+  if (!S.zones || !chk) setStatus('Двигай заголовок пальцем, двумя пальцами меняй размер');
+  else if (chk.bad.length) setStatus('Заголовок заходит под ' + chk.bad.map(z => z.name).join(', '), 'bad');
+  else if (!chk.inAd) setStatus('В рилсе всё видно. Для рекламы держи заголовок внутри пунктира', 'good');
+  else setStatus('Заголовок в безопасной зоне', 'good');
+}
+
+// вкладки, ленты выбора и перетаскивание заголовка
+const ANIMS = [['none', 'Без анимации'], ['pop', 'Выпрыгивает'], ['drop', 'Падает сверху'], ['lines', 'По строкам'], ['pulse', 'Пульсирует']];
+const press = (root, attr, val) => root.querySelectorAll('[' + attr + ']').forEach(b => b.setAttribute('aria-pressed', String(b.getAttribute(attr) === val)));
+
+function restartAnim() {
+  if (hasVideo) { try { video.currentTime = S.tIn; } catch (e) {} } else fakeStart = performance.now();
+}
+
+function buildTabs() {
+  document.querySelectorAll('[role=tab]').forEach(b => b.addEventListener('click', () => {
+    document.querySelectorAll('[role=tab]').forEach(x => x.setAttribute('aria-selected', String(x === b)));
+    document.querySelectorAll('[data-pane]').forEach(p => { p.hidden = p.dataset.pane !== b.dataset.tab; });
+  }));
+}
+
+// карточки оформлений: каждое написано своим же материалом
+async function buildLooks() {
+  const box = $('looks');
+  STYLES.forEach(st => {
+    const b = document.createElement('button');
+    b.type = 'button'; b.className = 'card'; b.setAttribute('data-look', st.id);
+    const c = document.createElement('canvas'); c.width = 300; c.height = 200;
+    const n = document.createElement('span'); n.textContent = st.name;
+    b.append(c, n); box.appendChild(b);
+    b.addEventListener('click', () => {
+      S.look = st.id; S.font = null; S.pal = null; S.cL = null; S.cD = null;
+      press(box, 'data-look', st.id); press($('fonts'), 'data-font', '');
+      press($('pals'), 'data-pal', st.pal); syncColors(); persist(); rebuild(0); restartAnim();
+    });
+  });
+  press(box, 'data-look', S.look);
+  const fonts = Array.from(new Set(STYLES.map(s => s.font)));
+  await FONTS.previews(fonts, STYLES.map(s => s.name).join(''));
+  await ENGINE.ready(fonts.map(f => `${FONT_W[f] || 400} 100px "П-${f}"`));
+  STYLES.forEach(st => {
+    const c = box.querySelector('[data-look="' + st.id + '"] canvas'), x = c.getContext('2d');
+    const t = buildTitle(Object.assign({}, st, { heart: false, roles: 'd' }), [st.name], {});
+    t.font = 'П-' + st.font; t.lines[0].size = 110; t.maxW = 2000;
+    const lay = ENGINE.layout(t);
+    const k = Math.min(270 / Math.max(1, lay.width), 150 / Math.max(1, lay.height));
+    x.clearRect(0, 0, 300, 200);
+    ENGINE.draw(x, lay, { cx: 150, cy: 100, scale: k });
+  });
+}
+
+function buildFonts() {
+  const box = $('fonts');
+  FONT_GROUPS.forEach(([title, list]) => {
+    const g = document.createElement('div'); g.className = 'fgroup';
+    const h = document.createElement('h3'); h.textContent = title; g.appendChild(h);
+    const l = document.createElement('div'); l.className = 'flist';
+    list.forEach(([f, w]) => {
+      const b = document.createElement('button'); b.type = 'button'; b.className = 'fbtn'; b.setAttribute('data-font', f);
+      const s = document.createElement('span'); s.className = 's'; s.textContent = 'Заголовок';
+      s.style.fontFamily = `"П-${f}", "Golos Text", sans-serif`; s.style.fontWeight = w;
+      const n = document.createElement('span'); n.className = 'n'; n.textContent = f;
+      b.append(s, n); l.appendChild(b);
+      b.addEventListener('click', () => { S.font = f; press(box, 'data-font', f); persist(); rebuild(0); });
+    });
+    g.appendChild(l); box.appendChild(g);
+  });
+  press(box, 'data-font', S.font || '');
+  FONTS.previews(FONT_GROUPS.flatMap(([, list]) => list.map(([f]) => f)), 'Заголовок');
+}
+
+function syncColors() {
+  const p = pal(S.pal || look().pal);
+  $('cL').value = S.cL || p.l; $('cD').value = S.cD || p.d;
+}
+
+function buildColors() {
+  const box = $('pals');
+  PALETTES.forEach(p => {
+    const b = document.createElement('button'); b.type = 'button'; b.className = 'pal'; b.setAttribute('data-pal', p.id);
+    const i = document.createElement('i'); i.style.background = `linear-gradient(90deg, ${p.l} 0 50%, ${p.d} 50% 100%)`;
+    const n = document.createElement('span'); n.textContent = p.name;
+    b.append(i, n); box.appendChild(b);
+    b.addEventListener('click', () => { S.pal = p.id; S.cL = null; S.cD = null; press(box, 'data-pal', p.id); syncColors(); persist(); rebuild(0); });
+  });
+  press(box, 'data-pal', S.pal || look().pal);
+  $('cL').addEventListener('input', e => { S.cL = e.target.value; persist(); rebuild(); });
+  $('cD').addEventListener('input', e => { S.cD = e.target.value; persist(); rebuild(); });
+  syncColors();
+}
+
+function buildAnims() {
+  const box = $('anims');
+  ANIMS.forEach(([id, name]) => {
+    const b = document.createElement('button'); b.type = 'button'; b.className = 'chip'; b.setAttribute('data-anim', id); b.textContent = name;
+    b.addEventListener('click', () => { S.anim = id; press(box, 'data-anim', id); persist(); hideDone(); restartAnim(); });
+    box.appendChild(b);
+  });
+  press(box, 'data-anim', S.anim);
+}
+
+const sec = (v) => v.toFixed(1).replace('.', ',') + ' с';
+function syncTime() {
+  const d = dur();
+  $('tIn').value = Math.round(S.tIn / d * 100); $('tOut').value = Math.round(tOut() / d * 100);
+  $('tInV').textContent = sec(S.tIn); $('tOutV').textContent = sec(tOut());
+}
+function buildTime() {
+  $('tIn').addEventListener('input', e => { S.tIn = Math.min(e.target.value / 100 * dur(), tOut() - 0.5); if (S.tIn < 0) S.tIn = 0; syncTime(); hideDone(); restartAnim(); });
+  $('tOut').addEventListener('input', e => { S.tOut = Math.max(e.target.value / 100 * dur(), S.tIn + 0.5); syncTime(); hideDone(); });
+  syncTime();
+}
+
+// пальцы: один двигает заголовок, два меняют размер
+function buildDrag() {
+  const st = $('stage'), pts = new Map();
+  let start = null;
+  const pos = (e) => { const r = cv.getBoundingClientRect(); return { x: (e.clientX - r.left) * 1080 / r.width, y: (e.clientY - r.top) * 1920 / r.height }; };
+  const snapshot = () => {
+    const a = [...pts.values()];
+    const mid = a.length > 1 ? { x: (a[0].x + a[1].x) / 2, y: (a[0].y + a[1].y) / 2 } : a[0];
+    const dist = a.length > 1 ? Math.hypot(a[0].x - a[1].x, a[0].y - a[1].y) : 0;
+    start = { mid, dist, cx: S.cx, cy: S.cy, scale: S.scale };
+  };
+  st.addEventListener('pointerdown', e => { st.setPointerCapture(e.pointerId); pts.set(e.pointerId, pos(e)); snapshot(); });
+  st.addEventListener('pointermove', e => {
+    if (!pts.has(e.pointerId) || !start) return;
+    pts.set(e.pointerId, pos(e));
+    const a = [...pts.values()];
+    const mid = a.length > 1 ? { x: (a[0].x + a[1].x) / 2, y: (a[0].y + a[1].y) / 2 } : a[0];
+    let cx = start.cx + mid.x - start.mid.x;
+    snapGuide = Math.abs(cx - 540) < 22; if (snapGuide) cx = 540;
+    S.cx = Math.round(cx); S.cy = Math.round(start.cy + mid.y - start.mid.y);
+    if (a.length > 1 && start.dist > 20) {
+      const d = Math.hypot(a[0].x - a[1].x, a[0].y - a[1].y);
+      S.scale = Math.max(0.4, Math.min(1.6, start.scale * d / start.dist)); syncSize();
+    }
+  });
+  const up = (e) => { pts.delete(e.pointerId); snapGuide = false; if (pts.size) snapshot(); else { start = null; persist(); hideDone(); } };
+  st.addEventListener('pointerup', up); st.addEventListener('pointercancel', up);
+}
+
+function syncSize() { $('size').value = Math.round(S.scale * 100); $('sizeV').textContent = Math.round(S.scale * 100) + '%'; }
+
+function buildText() {
+  $('txt').value = S.text;
+  $('txt').addEventListener('input', e => { S.text = e.target.value; persist(); rebuild(220); });
+  $('size').addEventListener('input', e => { S.scale = e.target.value / 100; syncSize(); persist(); hideDone(); });
+  syncSize();
+  const tog = (id, key) => { const b = $(id); b.setAttribute('aria-pressed', String(!!S[key])); b.addEventListener('click', () => { S[key] = !S[key]; b.setAttribute('aria-pressed', String(S[key])); persist(); }); };
+  tog('tZones', 'zones'); tog('tGrid', 'grid');
+  $('tPlay').addEventListener('click', () => {
+    paused = !paused; $('tPlay').setAttribute('aria-pressed', String(paused));
+    if (hasVideo) { if (paused) video.pause(); else video.play().catch(() => {}); }
+  });
+  $('tCenter').addEventListener('click', () => { S.cx = 540; S.cy = DEF.cy; S.scale = 1; syncSize(); persist(); hideDone(); });
+}
+
+function buildFile() {
+  $('file').addEventListener('change', () => {
+    const f = $('file').files[0]; if (!f) return;
+    $('outErr').hidden = true;
+    setStatus('Открываю видео…');
+    video.src = URL.createObjectURL(f);
+    video.onloadeddata = () => { hasVideo = true; S.tIn = 0; S.tOut = null; syncTime(); hideDone(); video.play().catch(() => {}); };
+    video.onerror = () => { hasVideo = false; showErr('Это видео браузер не открыл. Попробуй другой файл или в камере айфона включи формат «Наиболее совместимый»'); };
+  });
+}
+
+// сборка и отдача файла
+let outFile = null;
+function hideDone() { outFile = null; $('done').hidden = true; $('make').hidden = false; }
+function showErr(t) { const e = $('outErr'); e.textContent = t; e.hidden = !t; }
+
+async function make() {
+  if (!hasVideo) return showErr('Сначала загрузи своё видео кнопкой «Загрузить видео» сверху');
+  if (!L) return showErr('Напиши текст заголовка во вкладке «Текст»');
+  showErr(''); exporting = true; $('make').disabled = true; $('bar').hidden = false;
+  const t0 = performance.now();
+  try {
+    const r = await EXPORT.run(video, paint, p => { $('barI').style.width = Math.round(p * 100) + '%'; $('make').textContent = 'Собираю… ' + Math.round(p * 100) + '%'; });
+    outFile = new File([r.blob], 'zagolovok.' + r.ext, { type: r.blob.type }); window.__way = r.way;
+    $('make').hidden = true; $('done').hidden = false;
+    $('outHint').textContent = 'Готово за ' + Math.round((performance.now() - t0) / 1000) + ' с, ' + (r.blob.size / 1048576).toFixed(1).replace('.', ',') + ' МБ. «Поделиться» открывает меню телефона: там Instagram и «Сохранить видео»';
+  } catch (e) {
+    showErr('Не получилось собрать видео: ' + (e && e.message ? e.message : e));
+  } finally {
+    exporting = false; $('make').disabled = false; $('make').textContent = 'Собрать видео'; $('bar').hidden = true;
+    video.loop = true; try { video.currentTime = 0; } catch (e) {} if (!paused) video.play().catch(() => {});
+  }
+}
+
+async function share() {
+  if (!outFile) return;
+  try {
+    if (navigator.canShare && navigator.canShare({ files: [outFile] })) await navigator.share({ files: [outFile], title: 'Заголовок для рилса' });
+    else showErr('На этом устройстве «Поделиться» недоступно. Нажми «Скачать» или открой страницу с телефона');
+  } catch (e) {
+    if (e && e.name === 'NotAllowedError') showErr('Видео готово, нажми «Поделиться» ещё раз');
+  }
+}
+
+function save() {
+  if (!outFile) return;
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(outFile); a.download = outFile.name;
+  document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(() => URL.revokeObjectURL(a.href), 60000);
+}
+
+(async function init() {
+  buildTabs(); buildText(); buildColors(); buildAnims(); buildTime(); buildDrag(); buildFile(); buildFonts();
+  $('make').addEventListener('click', make); $('share').addEventListener('click', share); $('save').addEventListener('click', save);
+  // шрифт догрузился позже сборки заголовка: перерисовать
+  if (document.fonts && document.fonts.addEventListener) document.fonts.addEventListener('loadingdone', (e) => {
+    const cur = S.font || look().font;
+    if ((e.fontfaces || []).some(f => f.family.replace(/["']/g, '') === cur)) rebuild(60);
+  });
+  await demo.decode().catch(() => null);
+  rebuild(0);
+  requestAnimationFrame(loop);
+  buildLooks();
+})();
