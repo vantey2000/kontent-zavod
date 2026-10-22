@@ -302,17 +302,22 @@ const ENGINE = (() => {
 
   const dir = (set) => set.startsWith('f:') ? 'atlas/fonts/' + set.slice(2) + '/' : 'atlas/' + set + '/';
 
+  // GitHub Pages изредка отвечает 503 на всплеск запросов (23.10, и на meta.json): одна повторная попытка
+  const getJson = (url, empty) => fetch(url).then(r => r.ok ? r.json() : Promise.reject(r.status))
+    .catch(() => new Promise(r => setTimeout(r, 600)).then(() => fetch(url + '?r=1')).then(r => r.ok ? r.json() : empty))
+    .catch(() => empty);
+
   // какие шрифты уже надуты в бархат (список из atlas/fonts/index.json)
   async function atlasIndex() {
-    if (!ATLAS.index) ATLAS.index = await fetch('atlas/fonts/index.json').then(r => r.ok ? r.json() : {}).catch(() => ({}));
+    if (!ATLAS.index) ATLAS.index = await getJson('atlas/fonts/index.json', {});
     return ATLAS.index;
   }
   function fontSet(name) { const e = ATLAS.index && ATLAS.index[name]; return e ? 'f:' + e.slug : null; }
 
   async function atlasLoad(chars, sets) {
-    if (!ATLAS.meta) ATLAS.meta = await (await fetch('atlas/atlas.json')).json();
+    if (!ATLAS.meta) ATLAS.meta = await getJson('atlas/atlas.json', {});
     await Promise.all(sets.filter(s => !ATLAS.meta[s]).map(async s => {
-      ATLAS.meta[s] = await fetch(dir(s) + 'meta.json').then(r => r.json()).catch(() => ({}));
+      ATLAS.meta[s] = await getJson(dir(s) + 'meta.json', {});
     }));
     const jobs = [];
     sets.forEach(set => [...new Set([...chars, '♥'])].forEach(ch => {
@@ -595,7 +600,9 @@ const ENGINE = (() => {
     await Promise.all(specs.map(f => document.fonts.load(f, 'АБВГДЕЖЗИЙЯя AZ').catch(() => null)));
   }
 
-  return { layout, draw, box, ready, atlasLoad, atlasMissing, atlasIndex, fontSet };
+  // сколько знаков в загруженном наборе (проверка, что карта букв шрифта пришла с сайта, а не пустая)
+  const atlasCount = (set) => Object.keys((ATLAS.meta && ATLAS.meta[set]) || {}).filter(k => k[0] !== '_').length;
+  return { layout, draw, box, ready, atlasLoad, atlasMissing, atlasIndex, fontSet, atlasCount };
 })();
 
 // шрифты с кириллицей (проверены по каталогу Google Fonts 22.10.2026) и самый жирный вес каждого
