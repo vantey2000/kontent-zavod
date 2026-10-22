@@ -161,6 +161,142 @@ const ENGINE = (() => {
     return m;
   }
 
+  // БАРХАТ v2 (по образцу Ивана 22.10): каждая буква надута отдельно, как плюшевая подушка
+  const VL = V(-0.35, -0.78, 0.9);
+
+  // внешняя область, связанная с краем картинки; всё пустое, что не связано, - дырки букв
+  function exterior(a, w, h) {
+    const ext = new Uint8Array(w * h), q = new Int32Array(w * h);
+    let head = 0, tail = 0;
+    const push = (i) => { if (!ext[i] && a[i] < 128) { ext[i] = 1; q[tail++] = i; } };
+    for (let x = 0; x < w; x++) { push(x); push((h - 1) * w + x); }
+    for (let y = 0; y < h; y++) { push(y * w); push(y * w + w - 1); }
+    while (head < tail) {
+      const i = q[head++], x = i % w;
+      if (x > 0) push(i - 1); if (x < w - 1) push(i + 1);
+      if (i >= w) push(i - w); if (i < w * (h - 1)) push(i + w);
+    }
+    return ext;
+  }
+
+  function vnoise(x, y, s, seed) {
+    const gx = Math.floor(x / s), gy = Math.floor(y / s), fx = x / s - gx, fy = y / s - gy;
+    const u = fx * fx * (3 - 2 * fx), v = fy * fy * (3 - 2 * fy);
+    const a = hash(gx + seed, gy), b = hash(gx + 1 + seed, gy), c = hash(gx + seed, gy + 1), d = hash(gx + 1 + seed, gy + 1);
+    return a + (b - a) * u + (c - a) * v + (a - b - c + d) * u * v;
+  }
+
+  // сердечко вместо галочки над «Й», как в образце
+  function heartPath(x, cx, cy, s) {
+    x.save(); x.translate(cx - s / 2, cy - s / 2); x.scale(s / 100, s / 100);
+    x.beginPath(); x.moveTo(50, 90);
+    x.bezierCurveTo(12, 64, 0, 44, 6, 26); x.bezierCurveTo(12, 6, 40, 2, 50, 24);
+    x.bezierCurveTo(60, 2, 88, 6, 94, 26); x.bezierCurveTo(100, 44, 88, 64, 50, 90);
+    x.fill(); x.restore();
+  }
+
+  // одна буква: маска -> подушка -> свет, ворс, тёмные щели вместо дырок
+  function velvetGlyph(ch, o, S) {
+    const size = o.size * S, fat = (o.fatten || 0.11) * size, gp = Math.ceil(fat + size * 0.12);
+    const c = document.createElement('canvas'), x = c.getContext('2d');
+    const font = `${o.weight || 400} ${size}px "${o.font}", sans-serif`;
+    x.font = font;
+    const heart = ch === 'Й' || ch === 'й';
+    if (heart) ch = ch === 'Й' ? 'И' : 'и';
+    const sq = o.squeeze || 1;
+    const adv = x.measureText(ch).width * sq;
+    c.width = Math.ceil(adv + gp * 2); c.height = Math.ceil(size * 1.45 + gp * 2);
+    x.font = font; x.fillStyle = '#fff'; x.strokeStyle = '#fff'; x.lineJoin = 'round'; x.lineWidth = fat;
+    const by = gp + size * 1.12;
+    x.save(); x.translate(gp, by); x.scale(sq, 1);
+    x.fillText(ch, 0, 0); x.lineWidth = fat / sq; x.strokeText(ch, 0, 0); x.restore();
+    if (heart) heartPath(x, gp + adv / 2, by - size * (ch === 'И' ? 0.97 : 0.75), size * 0.34);
+    const w = c.width, h = c.height, src = x.getImageData(0, 0, w, h).data;
+    // дутые углы: размыть форму буквы и обрезать обратно, как воздушный шар
+    const raw = new Float32Array(w * h);
+    for (let i = 0; i < w * h; i++) raw[i] = src[i * 4 + 3];
+    const rb = blur(raw, w, h, Math.max(1, Math.round(size * (o.round || 0.05))));
+    const a = new Uint8Array(w * h);
+    for (let i = 0; i < w * h; i++) a[i] = Math.max(0, Math.min(255, (rb[i] - 128) * 4 + 128));
+    const d = edt(a, w, h);
+    let maxD = 1;
+    for (let i = 0; i < w * h; i++) if (d[i] > maxD) maxD = d[i];
+    const hm = new Float32Array(w * h);
+    const R = Math.min(maxD, (0.075 + (o.fatten || 0.05) * 0.5) * size);
+    for (let i = 0; i < w * h; i++) { const t = Math.min(1, d[i] / R); hm[i] = R * Math.sqrt(1 - (1 - t) * (1 - t)); }
+    const H = blur(hm, w, h, Math.max(1, Math.round(R * 0.3)));
+    const ext = exterior(a, w, h);
+    const base = hex(o.color), hi = hex(o.sheen || '#ffffff');
+    const out = x.createImageData(w, h), px = out.data;
+    const hole = [base[0] * 0.3, base[1] * 0.3, base[2] * 0.3];
+    const fz = 1.6 * S;
+    for (let y = 1; y < h - 1; y++) for (let xx = 1; xx < w - 1; xx++) {
+      const i = y * w + xx, j = i * 4;
+      if (!ext[i] && a[i] < 128) { px[j] = hole[0]; px[j + 1] = hole[1]; px[j + 2] = hole[2]; px[j + 3] = 255; continue; }
+      let al = a[i];
+      if (!al) continue;
+      if (d[i] < fz) al = al * (0.45 + 0.55 * hash(xx * 7, y * 3));
+      let nx = -(H[i + 1] - H[i - 1]) * 0.5, ny = -(H[i + w] - H[i - w]) * 0.5, nz = 1;
+      const l = Math.sqrt(nx * nx + ny * ny + 1); nx /= l; ny /= l; nz /= l;
+      const dif = Math.max(0, Math.min(1, (nx * VL[0] + ny * VL[1] + nz * VL[2] + 0.35) / 1.35));
+      const top = Math.pow(nz, 1.3);
+      const k = 0.12 + 0.56 * dif + 0.42 * top;
+      const rim = Math.pow(1 - nz, 4) * 0.22 * (0.3 + 0.7 * dif);
+      const fib = 1 + 0.07 * (hash(xx, y) - 0.5) + 0.06 * (vnoise(xx, y, 3 * S, 11) - 0.5) + 0.035 * (vnoise(xx, y, 14 * S, 37) - 0.5);
+      px[j] = base[0] * k * fib + hi[0] * rim;
+      px[j + 1] = base[1] * k * fib + hi[1] * rim;
+      px[j + 2] = base[2] * k * fib + hi[2] * rim;
+      px[j + 3] = al;
+    }
+    x.putImageData(out, 0, 0);
+    return { c, adv, gp, by };
+  }
+
+  // строка бархата: буквы-подушки внахлёст со складкой-тенью, светлая обводка-наклейка, рендер в 2x
+  function velvetLine(o) {
+    const S = 2, size = o.size * S, tr = (o.tracking || 0) * size;
+    const glyphs = [...o.text].map(ch => ch === ' ' ? null : velvetGlyph(ch, o, S));
+    const probe = document.createElement('canvas').getContext('2d');
+    probe.font = `${o.weight || 400} ${size}px "${o.font}", sans-serif`;
+    const space = probe.measureText(' ').width;
+    const gp = glyphs.reduce((m, g) => g ? Math.max(m, g.gp) : m, 0) || Math.ceil(size * 0.2);
+    const pad = gp + Math.ceil(size * 0.06);
+    let tw = 0;
+    glyphs.forEach((g, i) => { tw += (g ? g.adv : space) + (i < glyphs.length - 1 ? tr : 0); });
+    const W = Math.ceil(tw + pad * 2), Hh = Math.ceil(size * 1.45 + pad * 2);
+    const by = pad + size * 1.12;
+    // буквы на отдельном слое: каждая отбрасывает мягкую тень на соседку слева
+    const L = document.createElement('canvas'); L.width = W; L.height = Hh;
+    const lx = L.getContext('2d');
+    let cx = pad;
+    glyphs.forEach((g, i) => {
+      if (g) {
+        lx.save();
+        lx.shadowColor = 'rgba(15,0,6,.75)'; lx.shadowBlur = size * 0.022;
+        lx.shadowOffsetX = -size * 0.01; lx.shadowOffsetY = size * 0.008;
+        lx.drawImage(g.c, Math.round(cx - g.gp), Math.round(by - g.by));
+        lx.restore();
+      }
+      cx += (g ? g.adv : space) + tr;
+    });
+    // светлая обводка: силуэт строки, раздутый во все стороны
+    const sil = document.createElement('canvas'); sil.width = W; sil.height = Hh;
+    const sx = sil.getContext('2d');
+    sx.drawImage(L, 0, 0); sx.globalCompositeOperation = 'source-in';
+    sx.fillStyle = o.outline || 'rgba(255,255,255,.75)'; sx.fillRect(0, 0, W, Hh);
+    const out = document.createElement('canvas'); out.width = W; out.height = Hh;
+    const ox = out.getContext('2d'), r = size * 0.016;
+    for (let k = 0; k < 16; k++) { const t = k / 16 * Math.PI * 2; ox.drawImage(sil, Math.cos(t) * r, Math.sin(t) * r); }
+    ox.globalCompositeOperation = 'destination-out'; ox.drawImage(L, 0, 0);
+    // итог в 1x с качественным сглаживанием
+    const c = document.createElement('canvas'); c.width = Math.ceil(W / S); c.height = Math.ceil(Hh / S);
+    const x = c.getContext('2d');
+    x.imageSmoothingEnabled = true; x.imageSmoothingQuality = 'high';
+    x.globalAlpha = 0.85; x.drawImage(out, 0, 0, W, Hh, 0, 0, W / S, Hh / S); x.globalAlpha = 1;
+    x.drawImage(L, 0, 0, W, Hh, 0, 0, W / S, Hh / S);
+    return { c, x, w: c.width, h: c.height, pad: pad / S, yoff: o.size * 0.17 };
+  }
+
   // сердечко-декор в том же материале, что и буквы
   function heartMask(o) {
     const s = o.size, pad = Math.round(s * 0.35);
@@ -215,7 +351,17 @@ const ENGINE = (() => {
   }
 
   const PUFFY = new Set(['velvet', 'gloss', 'chrome']);
-  const line = (o) => PUFFY.has(o.style) ? puffy(o) : flat(o);
+  const draw1 = (o) => o.style === 'velvet' ? velvetLine(o) : PUFFY.has(o.style) ? puffy(o) : flat(o);
+  // готовые строки запоминаются: при наборе текста пересчитывается только изменённая строка
+  const cache = new Map();
+  function line(o) {
+    const key = [o.style, o.text, o.font, o.weight, o.size, o.color, o.sheen, o.edge, o.tracking, o.fatten, o.round, o.squeeze, o.puff].join('|');
+    if (cache.has(key)) { const m = cache.get(key); cache.delete(key); cache.set(key, m); return m; }
+    const m = draw1(o);
+    cache.set(key, m);
+    if (cache.size > 14) cache.delete(cache.keys().next().value);
+    return m;
+  }
 
   // тень запекается в картинку строки один раз, чтобы кадры рисовались быстро
   function bake(m, o, shadow) {
@@ -233,15 +379,15 @@ const ENGINE = (() => {
     const parts = [];
     let y = 0;
     t.lines.forEach(l => {
-      const o = Object.assign({ font: t.font, weight: t.weight, style: t.style, tracking: t.tracking, fatten: t.fatten, puff: t.puff }, l);
+      const o = Object.assign({ font: t.font, weight: t.weight, style: t.style, tracking: t.tracking, fatten: t.fatten, round: t.round, squeeze: t.squeeze, puff: t.puff }, l);
       let m = line(o);
       const maxW = (t.maxW || 960) - (o.heart ? o.size * 1.25 : 0), tw = m.w - m.pad * 2;
       if (tw > maxW) { o.size = Math.floor(o.size * maxW / tw); m = line(o); }
       const b = bake(m, o, t.shadow !== false && o.style !== 'neon');
-      const part = { c: b.c, x: -b.w / 2, y: y - b.pad, w: b.w, h: b.h, tw: m.w - m.pad * 2, size: o.size, top: y };
+      const part = { c: b.c, x: -b.w / 2, y: y - b.pad, w: b.w, h: b.h, tw: m.w - m.pad * 2, size: o.size, top: y + (m.yoff || 0) };
       if (o.heart) {
         const hm = puffy({ shape: 'heart', size: o.size * 0.62, color: o.heart, sheen: '#ffffff', style: 'gloss', puff: 0.22 });
-        part.heart = { c: hm.c, x: part.tw / 2 - hm.pad + o.size * 0.08, y: y + o.size * 0.3 - hm.pad };
+        part.heart = { c: hm.c, x: part.tw / 2 - hm.pad + o.size * 0.08, y: part.top + o.size * 0.3 - hm.pad };
       }
       parts.push(part);
       y += o.size * (t.leading || 0.86);
@@ -337,7 +483,7 @@ FONT_GROUPS.forEach(([, list]) => list.forEach(([f, w]) => { FONT_W[f] = w; }));
 
 // палитры: светлая строка, тёмная строка, сердечко
 const PALETTES = [
-  { id: 'pink', name: 'Розовый', l: '#f29bbb', d: '#8a0f33', h: '#ff6fa8' },
+  { id: 'pink', name: 'Розовый', l: '#f7aec8', d: '#8f1440', h: '#ff7fb0' },
   { id: 'lilac', name: 'Конфета', l: '#ff3d9a', d: '#6c2bff', h: '#ff8cc6' },
   { id: 'mint', name: 'Мята', l: '#a8f0d4', d: '#0b6b50', h: '#5fe0b0' },
   { id: 'sky', name: 'Небо', l: '#a9d8ff', d: '#1c3fa0', h: '#7cc0ff' },
@@ -351,9 +497,9 @@ const PALETTES = [
 
 // готовые оформления: материал + шрифт + размеры строк + какая строка светлая, какая тёмная
 const STYLES = [
-  { id: 'barhat', name: 'Бархат', style: 'velvet', font: 'Rubik', tracking: -0.035, fatten: 0.05, puff: 0.2, leading: 0.84, sizes: [112, 176, 176, 140], roles: 'lddl', pal: 'pink', heart: true },
+  { id: 'barhat', name: 'Бархат', style: 'velvet', font: 'Rubik', weight: 700, tracking: -0.035, fatten: 0.1, round: 0.025, squeeze: 0.86, puff: 0.2, leading: 0.8, sizes: [124, 196, 196, 154], roles: 'lddl', pal: 'pink', heart: true },
   { id: 'sharik', name: 'Шарик', style: 'gloss', font: 'Nunito', tracking: -0.03, fatten: 0.06, puff: 0.14, leading: 0.86, sizes: [112, 176, 176, 140], roles: 'lddl', pal: 'lilac' },
-  { id: 'zefir', name: 'Зефир', style: 'velvet', font: 'M PLUS Rounded 1c', tracking: -0.03, fatten: 0.05, puff: 0.2, leading: 0.86, sizes: [112, 170, 170, 136], roles: 'lddl', pal: 'mint', heart: true },
+  { id: 'zefir', name: 'Зефир', style: 'velvet', font: 'M PLUS Rounded 1c', tracking: -0.04, fatten: 0.075, round: 0.03, squeeze: 0.88, puff: 0.2, leading: 0.84, sizes: [112, 170, 170, 136], roles: 'lddl', pal: 'mint', heart: true },
   { id: 'karamel', name: 'Карамель', style: 'gloss', font: 'Unbounded', tracking: -0.04, fatten: 0.03, puff: 0.12, leading: 0.9, sizes: [84, 128, 136, 104], roles: 'lddl', pal: 'fire' },
   { id: 'sticker', name: 'Стикер', style: 'sticker', font: 'Rubik Mono One', tracking: -0.02, leading: 1.0, sizes: [82, 120, 140, 96], roles: 'dlld', pal: 'lemon' },
   { id: 'blok', name: '3D-блок', style: 'extrude', font: 'Dela Gothic One', tracking: 0, leading: 1.02, sizes: [96, 150, 168, 112], roles: 'lddl', pal: 'fire' },
@@ -385,7 +531,8 @@ function buildTitle(st, text, o) {
     return { text: s, size: st.sizes[i % st.sizes.length], color, sheen: shadeHex(color, 0.55), edge };
   });
   if (st.heart && lines.length) lines[lines.length - 1].heart = p.h;
-  return { font, weight: FONT_W[font] || 400, style: st.style, tracking: st.tracking, fatten: st.fatten, puff: st.puff, leading: st.leading, shadow: st.shadow, lines, maxW: 800 };
+  const weight = (!o.font && st.weight) || FONT_W[font] || 400;
+  return { font, weight, style: st.style, tracking: st.tracking, fatten: st.fatten, round: st.round, squeeze: st.squeeze, puff: st.puff, leading: st.leading, shadow: st.shadow, lines, maxW: 800 };
 }
 
 // безопасные рамки рилса 1080×1920. Верх и края по требованиям Meta (14% сверху, 6% с боков),
@@ -598,16 +745,16 @@ const FONTS = (() => {
   const fam = (f, w) => 'family=' + f.replace(/ /g, '+') + (w && w !== 400 ? ':wght@' + w : '');
   const loaded = new Map();
 
-  function loadFont(f) {
-    if (loaded.has(f)) return loaded.get(f);
-    const w = FONT_W[f] || 400;
+  function loadFont(f, weight) {
+    const w = weight || FONT_W[f] || 400, key = f + ':' + w;
+    if (loaded.has(key)) return loaded.get(key);
     const p = new Promise(res => {
       const l = document.createElement('link');
       l.rel = 'stylesheet'; l.href = GF + fam(f, w) + '&display=block';
       l.onload = () => res(); l.onerror = () => res();
       document.head.appendChild(l);
     }).then(() => ENGINE.ready([`${w} 100px "${f}"`]));
-    loaded.set(f, p);
+    loaded.set(key, p);
     return p;
   }
 
@@ -670,7 +817,7 @@ function rebuild(delay) {
   clearTimeout(rebuildTimer);
   rebuildTimer = setTimeout(async () => {
     const n = ++rebuildN, st = look(), font = S.font || st.font;
-    await FONTS.loadFont(font);
+    await FONTS.loadFont(font, (!S.font && st.weight) || FONT_W[font]);
     if (n !== rebuildN) return;
     const opts = { font, pal: S.pal, colorL: S.cL, colorD: S.cD };
     L = lines().length ? ENGINE.layout(buildTitle(st, lines(), opts)) : null;
@@ -691,7 +838,7 @@ function previewTime() {
 function loop() {
   requestAnimationFrame(loop);
   if (exporting) return;
-  const time = paused && !hasVideo ? 99 : previewTime();
+  const time = paused && !hasVideo ? tOut() - 0.001 : previewTime();
   paint(ctx, time);
   const b = L ? ENGINE.box(L, S.cx, S.cy, S.scale) : null;
   const chk = drawZones(ctx, { zones: S.zones, grid: S.grid }, b);
