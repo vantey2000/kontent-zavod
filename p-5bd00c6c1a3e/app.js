@@ -179,6 +179,7 @@ function deepParam(a) {
   let w = '';
   if (a.before) w = '-b' + a.before;
   if (a.at) w = '-a' + a.at.slice(2, 4) + a.at.slice(5, 7) + a.at.slice(8, 10) + a.at.slice(11, 13) + a.at.slice(14, 16);
+  if (a.op === 'tmrw' && a.date) w = '-d' + a.date.slice(2, 4) + a.date.slice(5, 7) + a.date.slice(8, 10);
   return op + '-' + a.id + w;
 }
 const GONE = ['done', 'cancel', 'tmrw', 'idea_del', 'idea_task'];
@@ -483,10 +484,35 @@ function taskSheet(id) {
   if (e.date) meta = dayLabel(e.date) + ', ' + (e.kind === 'hard' ? 'в ' + hm(e.s) : hm(e.s) + '-' + hm(e.e)) + ' · ' + meta;
   const acts = e.done
     ? '<button class="btn pri" data-act="reopen">↩ Вернуть в работу</button>'
-    : '<button class="btn pri" data-act="done">✓ Сделано</button><button class="btn" data-act="edit">✏️ Изменить</button><button class="btn" data-act="tmrw">→ ' +
-      (e.date && e.date > localToday() ? 'На день позже' : 'На завтра') + '</button><button class="btn warn wide" data-act="cancel">✕ Удалить</button>';
+    : '<button class="btn pri" data-act="done">✓ Сделано</button><button class="btn" data-act="tmrw">→ ' +
+      (e.date && e.date > localToday() ? 'На день позже' : 'На завтра') + '</button><button class="btn" data-act="pick">📅 Выбрать день</button>' +
+      '<button class="btn" data-act="edit">✏️ Изменить</button><button class="btn warn" data-act="cancel">✕ Удалить</button>';
   openSheet('<h3>' + esc(e.title) + '</h3><div class="meta">' + meta + '</div><div class="acts" data-task="' + e.id + '">' + acts + '</div>' +
     (e.done ? '' : '<div data-task="' + e.id + '">' + remBlock(e) + '</div>'));
+}
+// ── перенос на выбранный день: ближайшая неделя кнопками, дальше календарём ──
+function addDays(date, n) { const d = new Date(date + 'T12:00'); d.setDate(d.getDate() + n); return d.getFullYear() + '-' + pad(d.getMonth() + 1) + '-' + pad(d.getDate()); }
+function pickSheet(id) {
+  const e = findItem(id);
+  if (!e) return;
+  const today = localToday();
+  const days = [];
+  for (let i = 0; i <= 7; i++) { const d = addDays(today, i); if (d !== e.date) days.push(d); }
+  const keep = e.kind === 'hard' ? 'Время ' + hm(e.s) + ' сохранится, поменяется только день'
+    : 'Бот сам поставит дело в свободное окно этого дня';
+  openSheet('<h3>Перенести на день</h3><div class="meta">' + esc(e.title) + (e.date ? ' · сейчас ' + dayLabel(e.date) : '') + '</div>' +
+    '<div data-task="' + e.id + '"><div class="chips">' +
+    days.map((d) => '<button class="chip" data-mv="' + d + '">' + dayLabel(d) + '</button>').join('') + '</div>' +
+    '<label class="fl" for="mvDate">Другая дата</label><div class="rbox"><input type="date" id="mvDate" min="' + today + '" value="' + addDays(today, 8) + '">' +
+    '<button class="btn" data-mvgo="1">Перенести</button></div></div>' +
+    '<div class="hint">' + keep + '</div>');
+}
+function moveTo(id, date) {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(date || '')) return toast('Выбери дату');
+  if (date < localToday()) return toast('Выбери сегодня или позже');
+  closeSheet();
+  send({ op: 'tmrw', id, date });
+  toast('Переношу на ' + dayLabel(date));
 }
 // ── правка дела: текст, день, своё время, длительность ──
 let EDIT = null;
@@ -585,6 +611,8 @@ document.addEventListener('click', (ev) => {
   if (t.dataset.done) { send({ op: 'done', id: t.dataset.done }); return toast('Отмечено'); }
   const box = t.closest('[data-task]');
   const tid = box ? box.dataset.task : null;
+  if (t.dataset.mv) return moveTo(tid, t.dataset.mv);
+  if (t.dataset.mvgo) return moveTo(tid, $('#mvDate').value);
   if (t.dataset.remopen) { const r = $('#remBox'); if (r) r.hidden = !r.hidden; return; }
   if (t.dataset.rem) {
     const n = +t.dataset.rem;
@@ -612,6 +640,7 @@ document.addEventListener('click', (ev) => {
       return toast(act === 'say' ? 'Отправил боту, дело встанет в план через минуту' : 'Записываю идею');
     }
     if (act === 'edit') return editSheet(tid);
+    if (act === 'pick') return pickSheet(tid);
     if (act === 'save') return saveEdit();
     if (act === 'cancel' && !t.classList.contains('arm')) { t.classList.add('arm'); t.textContent = 'Точно удалить?'; return; }
     if (act === 'idea_del' && !t.classList.contains('arm')) { t.classList.add('arm'); t.textContent = 'Точно удалить идею?'; return; }
