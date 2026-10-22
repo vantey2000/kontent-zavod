@@ -382,7 +382,7 @@ const ENGINE = (() => {
     const lx = L.getContext('2d');
     lx.imageSmoothingQuality = 'high';
     const target = (o.vcolor || o.color || '').toLowerCase();
-    let cx = pad * S;
+    let cx = pad * S, inkTop = base - cap * S, inkBottom = base;
     parts.forEach((p, i) => {
       if (i && !p.space && !parts[i - 1].space) cx -= over * S;
       if (!p.space) {
@@ -394,6 +394,7 @@ const ENGINE = (() => {
         lx.shadowColor = 'rgba(15,0,6,.55)'; lx.shadowBlur = cap * 0.05 * S;
         lx.shadowOffsetX = -cap * 0.015 * S; lx.shadowOffsetY = cap * 0.02 * S;
         lx.drawImage(src, cx, y, w, h);
+        inkTop = Math.min(inkTop, y); inkBottom = Math.max(inkBottom, y + h);
         lx.restore();
       }
       cx += p.w * S;
@@ -412,7 +413,7 @@ const ENGINE = (() => {
     x.imageSmoothingEnabled = true; x.imageSmoothingQuality = 'high';
     x.globalAlpha = 0.8; x.drawImage(out, 0, 0, W, H, 0, 0, W / S, H / S); x.globalAlpha = 1;
     x.drawImage(L, 0, 0, W, H, 0, 0, W / S, H / S);
-    return { c, x, w: c.width, h: c.height, pad, yoff: o.size * 0.17 };
+    return { c, x, w: c.width, h: c.height, pad, yoff: o.size * 0.17, by: base / S, asc: (base - inkTop) / S, desc: (inkBottom - base) / S };
   }
 
   // сердечко-декор в том же материале, что и буквы
@@ -495,7 +496,7 @@ const ENGINE = (() => {
   // раскладка заголовка: картинки строк и их места относительно центра блока
   function layout(t) {
     const parts = [];
-    let y = 0;
+    let y = 0, base = null, prevDesc = 0;
     t.lines.forEach(l => {
       const o = Object.assign({ font: t.font, weight: t.weight, style: t.style, tracking: t.tracking, fatten: t.fatten, round: t.round, squeeze: t.squeeze, puff: t.puff }, l);
       let m = line(o);
@@ -503,6 +504,14 @@ const ENGINE = (() => {
       if (tw > maxW) { o.size = Math.floor(o.size * maxW / tw); m = line(o); }
       const b = bake(m, o, t.shadow !== false && o.style !== 'neon');
       const part = { c: b.c, x: -b.w / 2, y: y - b.pad, w: b.w, h: b.h, tw: m.w - m.pad * 2, size: o.size, top: y + (m.yoff || 0) };
+      if (m.by != null) {
+        // строки по самим буквам: следующая начинается ниже самой низкой точки предыдущей, с зазором
+        base = base == null ? m.asc : base + prevDesc + o.size * (t.gap == null ? 0.06 : t.gap) + m.asc;
+        prevDesc = m.desc;
+        part.y = base - m.by - (b.pad - m.pad);
+        part.top = base - o.size * 0.74 - o.size * 0.14;
+        part.bottom = base + m.desc;
+      }
       if (o.heart) {
         const hm = (o.style === 'atlas' && atlasHeart(o.size * 0.62)) || puffy({ shape: 'heart', size: o.size * 0.62, color: o.heart, sheen: '#ffffff', style: 'gloss', puff: 0.22 });
         part.heart = { c: hm.c, x: part.tw / 2 - hm.pad + o.size * 0.08, y: part.top + o.size * 0.3 - hm.pad };
@@ -511,7 +520,7 @@ const ENGINE = (() => {
       y += o.size * (t.leading || 0.86);
     });
     const last = parts[parts.length - 1];
-    const height = last ? last.top + last.size * 1.05 : 0;
+    const height = last ? (last.bottom != null ? last.bottom : last.top + last.size * 1.05) : 0;
     parts.forEach(p => { p.y -= height / 2; p.top -= height / 2; if (p.heart) p.heart.y -= height / 2; });
     const width = parts.reduce((s, p) => Math.max(s, p.tw + (p.heart ? p.size * 0.9 : 0)), 0);
     return { parts, width, height };
@@ -615,9 +624,9 @@ const PALETTES = [
 
 // готовые оформления: материал + шрифт + размеры строк + какая строка светлая, какая тёмная
 const STYLES = [
-  { id: 'barhat', name: 'Бархат', style: 'atlas', font: 'Rubik', weight: 700, overlap: 0.11, tracking: -0.035, fatten: 0.1, round: 0.025, squeeze: 0.78, puff: 0.2, leading: 0.64, sizes: [150, 236, 236, 184], roles: 'lddl', pal: 'pink', heart: true },
+  { id: 'barhat', name: 'Бархат', style: 'atlas', font: 'Rubik', weight: 700, overlap: 0.11, tracking: -0.035, fatten: 0.1, round: 0.025, squeeze: 0.78, puff: 0.2, leading: 0.64, sizes: [150, 236, 236, 184], roles: 'lddl', pal: 'pink' },
   { id: 'sharik', name: 'Шарик', style: 'gloss', font: 'Nunito', tracking: -0.03, fatten: 0.06, puff: 0.14, leading: 0.86, sizes: [112, 176, 176, 140], roles: 'lddl', pal: 'lilac' },
-  { id: 'zefir', name: 'Зефир', style: 'velvet', font: 'M PLUS Rounded 1c', tracking: -0.04, fatten: 0.075, round: 0.03, squeeze: 0.88, puff: 0.2, leading: 0.84, sizes: [112, 170, 170, 136], roles: 'lddl', pal: 'mint', heart: true },
+  { id: 'zefir', name: 'Зефир', style: 'velvet', font: 'M PLUS Rounded 1c', tracking: -0.04, fatten: 0.075, round: 0.03, squeeze: 0.88, puff: 0.2, leading: 0.84, sizes: [112, 170, 170, 136], roles: 'lddl', pal: 'mint' },
   { id: 'karamel', name: 'Карамель', style: 'gloss', font: 'Unbounded', tracking: -0.04, fatten: 0.03, puff: 0.12, leading: 0.9, sizes: [84, 128, 136, 104], roles: 'lddl', pal: 'fire' },
   { id: 'sticker', name: 'Стикер', style: 'sticker', font: 'Rubik Mono One', tracking: -0.02, leading: 1.0, sizes: [82, 120, 140, 96], roles: 'dlld', pal: 'lemon' },
   { id: 'blok', name: '3D-блок', style: 'extrude', font: 'Dela Gothic One', tracking: 0, leading: 1.02, sizes: [96, 150, 168, 112], roles: 'lddl', pal: 'fire' },
@@ -651,7 +660,8 @@ function buildTitle(st, text, o) {
     const edge = st.edge || (st.style === 'extrude' ? shadeHex(p.d, -0.7) : other);
     return { text: s, size: st.sizes[i % st.sizes.length], color, sheen: shadeHex(color, 0.55), edge, set: fset || (role === 'l' ? 'light' : 'dark'), overlap: fset ? 0.08 : st.overlap, vcolor: fset ? (role === 'l' ? (p.vl || p.l) : (p.vd || shadeHex(p.d, 0.1))) : undefined };
   });
-  if (st.heart && lines.length) lines[lines.length - 1].heart = p.h;
+  // сердечко в конце заголовка - по переключателю, по умолчанию выключено
+  if (o.heart && lines.length) lines[lines.length - 1].heart = p.h;
   const weight = (!o.font && st.weight) || FONT_W[font] || 400;
   const style = fset ? 'atlas' : st.style === 'atlas' && o.font ? 'velvet' : st.style;
   return { font, weight, style, tracking: st.tracking, fatten: st.fatten, round: st.round, squeeze: fset ? 1 : st.squeeze, puff: st.puff, leading: fset && st.style === 'velvet' ? 0.72 : st.leading, shadow: st.shadow, lines, maxW: 800 };
@@ -901,7 +911,7 @@ const FONTS = (() => {
 
 // состояние экрана, превью и общий рисовальщик кадра (превью и экспорт рисуют одно и то же)
 const $ = (id) => document.getElementById(id);
-const DEF = { look: 'barhat', font: null, pal: null, cL: null, cD: null, anim: 'pop', text: 'САМЫЙ ТОПОВЫЙ\nДОМАШНИЙ\nДЕВАЙС\nДЛЯ ЛИЦА', scale: 1, cx: 540, cy: 1180, tIn: 0, tOut: null, zones: true, grid: false };
+const DEF = { look: 'barhat', font: null, pal: null, cL: null, cD: null, anim: 'pop', heart: false, text: 'САМЫЙ ТОПОВЫЙ\nДОМАШНИЙ\nДЕВАЙС\nДЛЯ ЛИЦА', scale: 1, cx: 540, cy: 1180, tIn: 0, tOut: null, zones: true, grid: false };
 let S = Object.assign({}, DEF);
 try { const saved = JSON.parse(localStorage.getItem('zag-state') || 'null'); if (saved) S = Object.assign(S, saved, { tIn: 0, tOut: null }); } catch (e) {}
 const persist = () => { try { localStorage.setItem('zag-state', JSON.stringify(S)); } catch (e) {} };
@@ -943,7 +953,7 @@ function rebuild(delay) {
     if ((st.style === 'atlas' && !S.font) || fset) { await ENGINE.atlasLoad(lines().join('').toUpperCase(), fset ? ['light', fset] : ['light', 'dark']); atlasWarn = ENGINE.atlasMissing(lines().join(''), fset); }
     else { atlasWarn = ''; await FONTS.loadFont(font, (!S.font && st.weight) || FONT_W[font]); }
     if (n !== rebuildN) return;
-    const opts = { font: S.font, pal: S.pal, colorL: S.cL, colorD: S.cD };
+    const opts = { font: S.font, pal: S.pal, colorL: S.cL, colorD: S.cD, heart: S.heart };
     L = lines().length ? ENGINE.layout(buildTitle(st, lines(), opts)) : null;
     hideDone();
   }, delay == null ? 120 : delay);
@@ -1123,6 +1133,7 @@ function buildText() {
   syncSize();
   const tog = (id, key) => { const b = $(id); b.setAttribute('aria-pressed', String(!!S[key])); b.addEventListener('click', () => { S[key] = !S[key]; b.setAttribute('aria-pressed', String(S[key])); persist(); }); };
   tog('tZones', 'zones'); tog('tGrid', 'grid');
+  tog('tHeart', 'heart'); $('tHeart').addEventListener('click', () => rebuild(0));
   $('tPlay').addEventListener('click', () => {
     paused = !paused; $('tPlay').setAttribute('aria-pressed', String(paused));
     if (hasVideo) { if (paused) video.pause(); else video.play().catch(() => {}); }
