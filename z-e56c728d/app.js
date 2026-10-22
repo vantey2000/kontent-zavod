@@ -300,14 +300,26 @@ const ENGINE = (() => {
   // БАРХАТ v3 (22.10): шрифт из готовых букв, нарисованных по образцу Ивана. Буквы лежат в atlas/<набор>/
   const ATLAS = { meta: null, img: new Map() };
 
+  const dir = (set) => set.startsWith('f:') ? 'atlas/fonts/' + set.slice(2) + '/' : 'atlas/' + set + '/';
+
+  // какие шрифты уже надуты в бархат (список из atlas/fonts/index.json)
+  async function atlasIndex() {
+    if (!ATLAS.index) ATLAS.index = await fetch('atlas/fonts/index.json').then(r => r.ok ? r.json() : {}).catch(() => ({}));
+    return ATLAS.index;
+  }
+  function fontSet(name) { const e = ATLAS.index && ATLAS.index[name]; return e ? 'f:' + e.slug : null; }
+
   async function atlasLoad(chars, sets) {
     if (!ATLAS.meta) ATLAS.meta = await (await fetch('atlas/atlas.json')).json();
+    await Promise.all(sets.filter(s => !ATLAS.meta[s]).map(async s => {
+      ATLAS.meta[s] = await fetch(dir(s) + 'meta.json').then(r => r.json()).catch(() => ({}));
+    }));
     const jobs = [];
     sets.forEach(set => [...new Set([...chars, '♥'])].forEach(ch => {
       const m = ATLAS.meta[set] && ATLAS.meta[set][ch];
       const key = set + ch;
       if (!m || ATLAS.img.has(key)) return;
-      const im = new Image(); im.decoding = 'async'; im.src = 'atlas/' + set + '/' + m.f;
+      const im = new Image(); im.decoding = 'async'; im.src = dir(set) + m.f;
       ATLAS.img.set(key, im);
       jobs.push(im.decode().catch(() => null));
     }));
@@ -315,23 +327,25 @@ const ENGINE = (() => {
   }
 
   // каких знаков текста нет в наборе (латиница, редкие символы)
-  function atlasMissing(text) {
+  function atlasMissing(text, set) {
     if (!ATLAS.meta) return '';
     const have = ATLAS.meta.dark || {};
-    return [...new Set([...text.toUpperCase()].filter(ch => ch.trim() && !have[ch]))].join(' ');
+    const fs = set && ATLAS.meta[set] || {};
+    return [...new Set([...text.toUpperCase()].filter(ch => ch.trim() && !have[ch] && !fs[ch]))].join(' ');
   }
 
   // перекраска под другую палитру: яркость ворса сохраняется, меняется только цвет
-  function tint(im, from, to) {
+  function tint(im, meta, to) {
     const c = document.createElement('canvas'); c.width = im.naturalWidth; c.height = im.naturalHeight;
     const x = c.getContext('2d'); x.drawImage(im, 0, 0);
     const d = x.getImageData(0, 0, c.width, c.height), p = d.data;
-    const fl = 0.3 * from[0] + 0.59 * from[1] + 0.11 * from[2] || 1;
+    const lo = meta._lo || 30, hi = meta._hi || 230;
+    const light = 0.3 * to[0] + 0.59 * to[1] + 0.11 * to[2] > 150;
+    const sh = to.map(v => v * (light ? 0.74 : 0.3)), hl = to.map(v => v + (255 - v) * (light ? 0.6 : 0.28));
     for (let i = 0; i < p.length; i += 4) {
       if (!p[i + 3]) continue;
-      const k = (0.3 * p[i] + 0.59 * p[i + 1] + 0.11 * p[i + 2]) / fl;
-      const hl = Math.max(0, k - 1) * 0.6;
-      for (let j = 0; j < 3; j++) p[i + j] = Math.min(255, to[j] * Math.min(k, 1) + (255 - to[j]) * hl + to[j] * Math.max(0, k - 1) * 0.4);
+      const t = Math.max(0, Math.min(1, (0.3 * p[i] + 0.59 * p[i + 1] + 0.11 * p[i + 2] - lo) / (hi - lo)));
+      for (let j = 0; j < 3; j++) p[i + j] = t < 0.55 ? sh[j] + (to[j] - sh[j]) * (t / 0.55) : to[j] + (hl[j] - to[j]) * ((t - 0.55) / 0.45);
     }
     x.putImageData(d, 0, 0);
     return c;
@@ -352,10 +366,13 @@ const ENGINE = (() => {
     const cap = o.size * 0.74, over = cap * (o.overlap == null ? 0.07 : o.overlap);
     const S = 2, chars = [...o.text.toUpperCase()];
     const parts = chars.map(ch => {
-      const m = meta && meta[ch], im = ATLAS.img.get(set + ch);
+      // знака нет в наборе шрифта - берём его из родного розового набора
+      let s = set, m = meta && meta[ch];
+      if (!m && set.startsWith('f:') && ATLAS.meta.light && ATLAS.meta.light[ch]) { s = 'light'; m = ATLAS.meta.light[ch]; }
+      const im = ATLAS.img.get(s + ch);
       if (!m || !im || !im.naturalWidth) return { space: true, w: cap * (ch === ' ' ? 0.16 : 0.5) };
       const k = cap / m.cap;
-      return { im, m, ch, w: m.w * k * (o.squeeze || 1), h: m.h * k };
+      return { im, m, ch, set: s, w: m.w * k * (o.squeeze || 1), h: m.h * k };
     });
     const tw = parts.reduce((s, p, i) => s + p.w - (i && !p.space && !parts[i - 1].space ? over : 0), 0);
     const pad = Math.ceil(o.size * 0.3);
@@ -364,12 +381,13 @@ const ENGINE = (() => {
     const L = document.createElement('canvas'); L.width = W; L.height = H;
     const lx = L.getContext('2d');
     lx.imageSmoothingQuality = 'high';
-    const recolor = o.color && meta && o.color.toLowerCase() !== meta._nominal;
+    const target = (o.vcolor || o.color || '').toLowerCase();
     let cx = pad * S;
     parts.forEach((p, i) => {
       if (i && !p.space && !parts[i - 1].space) cx -= over * S;
       if (!p.space) {
-        const src = recolor ? (p.im['_t' + o.color] || (p.im['_t' + o.color] = tint(p.im, hex(meta._mean), hex(o.color)))) : p.im;
+        const pm = ATLAS.meta[p.set];
+        const src = target && target !== pm._nominal ? (p.im['_t' + target] || (p.im['_t' + target] = tint(p.im, pm, hex(target)))) : p.im;
         const w = p.w * S, h = p.h * S, al = p.m.al;
         const y = al === 'desc' ? base - cap * S : al === 'mid' ? base - cap * 0.45 * S - h / 2 : al === 'comma' ? base - h * 0.6 : base - h;
         lx.save();
@@ -455,7 +473,7 @@ const ENGINE = (() => {
   // готовые строки запоминаются: при наборе текста пересчитывается только изменённая строка
   const cache = new Map();
   function line(o) {
-    const key = [o.style, o.set, ATLAS.meta ? 1 : 0, o.text, o.font, o.weight, o.size, o.color, o.sheen, o.edge, o.tracking, o.fatten, o.round, o.squeeze, o.puff, o.overlap].join('|');
+    const key = [o.style, o.set, ATLAS.meta ? 1 : 0, o.text, o.font, o.weight, o.size, o.color, o.sheen, o.edge, o.tracking, o.fatten, o.round, o.squeeze, o.puff, o.overlap, o.vcolor].join('|');
     if (cache.has(key)) { const m = cache.get(key); cache.delete(key); cache.set(key, m); return m; }
     const m = draw1(o);
     cache.set(key, m);
@@ -566,7 +584,7 @@ const ENGINE = (() => {
     await Promise.all(specs.map(f => document.fonts.load(f, 'АБВГДЕЖЗИЙЯя AZ').catch(() => null)));
   }
 
-  return { layout, draw, box, ready, atlasLoad, atlasMissing };
+  return { layout, draw, box, ready, atlasLoad, atlasMissing, atlasIndex, fontSet };
 })();
 
 // шрифты с кириллицей (проверены по каталогу Google Fonts 22.10.2026) и самый жирный вес каждого
@@ -583,7 +601,7 @@ FONT_GROUPS.forEach(([, list]) => list.forEach(([f, w]) => { FONT_W[f] = w; }));
 
 // палитры: светлая строка, тёмная строка, сердечко
 const PALETTES = [
-  { id: 'pink', name: 'Розовый', l: '#f7aec8', d: '#8f1440', h: '#ff7fb0' },
+  { id: 'pink', name: 'Розовый', l: '#f7aec8', d: '#8f1440', h: '#ff7fb0', vd: '#b8123c' },
   { id: 'lilac', name: 'Конфета', l: '#ff3d9a', d: '#6c2bff', h: '#ff8cc6' },
   { id: 'mint', name: 'Мята', l: '#a8f0d4', d: '#0b6b50', h: '#5fe0b0' },
   { id: 'sky', name: 'Небо', l: '#a9d8ff', d: '#1c3fa0', h: '#7cc0ff' },
@@ -623,17 +641,20 @@ function buildTitle(st, text, o) {
   if (o.colorL) p.l = o.colorL;
   if (o.colorD) p.d = o.colorD;
   const font = o.font || st.font;
+  // бархат на выбранном шрифте: плюшевые буквы этого шрифта, если набор уже нарисован
+  const velvetish = st.style === 'atlas' || st.style === 'velvet';
+  const fset = velvetish && (o.font || st.style === 'velvet') ? ENGINE.fontSet(font) : null;
   const lines = text.map((s, i) => {
     const role = st.roles[i % st.roles.length];
     const color = role === 'l' ? p.l : p.d;
     const other = role === 'l' ? p.d : p.l;
     const edge = st.edge || (st.style === 'extrude' ? shadeHex(p.d, -0.7) : other);
-    return { text: s, size: st.sizes[i % st.sizes.length], color, sheen: shadeHex(color, 0.55), edge, set: role === 'l' ? 'light' : 'dark', overlap: st.overlap };
+    return { text: s, size: st.sizes[i % st.sizes.length], color, sheen: shadeHex(color, 0.55), edge, set: fset || (role === 'l' ? 'light' : 'dark'), overlap: fset ? 0.08 : st.overlap, vcolor: fset ? (role === 'l' ? (p.vl || p.l) : (p.vd || shadeHex(p.d, 0.1))) : undefined };
   });
   if (st.heart && lines.length) lines[lines.length - 1].heart = p.h;
   const weight = (!o.font && st.weight) || FONT_W[font] || 400;
-  const style = st.style === 'atlas' && o.font ? 'velvet' : st.style;
-  return { font, weight, style, tracking: st.tracking, fatten: st.fatten, round: st.round, squeeze: st.squeeze, puff: st.puff, leading: st.leading, shadow: st.shadow, lines, maxW: 800 };
+  const style = fset ? 'atlas' : st.style === 'atlas' && o.font ? 'velvet' : st.style;
+  return { font, weight, style, tracking: st.tracking, fatten: st.fatten, round: st.round, squeeze: fset ? 1 : st.squeeze, puff: st.puff, leading: fset && st.style === 'velvet' ? 0.72 : st.leading, shadow: st.shadow, lines, maxW: 800 };
 }
 
 // безопасные рамки рилса 1080×1920. Верх и края по требованиям Meta (14% сверху, 6% с боков),
@@ -918,7 +939,8 @@ function rebuild(delay) {
   clearTimeout(rebuildTimer);
   rebuildTimer = setTimeout(async () => {
     const n = ++rebuildN, st = look(), font = S.font || st.font;
-    if (st.style === 'atlas' && !S.font) { await ENGINE.atlasLoad(lines().join('').toUpperCase(), ['light', 'dark']); atlasWarn = ENGINE.atlasMissing(lines().join('')); }
+    const fset = (st.style === 'atlas' || st.style === 'velvet') && (S.font || st.style === 'velvet') ? ENGINE.fontSet(font) : null;
+    if ((st.style === 'atlas' && !S.font) || fset) { await ENGINE.atlasLoad(lines().join('').toUpperCase(), fset ? ['light', fset] : ['light', 'dark']); atlasWarn = ENGINE.atlasMissing(lines().join(''), fset); }
     else { atlasWarn = ''; await FONTS.loadFont(font, (!S.font && st.weight) || FONT_W[font]); }
     if (n !== rebuildN) return;
     const opts = { font: S.font, pal: S.pal, colorL: S.cL, colorD: S.cD };
@@ -986,7 +1008,10 @@ async function buildLooks() {
   const fonts = Array.from(new Set(STYLES.map(s => s.font)));
   await FONTS.previews(fonts, STYLES.map(s => s.name).join(''));
   await ENGINE.ready(fonts.map(f => `${FONT_W[f] || 400} 100px "П-${f}"`));
-  for (const st of STYLES) if (st.style === 'atlas') await ENGINE.atlasLoad(st.name.toUpperCase(), ['dark']);
+  for (const st of STYLES) {
+    const fs = st.style === 'velvet' ? ENGINE.fontSet(st.font) : null;
+    if (st.style === 'atlas' || fs) await ENGINE.atlasLoad(st.name.toUpperCase(), fs ? ['light', fs] : ['dark']);
+  }
   STYLES.forEach(st => {
     const c = box.querySelector('[data-look="' + st.id + '"] canvas'), x = c.getContext('2d');
     const t = buildTitle(Object.assign({}, st, { heart: false, roles: 'd' }), [st.name], {});
@@ -1166,6 +1191,7 @@ function save() {
     if ((e.fontfaces || []).some(f => f.family.replace(/["']/g, '') === cur)) rebuild(60);
   });
   await demo.decode().catch(() => null);
+  await ENGINE.atlasIndex();
   rebuild(0);
   requestAnimationFrame(loop);
   buildLooks();
