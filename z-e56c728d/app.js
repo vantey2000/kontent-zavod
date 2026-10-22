@@ -321,7 +321,9 @@ const ENGINE = (() => {
       if (!m || ATLAS.img.has(key)) return;
       const im = new Image(); im.decoding = 'async'; im.src = dir(set) + m.f;
       ATLAS.img.set(key, im);
-      jobs.push(im.decode().catch(() => null));
+      // GitHub Pages изредка отвечает 503 на всплеск запросов (2 из 2417 в проверке 23.10): одна повторная попытка
+      const retry = () => new Promise(r => setTimeout(r, 600)).then(() => { im.src = dir(set) + m.f + '?r=1'; return im.decode(); });
+      jobs.push(im.decode().catch(retry).catch(() => null));
     }));
     await Promise.all(jobs);
   }
