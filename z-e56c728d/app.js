@@ -297,6 +297,106 @@ const ENGINE = (() => {
     return { c, x, w: c.width, h: c.height, pad: pad / S, yoff: o.size * 0.17 };
   }
 
+  // БАРХАТ v3 (22.10): шрифт из готовых букв, нарисованных по образцу Ивана. Буквы лежат в atlas/<набор>/
+  const ATLAS = { meta: null, img: new Map() };
+
+  async function atlasLoad(chars, sets) {
+    if (!ATLAS.meta) ATLAS.meta = await (await fetch('atlas/atlas.json')).json();
+    const jobs = [];
+    sets.forEach(set => [...new Set([...chars, '♥'])].forEach(ch => {
+      const m = ATLAS.meta[set] && ATLAS.meta[set][ch];
+      const key = set + ch;
+      if (!m || ATLAS.img.has(key)) return;
+      const im = new Image(); im.decoding = 'async'; im.src = 'atlas/' + set + '/' + m.f;
+      ATLAS.img.set(key, im);
+      jobs.push(im.decode().catch(() => null));
+    }));
+    await Promise.all(jobs);
+  }
+
+  // каких знаков текста нет в наборе (латиница, редкие символы)
+  function atlasMissing(text) {
+    if (!ATLAS.meta) return '';
+    const have = ATLAS.meta.dark || {};
+    return [...new Set([...text.toUpperCase()].filter(ch => ch.trim() && !have[ch]))].join(' ');
+  }
+
+  // перекраска под другую палитру: яркость ворса сохраняется, меняется только цвет
+  function tint(im, from, to) {
+    const c = document.createElement('canvas'); c.width = im.naturalWidth; c.height = im.naturalHeight;
+    const x = c.getContext('2d'); x.drawImage(im, 0, 0);
+    const d = x.getImageData(0, 0, c.width, c.height), p = d.data;
+    const fl = 0.3 * from[0] + 0.59 * from[1] + 0.11 * from[2] || 1;
+    for (let i = 0; i < p.length; i += 4) {
+      if (!p[i + 3]) continue;
+      const k = (0.3 * p[i] + 0.59 * p[i + 1] + 0.11 * p[i + 2]) / fl;
+      const hl = Math.max(0, k - 1) * 0.6;
+      for (let j = 0; j < 3; j++) p[i + j] = Math.min(255, to[j] * Math.min(k, 1) + (255 - to[j]) * hl + to[j] * Math.max(0, k - 1) * 0.4);
+    }
+    x.putImageData(d, 0, 0);
+    return c;
+  }
+
+  // сердечко в конце заголовка из того же набора
+  function atlasHeart(size) {
+    const im = ATLAS.img.get('light♥'), m = ATLAS.meta && ATLAS.meta.light && ATLAS.meta.light['♥'];
+    if (!im || !m || !im.naturalWidth) return null;
+    const k = size / m.h, c = document.createElement('canvas');
+    c.width = Math.ceil(m.w * k); c.height = Math.ceil(size);
+    const x = c.getContext('2d'); x.imageSmoothingQuality = 'high'; x.drawImage(im, 0, 0, c.width, c.height);
+    return { c, pad: 0 };
+  }
+
+  function atlasLine(o) {
+    const set = o.set || 'dark', meta = ATLAS.meta && ATLAS.meta[set];
+    const cap = o.size * 0.74, over = cap * (o.overlap == null ? 0.07 : o.overlap);
+    const S = 2, chars = [...o.text.toUpperCase()];
+    const parts = chars.map(ch => {
+      const m = meta && meta[ch], im = ATLAS.img.get(set + ch);
+      if (!m || !im || !im.naturalWidth) return { space: true, w: cap * (ch === ' ' ? 0.16 : 0.5) };
+      const k = cap / m.cap;
+      return { im, m, ch, w: m.w * k * (o.squeeze || 1), h: m.h * k };
+    });
+    const tw = parts.reduce((s, p, i) => s + p.w - (i && !p.space && !parts[i - 1].space ? over : 0), 0);
+    const pad = Math.ceil(o.size * 0.3);
+    const W = Math.ceil((tw + pad * 2) * S), H = Math.ceil((o.size * 1.45 + pad * 2) * S);
+    const base = (pad + o.size * 1.12) * S;
+    const L = document.createElement('canvas'); L.width = W; L.height = H;
+    const lx = L.getContext('2d');
+    lx.imageSmoothingQuality = 'high';
+    const recolor = o.color && meta && o.color.toLowerCase() !== meta._nominal;
+    let cx = pad * S;
+    parts.forEach((p, i) => {
+      if (i && !p.space && !parts[i - 1].space) cx -= over * S;
+      if (!p.space) {
+        const src = recolor ? (p.im['_t' + o.color] || (p.im['_t' + o.color] = tint(p.im, hex(meta._mean), hex(o.color)))) : p.im;
+        const w = p.w * S, h = p.h * S, al = p.m.al;
+        const y = al === 'desc' ? base - cap * S : al === 'mid' ? base - cap * 0.45 * S - h / 2 : al === 'comma' ? base - h * 0.6 : base - h;
+        lx.save();
+        lx.shadowColor = 'rgba(15,0,6,.55)'; lx.shadowBlur = cap * 0.05 * S;
+        lx.shadowOffsetX = -cap * 0.015 * S; lx.shadowOffsetY = cap * 0.02 * S;
+        lx.drawImage(src, cx, y, w, h);
+        lx.restore();
+      }
+      cx += p.w * S;
+    });
+    // светлая обводка вокруг строки, как у наклейки в образце
+    const sil = document.createElement('canvas'); sil.width = W; sil.height = H;
+    const sx = sil.getContext('2d');
+    sx.drawImage(L, 0, 0); sx.globalCompositeOperation = 'source-in';
+    sx.fillStyle = 'rgba(255,255,255,.7)'; sx.fillRect(0, 0, W, H);
+    const out = document.createElement('canvas'); out.width = W; out.height = H;
+    const ox = out.getContext('2d'), r = cap * 0.022 * S;
+    for (let k = 0; k < 16; k++) { const t = k / 16 * Math.PI * 2; ox.drawImage(sil, Math.cos(t) * r, Math.sin(t) * r); }
+    ox.globalCompositeOperation = 'destination-out'; ox.drawImage(L, 0, 0);
+    const c = document.createElement('canvas'); c.width = Math.ceil(W / S); c.height = Math.ceil(H / S);
+    const x = c.getContext('2d');
+    x.imageSmoothingEnabled = true; x.imageSmoothingQuality = 'high';
+    x.globalAlpha = 0.8; x.drawImage(out, 0, 0, W, H, 0, 0, W / S, H / S); x.globalAlpha = 1;
+    x.drawImage(L, 0, 0, W, H, 0, 0, W / S, H / S);
+    return { c, x, w: c.width, h: c.height, pad, yoff: o.size * 0.17 };
+  }
+
   // сердечко-декор в том же материале, что и буквы
   function heartMask(o) {
     const s = o.size, pad = Math.round(s * 0.35);
@@ -351,11 +451,11 @@ const ENGINE = (() => {
   }
 
   const PUFFY = new Set(['velvet', 'gloss', 'chrome']);
-  const draw1 = (o) => o.style === 'velvet' ? velvetLine(o) : PUFFY.has(o.style) ? puffy(o) : flat(o);
+  const draw1 = (o) => o.style === 'atlas' ? atlasLine(o) : o.style === 'velvet' ? velvetLine(o) : PUFFY.has(o.style) ? puffy(o) : flat(o);
   // готовые строки запоминаются: при наборе текста пересчитывается только изменённая строка
   const cache = new Map();
   function line(o) {
-    const key = [o.style, o.text, o.font, o.weight, o.size, o.color, o.sheen, o.edge, o.tracking, o.fatten, o.round, o.squeeze, o.puff].join('|');
+    const key = [o.style, o.set, ATLAS.meta ? 1 : 0, o.text, o.font, o.weight, o.size, o.color, o.sheen, o.edge, o.tracking, o.fatten, o.round, o.squeeze, o.puff, o.overlap].join('|');
     if (cache.has(key)) { const m = cache.get(key); cache.delete(key); cache.set(key, m); return m; }
     const m = draw1(o);
     cache.set(key, m);
@@ -386,7 +486,7 @@ const ENGINE = (() => {
       const b = bake(m, o, t.shadow !== false && o.style !== 'neon');
       const part = { c: b.c, x: -b.w / 2, y: y - b.pad, w: b.w, h: b.h, tw: m.w - m.pad * 2, size: o.size, top: y + (m.yoff || 0) };
       if (o.heart) {
-        const hm = puffy({ shape: 'heart', size: o.size * 0.62, color: o.heart, sheen: '#ffffff', style: 'gloss', puff: 0.22 });
+        const hm = (o.style === 'atlas' && atlasHeart(o.size * 0.62)) || puffy({ shape: 'heart', size: o.size * 0.62, color: o.heart, sheen: '#ffffff', style: 'gloss', puff: 0.22 });
         part.heart = { c: hm.c, x: part.tw / 2 - hm.pad + o.size * 0.08, y: part.top + o.size * 0.3 - hm.pad };
       }
       parts.push(part);
@@ -466,7 +566,7 @@ const ENGINE = (() => {
     await Promise.all(specs.map(f => document.fonts.load(f, 'АБВГДЕЖЗИЙЯя AZ').catch(() => null)));
   }
 
-  return { layout, draw, box, ready };
+  return { layout, draw, box, ready, atlasLoad, atlasMissing };
 })();
 
 // шрифты с кириллицей (проверены по каталогу Google Fonts 22.10.2026) и самый жирный вес каждого
@@ -497,7 +597,7 @@ const PALETTES = [
 
 // готовые оформления: материал + шрифт + размеры строк + какая строка светлая, какая тёмная
 const STYLES = [
-  { id: 'barhat', name: 'Бархат', style: 'velvet', font: 'Rubik', weight: 700, tracking: -0.035, fatten: 0.1, round: 0.025, squeeze: 0.86, puff: 0.2, leading: 0.8, sizes: [124, 196, 196, 154], roles: 'lddl', pal: 'pink', heart: true },
+  { id: 'barhat', name: 'Бархат', style: 'atlas', font: 'Rubik', weight: 700, overlap: 0.11, tracking: -0.035, fatten: 0.1, round: 0.025, squeeze: 0.78, puff: 0.2, leading: 0.64, sizes: [150, 236, 236, 184], roles: 'lddl', pal: 'pink', heart: true },
   { id: 'sharik', name: 'Шарик', style: 'gloss', font: 'Nunito', tracking: -0.03, fatten: 0.06, puff: 0.14, leading: 0.86, sizes: [112, 176, 176, 140], roles: 'lddl', pal: 'lilac' },
   { id: 'zefir', name: 'Зефир', style: 'velvet', font: 'M PLUS Rounded 1c', tracking: -0.04, fatten: 0.075, round: 0.03, squeeze: 0.88, puff: 0.2, leading: 0.84, sizes: [112, 170, 170, 136], roles: 'lddl', pal: 'mint', heart: true },
   { id: 'karamel', name: 'Карамель', style: 'gloss', font: 'Unbounded', tracking: -0.04, fatten: 0.03, puff: 0.12, leading: 0.9, sizes: [84, 128, 136, 104], roles: 'lddl', pal: 'fire' },
@@ -528,11 +628,12 @@ function buildTitle(st, text, o) {
     const color = role === 'l' ? p.l : p.d;
     const other = role === 'l' ? p.d : p.l;
     const edge = st.edge || (st.style === 'extrude' ? shadeHex(p.d, -0.7) : other);
-    return { text: s, size: st.sizes[i % st.sizes.length], color, sheen: shadeHex(color, 0.55), edge };
+    return { text: s, size: st.sizes[i % st.sizes.length], color, sheen: shadeHex(color, 0.55), edge, set: role === 'l' ? 'light' : 'dark', overlap: st.overlap };
   });
   if (st.heart && lines.length) lines[lines.length - 1].heart = p.h;
   const weight = (!o.font && st.weight) || FONT_W[font] || 400;
-  return { font, weight, style: st.style, tracking: st.tracking, fatten: st.fatten, round: st.round, squeeze: st.squeeze, puff: st.puff, leading: st.leading, shadow: st.shadow, lines, maxW: 800 };
+  const style = st.style === 'atlas' && o.font ? 'velvet' : st.style;
+  return { font, weight, style, tracking: st.tracking, fatten: st.fatten, round: st.round, squeeze: st.squeeze, puff: st.puff, leading: st.leading, shadow: st.shadow, lines, maxW: 800 };
 }
 
 // безопасные рамки рилса 1080×1920. Верх и края по требованиям Meta (14% сверху, 6% с боков),
@@ -790,7 +891,7 @@ video.muted = true; video.playsInline = true; video.loop = true; video.preload =
 video.setAttribute('playsinline', ''); video.setAttribute('muted', '');
 const demo = new Image(); demo.src = 'demo.jpg';
 let hasVideo = false, exporting = false, paused = false, L = null, snapGuide = false;
-let lastStatus = '', fakeStart = performance.now();
+let lastStatus = '', fakeStart = performance.now(), atlasWarn = '';
 
 const look = () => STYLES.find(s => s.id === S.look) || STYLES[0];
 const lines = () => S.text.split('\n').map(s => s.trim()).filter(Boolean).slice(0, 5);
@@ -817,9 +918,10 @@ function rebuild(delay) {
   clearTimeout(rebuildTimer);
   rebuildTimer = setTimeout(async () => {
     const n = ++rebuildN, st = look(), font = S.font || st.font;
-    await FONTS.loadFont(font, (!S.font && st.weight) || FONT_W[font]);
+    if (st.style === 'atlas' && !S.font) { await ENGINE.atlasLoad(lines().join('').toUpperCase(), ['light', 'dark']); atlasWarn = ENGINE.atlasMissing(lines().join('')); }
+    else { atlasWarn = ''; await FONTS.loadFont(font, (!S.font && st.weight) || FONT_W[font]); }
     if (n !== rebuildN) return;
-    const opts = { font, pal: S.pal, colorL: S.cL, colorD: S.cD };
+    const opts = { font: S.font, pal: S.pal, colorL: S.cL, colorD: S.cD };
     L = lines().length ? ENGINE.layout(buildTitle(st, lines(), opts)) : null;
     hideDone();
   }, delay == null ? 120 : delay);
@@ -843,7 +945,8 @@ function loop() {
   const b = L ? ENGINE.box(L, S.cx, S.cy, S.scale) : null;
   const chk = drawZones(ctx, { zones: S.zones, grid: S.grid }, b);
   if (snapGuide) { ctx.fillStyle = '#7fe3ff'; ctx.fillRect(539, 0, 2, 1920); }
-  if (!S.zones || !chk) setStatus('Двигай заголовок пальцем, двумя пальцами меняй размер');
+  if (atlasWarn) setStatus('В «Бархате» нет знаков: ' + atlasWarn + '. Они пропущены', 'bad');
+  else if (!S.zones || !chk) setStatus('Двигай заголовок пальцем, двумя пальцами меняй размер');
   else if (chk.bad.length) setStatus('Заголовок заходит под ' + chk.bad.map(z => z.name).join(', '), 'bad');
   else if (!chk.inAd) setStatus('В рилсе всё видно. Для рекламы держи заголовок внутри пунктира', 'good');
   else setStatus('Заголовок в безопасной зоне', 'good');
@@ -883,6 +986,7 @@ async function buildLooks() {
   const fonts = Array.from(new Set(STYLES.map(s => s.font)));
   await FONTS.previews(fonts, STYLES.map(s => s.name).join(''));
   await ENGINE.ready(fonts.map(f => `${FONT_W[f] || 400} 100px "П-${f}"`));
+  for (const st of STYLES) if (st.style === 'atlas') await ENGINE.atlasLoad(st.name.toUpperCase(), ['dark']);
   STYLES.forEach(st => {
     const c = box.querySelector('[data-look="' + st.id + '"] canvas'), x = c.getContext('2d');
     const t = buildTitle(Object.assign({}, st, { heart: false, roles: 'd' }), [st.name], {});
