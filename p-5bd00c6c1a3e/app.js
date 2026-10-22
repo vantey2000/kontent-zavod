@@ -249,7 +249,7 @@ function entries(day) {
     const e = overlay(Object.assign({}, src, { id: p.id, kind: 'hard', s, e: s + (p.dur || src.dur || 30), part: '', star: false, travel: 0 }));
     if (e) list.push(e);
   });
-  return list.sort((a, b) => a.s - b.s);
+  return list.sort((a, b) => (!!a.done - !!b.done) || a.s - b.s);   // сделанное в конце дня
 }
 function listItems(name) {
   const gone = new Set(pending().filter((p) => GONE.includes(p.op) || (p.op === 'edit' && p.date)).map((p) => p.id));
@@ -300,7 +300,9 @@ function nextCard(list, nowM, isToday) {
 
 function renderToday() {
   const date = localToday();
-  const list = entries(dayObj(date));
+  const all = entries(dayObj(date));
+  const list = all.filter((e) => !e.done);       // на шкале только несделанное
+  const done = all.filter((e) => e.done);        // сделанное зачёркнуто внизу дня
   const now = new Date();
   const nowM = now.getHours() * 60 + now.getMinutes();
   const prof = DATA.profile;
@@ -313,7 +315,8 @@ function renderToday() {
   const ppm = 1.3;
   const y = (m) => (m - a) * ppm;
   let html = ydayLink() + nextCard(list, nowM, true);
-  if (!list.length) html += '<div class="empty"><b>Сегодня свободно</b>Скажи боту, что надо сделать, и дело встанет сюда</div>';
+  if (!all.length) html += '<div class="empty"><b>Сегодня свободно</b>Скажи боту, что надо сделать, и дело встанет сюда</div>';
+  else if (!list.length) html += '<div class="empty"><b>На сегодня всё сделано</b>Сделанное зачёркнуто ниже</div>' + doneList(done);
   html += '<div class="tl" style="height:' + Math.round(y(b) + 10) + 'px">';
   for (let m = a; m <= b; m += 60) html += '<div class="hr" style="top:' + y(m) + 'px"><span>' + hm(m) + '</span></div>';
   const groups = [];
@@ -339,6 +342,7 @@ function renderToday() {
   });
   if (nowM >= a && nowM <= b) html += '<div class="now" id="nowLine" style="top:' + y(nowM) + 'px"><b>' + hm(nowM) + '</b></div>';
   html += '</div>';
+  if (list.length) html += doneList(done);
   $('#v-today').innerHTML = html;
   if (scrollNow) {
     scrollNow = false;
@@ -347,6 +351,10 @@ function renderToday() {
   }
 }
 
+function doneList(done) {                 // касание открывает карточку с «Вернуть в работу»
+  if (!done.length) return '';
+  return '<div class="h2">✓ Сделано<span>' + done.length + '</span></div><div class="agenda">' + done.map(rowHtml).join('') + '</div>';
+}
 function ydayLink() {                     // «Сегодня» сверху: как прошёл вчерашний день, касание открывает его
   const y = new Date(localToday() + 'T12:00'); y.setDate(y.getDate() - 1);
   const h = (DATA.history || []).find((d) => d.date === localISO(y).slice(0, 10));
@@ -609,7 +617,7 @@ document.addEventListener('click', (ev) => {
     if (act === 'idea_del' && !t.classList.contains('arm')) { t.classList.add('arm'); t.textContent = 'Точно удалить идею?'; return; }
     closeSheet();
     send({ op: act, id: tid });
-    return toast({ done: 'Отмечено', tmrw: 'Переношу', cancel: 'Удаляю', reopen: 'Возвращаю', idea_del: 'Удаляю идею', idea_task: 'Переношу в дела' }[act]);
+    return toast({ done: 'Сделано, ушло вниз дня', tmrw: 'Переношу', cancel: 'Удаляю', reopen: 'Возвращаю', idea_del: 'Удаляю идею', idea_task: 'Переношу в дела' }[act]);
   }
   if (t.dataset.group) {
     const ids = t.dataset.group.split(',');
