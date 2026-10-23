@@ -677,12 +677,13 @@ function buildTitle(st, text, o) {
 }
 
 // безопасные рамки рилса 1080×1920. Верх и края по требованиям Meta (14% сверху, 6% с боков),
-// кнопки справа и подпись снизу по раскладке ленты Reels, строгая рамка Meta для рекламы (35% снизу)
+// кнопки справа и подпись снизу по раскладке ленты Reels, строгая рамка Meta для рекламы (35% снизу).
+// Низ по скрину Ивана 23.10 (iPhone, подпись в одну строку): ник с 1721, подпись до 1862, рамка с 1690
 const ZONES = [
   { id: 'top', name: 'шапку Reels', x: 0, y: 0, w: 1080, h: 269 },
-  { id: 'rail', name: 'кнопки лайков', x: 940, y: 1000, w: 140, h: 560 },
-  { id: 'bottom', name: 'ник и подпись', x: 0, y: 1560, w: 1080, h: 360 },
-  { id: 'left', name: 'левый край', x: 0, y: 269, w: 65, h: 1291 },
+  { id: 'rail', name: 'кнопки лайков', x: 940, y: 1000, w: 140, h: 690 },
+  { id: 'bottom', name: 'ник и подпись', x: 0, y: 1690, w: 1080, h: 230 },
+  { id: 'left', name: 'левый край', x: 0, y: 269, w: 65, h: 1421 },
   { id: 'right', name: 'правый край', x: 1015, y: 269, w: 65, h: 731 }
 ];
 const AD_FRAME = { x: 65, y: 269, w: 950, h: 979 };
@@ -723,11 +724,11 @@ function drawZones(x, show, b) {
     // схема интерфейса: кнопки справа, аватар и строки подписи снизу
     x.fillStyle = 'rgba(255,255,255,.55)';
     [1090, 1220, 1350, 1470].forEach(cy => { x.beginPath(); x.arc(1024, cy, 30, 0, Math.PI * 2); x.fill(); });
-    x.beginPath(); x.arc(80, 1640, 38, 0, Math.PI * 2); x.fill();
-    x.fillRect(136, 1622, 260, 30); x.fillRect(40, 1700, 760, 26); x.fillRect(40, 1746, 560, 26); x.fillRect(40, 1806, 420, 26);
+    x.beginPath(); x.arc(130, 1762, 40, 0, Math.PI * 2); x.fill();
+    x.fillRect(190, 1724, 260, 30); x.fillRect(190, 1774, 300, 22); x.fillRect(96, 1840, 520, 24);
     pill(x, 'Шапка Reels', 24, 200, '#ffd600');
-    pill(x, 'Ник, подпись, музыка', 24, 1572, '#ffd600');
-    x.save(); x.translate(946, 1552); x.rotate(-Math.PI / 2); pill(x, 'Лайки, комменты', 0, 0, '#ffd600'); x.restore();
+    pill(x, 'Ник, подпись, музыка', 520, 1702, '#ffd600');
+    x.save(); x.translate(946, 1682); x.rotate(-Math.PI / 2); pill(x, 'Лайки, комменты', 0, 0, '#ffd600'); x.restore();
     x.setLineDash([18, 14]); x.strokeStyle = 'rgba(255,214,0,.9)'; x.lineWidth = 3;
     x.strokeRect(AD_FRAME.x, AD_FRAME.y, AD_FRAME.w, AD_FRAME.h);
     x.setLineDash([]);
