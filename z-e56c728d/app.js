@@ -1216,3 +1216,471 @@ function save() {
   requestAnimationFrame(loop);
   buildLooks();
 })();
+
+// уникализатор: чистые функции без экрана (проверяются в node: tests/uniq_core.test.mjs)
+// модель отдаёт список правок «кусок → замена», здесь они находятся в тексте, проходят фильтры
+// и набираются под плашку N% равномерно по тексту; доля слов считается как difflib в text_diff.py
+const UNIQ = (() => {
+  const WORD = /[\p{L}\p{N}]+/gu;
+  const words = (t) => (String(t).toLowerCase().match(WORD) || []);
+
+  // сумма совпавших кусков, как SequenceMatcher(None, a, b, autojunk=False).get_matching_blocks()
+  function matched(a, b) {
+    const b2j = new Map();
+    b.forEach((x, j) => { const l = b2j.get(x); if (l) l.push(j); else b2j.set(x, [j]); });
+    let total = 0;
+    const queue = [[0, a.length, 0, b.length]];
+    while (queue.length) {
+      const [alo, ahi, blo, bhi] = queue.pop();
+      let bi = alo, bj = blo, size = 0, j2len = new Map();
+      for (let i = alo; i < ahi; i++) {
+        const next = new Map();
+        for (const j of (b2j.get(a[i]) || [])) {
+          if (j < blo) continue;
+          if (j >= bhi) break;
+          const k = (j2len.get(j - 1) || 0) + 1;
+          next.set(j, k);
+          if (k > size) { bi = i - k + 1; bj = j - k + 1; size = k; }
+        }
+        j2len = next;
+      }
+      if (!size) continue;
+      total += size;
+      if (alo < bi && blo < bj) queue.push([alo, bi, blo, bj]);
+      if (bi + size < ahi && bj + size < bhi) queue.push([bi + size, ahi, bj + size, bhi]);
+    }
+    return total;
+  }
+
+  // доля изменённых слов, проценты
+  function pct(a, b) {
+    const wa = words(a), wb = words(b), n = Math.max(wa.length, wb.length);
+    return n ? 100 * (1 - matched(wa, wb) / n) : 0;
+  }
+
+  // куски до max знаков по границам предложений (модель лучше правит короткое)
+  function chunks(text, max = 700) {
+    const ends = [];
+    const re = /[.!?…]+["»)]*\s+|\n+/g;
+    let m;
+    while ((m = re.exec(text))) ends.push(m.index + m[0].length);
+    if (!ends.length || ends[ends.length - 1] < text.length) ends.push(text.length);
+    const out = [];
+    let s = 0, cur = 0;
+    for (const e of ends) {
+      if (e - s > max && cur > s) { out.push([s, cur]); s = cur; }
+      while (e - s > max * 2) {                       // сверхдлинное предложение режем по пробелу
+        const cut = text.lastIndexOf(' ', s + max * 2) > s ? text.lastIndexOf(' ', s + max * 2) + 1 : s + max * 2;
+        out.push([s, cut]); s = cut;
+      }
+      cur = e;
+    }
+    if (cur > s) out.push([s, cur]);
+    return out.filter(([a, b]) => text.slice(a, b).trim()).map(([a, b]) => ({ s: a, e: b, text: text.slice(a, b) }));
+  }
+
+  const esc = (s) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+
+  // знаки на краях замены, которых нет на краях куска («приборы» → «приборы.» дало бы «приборы..»)
+  const LEAD = /^[\s.,:;!?…-]+/, TRAIL = /[\s.,:;!?…-]+$/;
+  function edges(f, t) {
+    const core = t.replace(LEAD, '').replace(TRAIL, '');
+    return core ? (f.match(LEAD) || [''])[0] + core + (f.match(TRAIL) || [''])[0] : '';
+  }
+
+  // правки куска → места в тексте; кусок должен найтись в своём отрезке ровно один раз, пересечения выкидываются
+  function locate(text, chunk, list) {
+    const body = text.slice(chunk.s, chunk.e), out = [];
+    for (const x of list || []) {
+      if (!x || typeof x.f !== 'string' || typeof x.t !== 'string') continue;
+      const f = x.f.trim(), t = edges(f, x.t.replace(/\s+/g, ' ').trim());
+      if (!f || !t) continue;
+      const re = new RegExp(esc(f).replace(/\s+/g, '\\s+'), 'g');
+      const hits = [...body.matchAll(re)];
+      if (hits.length !== 1) continue;
+      const s = chunk.s + hits[0].index, e = s + hits[0][0].length;
+      if (text.slice(s, e) === t) continue;
+      if (out.some((o) => s < o.e && o.s < e)) continue;
+      out.push({ s, e, t, ok: x.ok !== false });
+    }
+    return out.sort((a, b) => a.s - b.s);
+  }
+
+  const TY = new Set(['ты', 'тебя', 'тебе', 'тобой', 'твой', 'твоя', 'твоё', 'твое', 'твои', 'твоих', 'твоим', 'твою', 'твоего']);
+  const VY = new Set(['вы', 'вас', 'вам', 'вами', 'ваш', 'ваша', 'ваше', 'ваши', 'вашего', 'вашей', 'вашим', 'ваших', 'вашу']);
+  const BAN = ['данн', 'дабы', 'осуществл', 'башк', 'являющ', 'вышеуказ', 'нижеслед'];
+  const hasLatin = (s) => /[a-z]/i.test(s);
+
+  // слова с заглавной не в начале предложения = имена и названия
+  function names(src, s, e) {
+    const out = [];
+    for (const m of src.slice(s, e).matchAll(/[\p{Lu}][\p{Ll}]+/gu)) {
+      const prev = src.slice(0, s + m.index).replace(/\s+$/, '');
+      if (prev && !/[.!?…:«"„(\n-]$/.test(prev)) out.push(m[0]);
+    }
+    return out;
+  }
+
+  // спорная правка = причина, годная = ''
+  function guard(text, ed) {
+    const f = text.slice(ed.s, ed.e), t = ed.t, wf = words(f), wt = words(t);
+    if (!wt.length) return 'пусто';
+    if (wf.join(' ') === wt.join(' ')) return 'без слов';
+    if ((f.match(/\d+/g) || []).join() !== (t.match(/\d+/g) || []).join()) return 'числа';
+    if (names(text, ed.s, ed.e).some((n) => !t.includes(n))) return 'имя';
+    const after = words(text.slice(ed.e, ed.e + 80)), before = words(text.slice(Math.max(0, ed.s - 80), ed.s));
+    for (const n of [1, 2, 3]) {
+      if (n > wt.length) break;
+      const tailT = wt.slice(-n).join(' '), headT = wt.slice(0, n).join(' ');
+      if (n > 1 || wt.length > wf.length) {
+        if (after.length >= n && tailT === after.slice(0, n).join(' ') && tailT !== wf.slice(-n).join(' ')) return 'повтор';
+        if (before.length >= n && headT === before.slice(-n).join(' ') && headT !== wf.slice(0, n).join(' ')) return 'повтор';
+      }
+    }
+    const fresh = names(t, 0, t.length).filter((n) => !f.includes(n));
+    if (fresh.some((n) => text.slice(ed.e, ed.e + 80).includes(n) || text.slice(Math.max(0, ed.s - 80), ed.s).includes(n))) return 'повтор';
+    const vy = (ws) => ws.some((w) => VY.has(w) || /(йте|ите)$/.test(w));
+    if (words(text).some((w) => TY.has(w)) && vy(wt) && !vy(wf)) return 'вы';
+    if (wt.some((w) => BAN.some((b) => w.startsWith(b))) && !wf.some((w) => BAN.some((b) => w.startsWith(b)))) return 'канцелярит';
+    if (/[—–]/.test(t) && !/[—–]/.test(f)) return 'тире';
+    if (hasLatin(t) && !hasLatin(f)) return 'латиница';
+    if (wt.length > 2 * Math.max(1, wf.length) + 1) return 'длина';
+    return '';
+  }
+
+  // порядок обхода, при котором любое начало списка разбросано по тексту (обратный порядок битов)
+  function spread(k, shift = 0) {
+    let p = 1;
+    while (p < k) p <<= 1;
+    const bits = Math.log2(p), out = [];
+    for (let i = 0; i < p; i++) {
+      let r = 0;
+      for (let b = 0; b < bits; b++) if (i & (1 << b)) r |= 1 << (bits - 1 - b);
+      if (r < k) out.push((r + shift) % k);
+    }
+    return out;
+  }
+
+  // пул правок для текста: найденные, годные, не забракованные судьёй, с весом в словах
+  function pool(text, located) {
+    return located.filter((ed) => ed.ok && !guard(text, ed)).map((ed) => {
+      const wf = words(text.slice(ed.s, ed.e)), wt = words(ed.t);
+      return Object.assign({}, ed, { lost: wf.length - matched(wf, wt), grow: wt.length - wf.length });
+    });
+  }
+
+  // какие правки взять под плашку target%: начало порядка spread с оценкой ближе всего к цели
+  function pick(text, list, target, shift = 0) {
+    const n = words(text).length;
+    if (!n || !list.length || target <= 0) return new Set();
+    const order = spread(list.length, shift);
+    let lost = 0, grow = 0, best = 0, bestErr = Math.abs(target);
+    order.forEach((idx, i) => {
+      lost += list[idx].lost; grow += list[idx].grow;
+      const est = 100 * (1 - (n - lost) / Math.max(n, n + grow));
+      const err = Math.abs(est - target);
+      if (err < bestErr - 1e-9) { bestErr = err; best = i + 1; }
+    });
+    if (!best) {                                      // короткий текст: одна самая маленькая правка лучше, чем ни одной
+      let min = 0;
+      list.forEach((ed, i) => { if (ed.lost < list[min].lost) min = i; });
+      return new Set([min]);
+    }
+    return new Set(order.slice(0, best));
+  }
+
+  // итоговый текст и куски для подсветки; off = правки, которые человек вернул касанием
+  function build(text, list, chosen, off = new Set()) {
+    const parts = [];
+    let pos = 0, out = '';
+    list.forEach((ed, i) => {
+      if (!chosen.has(i)) return;
+      if (ed.s > pos) parts.push({ text: text.slice(pos, ed.s) });
+      const back = off.has(i);
+      parts.push({ text: back ? text.slice(ed.s, ed.e) : ed.t, i, changed: !back, orig: text.slice(ed.s, ed.e) });
+      pos = ed.e;
+    });
+    if (pos < text.length) parts.push({ text: text.slice(pos) });
+    out = parts.map((p) => p.text).join('');
+    return { text: out, parts, pct: pct(text, out) };
+  }
+
+  // перевод куска в другое лицо годен: числа те же и изменено не больше половины слов
+  const voiceOk = (a, b) => !!String(b || '').trim() && (a.match(/\d+/g) || []).join() === (b.match(/\d+/g) || []).join() && pct(a, b) <= 50;
+
+  // текст из переведённых кусков: всё между кусками и пробелы по краям куска остаются как были
+  function splice(text, list, outs) {
+    let out = '', pos = 0;
+    list.forEach((c, i) => {
+      const lead = c.text.match(/^\s*/)[0], tail = c.text.match(/\s*$/)[0];
+      out += text.slice(pos, c.s) + (voiceOk(c.text, outs[i]) ? lead + outs[i].trim() + tail : c.text);
+      pos = c.e;
+    });
+    return out + text.slice(pos);
+  }
+
+  // длинное и среднее тире → дефис (просьба Ивана 23.10): между числами слитно, в начале реплики «- », в остальных местах с пробелами
+  const dashes = (t) => String(t || '')
+    .replace(/(\d)[ \t]*[—–][ \t]*(?=\d)/g, '$1-')
+    .replace(/(^|\n)[ \t]*[—–][ \t]*/g, '$1- ')
+    .replace(/[ \t]*[—–][ \t]*/g, ' - ');
+
+  // текст слайда: переносы строк картинки внутри абзаца → пробел; абзацы, пункты списка и концы фраз остаются
+  function unwrap(t) {
+    return String(t || '').replace(/\r/g, '').split(/\n{2,}/).map((par) => par.split('\n').map((l) => l.trim()).filter(Boolean)
+      .reduce((acc, line) => (!acc ? line : acc + (/[.!?…:;»"]$/.test(acc) || /^(\d+[.)]|[-•—–*])\s/.test(line) ? '\n' : ' ') + line), ''))
+      .filter(Boolean).join('\n\n');
+  }
+
+  // хэштеги и упоминания в конце подписи
+  function trimTags(caption) {
+    const lines = String(caption || '').replace(/\r/g, '').split('\n');
+    while (lines.length && /^\s*([#@][\p{L}\p{N}_.]+\s*)*$/u.test(lines[lines.length - 1])) lines.pop();
+    if (lines.length) lines[lines.length - 1] = lines[lines.length - 1].replace(/(\s+[#][\p{L}\p{N}_]+)+\s*$/u, '');
+    return lines.join('\n').trim();
+  }
+
+  return { words, matched, pct, chunks, locate, guard, spread, pool, pick, build, voiceOk, splice, dashes, unwrap, trimTags };
+})();
+
+// экран уникализатора: ссылка → текст донора → плашка N% → результат с подсветкой (воркер uniq-api, см. его шапку)
+// подмена воркера только для тестов на этом компьютере: чужой адрес из ссылки не принимается
+const UQ_API = (/^http:\/\/127\.0\.0\.1:\d+$/.exec(new URLSearchParams(location.search).get('uniqapi') || '') || ['https://uniq-api.aivan-loginov.workers.dev'])[0];
+const UQ_PCTS = [5, 10, 15, 20, 30];
+const UQ_ERR = {
+  quota: 'Нейросеть на сегодня выдохлась: дневной лимит кончился. Попробуй завтра',
+  busy: 'Нейросеть сейчас не отвечает. Попробуй ещё раз через минуту',
+  rate: 'Слишком много запросов подряд. Подожди минуту',
+  unavailable: 'Пост не открылся: закрытый аккаунт, удалён или ссылка неверная',
+  url: 'Это не ссылка на пост Instagram. Нужна ссылка вида instagram.com/reel/… или /p/…',
+  image: 'Картинку не получилось прочитать',
+  network: 'Нет связи с сервером. Проверь интернет и попробуй ещё раз',
+};
+const UQ_VOICES = [['o', 'Как в оригинале'], ['m', 'От мужчины'], ['f', 'От женщины'], ['n', 'Со стороны']];
+const UQ_VOICE_NAME = { m: 'от мужского лица', f: 'от женского лица', n: 'со стороны' };
+const UQ = { pct: 15, voice: 'o', dash: true, v: 0, F: {}, busy: false };
+try {
+  const p = +localStorage.getItem('uq-pct'); if (UQ_PCTS.includes(p)) UQ.pct = p;
+  const w = localStorage.getItem('uq-voice'); if (UQ_VOICES.some(([id]) => id === w)) UQ.voice = w;
+  if (localStorage.getItem('uq-dash') === '0') UQ.dash = false;
+} catch (e) {}
+
+// запрос к воркеру: обрыв сети или занятая модель = ещё одна попытка через 1,5 с
+async function uqCall(path, obj, retry = 1) {
+  let r, j;
+  try {
+    r = await fetch(UQ_API + path, { method: 'POST', headers: { 'Content-Type': 'text/plain' }, body: JSON.stringify(obj) });
+    j = await r.json();
+  } catch (e) { j = { ok: false, error: 'network' }; }
+  if (!j.ok && retry && ['network', 'busy', 'server'].includes(j.error)) {
+    await new Promise((ok) => setTimeout(ok, 1500));
+    return uqCall(path, obj, retry - 1);
+  }
+  if (!j.ok) throw new Error(j.error || 'network');
+  return j;
+}
+const uqMsg = (e) => UQ_ERR[e && e.message] || UQ_ERR.network;
+
+// не больше n запросов одновременно (слайды, куски текста)
+async function uqMap(items, n, fn) {
+  const out = new Array(items.length);
+  let next = 0;
+  await Promise.all(Array.from({ length: Math.min(n, items.length) }, async () => {
+    while (next < items.length) { const i = next++; out[i] = await fn(items[i], i); }
+  }));
+  return out;
+}
+
+const uqSt = (id, text, cls) => { const el = $(id); el.textContent = text; el.className = 'hint' + (cls ? ' ' + cls : ''); };
+const uqDraft = () => { try { localStorage.setItem('uq-draft', JSON.stringify({ url: $('uqUrl').value, title: $('uqTitle').value, text: $('uqText').value })); } catch (e) {} };
+
+function uqClear() { UQ.F = {}; $('uqOutTitle').hidden = true; $('uqOutText').hidden = true; $('uqNote').hidden = true; }
+
+async function uqFetch() {
+  const url = $('uqUrl').value.trim();
+  if (!url) return uqSt('uqFetchSt', 'Вставь ссылку на рилс или карусель', 'err');
+  $('uqFetch').disabled = true; uqClear();
+  try {
+    uqSt('uqFetchSt', 'Забираю пост…');
+    const p = await uqCall('/fetch', { url });
+    if (p.kind === 'reel') {
+      $('uqTitleBox').hidden = false; $('uqTextLabel').textContent = 'Текст под рилсом';
+      $('uqText').value = UNIQ.trimTags(p.caption); $('uqTitle').value = '';
+      uqSt('uqFetchSt', 'Читаю заголовок с обложки…');
+      const o = p.cover ? await uqCall('/ocr', { src: p.cover, mode: 'title' }).catch(() => ({ text: '' })) : { text: '' };
+      $('uqTitle').value = o.text;
+      uqSt('uqFetchSt', o.text ? 'Готово: заголовок и текст под рилсом' : 'Текст забран. На обложке заголовок не нашёлся: загрузи скрин кадра с заголовком', o.text ? 'good' : '');
+    } else {
+      $('uqTitleBox').hidden = true; $('uqTextLabel').textContent = 'Текст со слайдов'; $('uqTitle').value = '';
+      let done = 0, lost = 0;
+      uqSt('uqFetchSt', `Читаю слайды: 0 из ${p.slides.length}`);
+      const texts = await uqMap(p.slides, 6, (src) => uqCall('/ocr', { src, mode: 'slide' })
+        .then((o) => o.text, (e) => { if (e.message === 'quota') throw e; lost++; return ''; })
+        .finally(() => uqSt('uqFetchSt', `Читаю слайды: ${++done} из ${p.slides.length}`)));
+      $('uqText').value = texts.filter(Boolean).map(UNIQ.unwrap).join('\n\n');
+      uqSt('uqFetchSt', lost ? `Готово, но ${lost} из ${p.slides.length} слайдов не прочитались: допиши их текст руками` : `Готово: текст ${p.slides.length} слайдов`, lost ? 'err' : 'good');
+    }
+    uqDraft();
+  } catch (e) { uqSt('uqFetchSt', uqMsg(e), 'err'); }
+  $('uqFetch').disabled = false;
+}
+
+// скрин кадра: уменьшаем на телефоне до 1280 по длинной стороне, читает тот же движок
+async function uqShot() {
+  const f = $('uqShot').files[0]; $('uqShot').value = '';
+  if (!f) return;
+  uqSt('uqFetchSt', 'Читаю заголовок со скрина…');
+  try {
+    const img = await createImageBitmap(f);
+    const k = Math.min(1, 1280 / Math.max(img.width, img.height));
+    const c = document.createElement('canvas'); c.width = Math.round(img.width * k); c.height = Math.round(img.height * k);
+    c.getContext('2d').drawImage(img, 0, 0, c.width, c.height);
+    const o = await uqCall('/ocr', { img: c.toDataURL('image/jpeg', 0.85), mode: 'title' });
+    $('uqTitle').value = o.text; uqDraft();
+    uqSt('uqFetchSt', o.text ? 'Заголовок со скрина прочитан' : 'На скрине заголовок не нашёлся', o.text ? 'good' : 'err');
+  } catch (e) { uqSt('uqFetchSt', uqMsg(e), 'err'); }
+}
+
+// правки поля: куски параллельно, найденные места в тексте; повторный вызов с другим v добирает правки
+async function uqEdits(text, v) {
+  const ch = UNIQ.chunks(text);
+  const got = await uqMap(ch, 4, (c) => uqCall('/uniq', { text: c.text, v }));
+  return ch.flatMap((c, i) => UNIQ.locate(text, c, got[i].edits));
+}
+const uqMax = (F) => UNIQ.build(F.src, F.pool, new Set(F.pool.map((_, i) => i))).pct;
+// плашка считается от оригинала: то, что уже изменил перевод в другое лицо, из цели правок вычитается
+const uqTarget = (F) => Math.max(0, UQ.pct - F.basePct);
+
+// весь текст в нужное лицо по кускам; негодный перевод куска (потерял число, переписал больше половины) = оригинал куска
+async function uqVoice(text, who) {
+  const ch = UNIQ.chunks(text);
+  const outs = await uqMap(ch, 4, (c) => uqCall('/voice', { text: c.text, voice: who }).then((r) => r.text));
+  return UNIQ.splice(text, ch, outs);
+}
+
+async function uqTopUp(key) {
+  const F = UQ.F[key];
+  if (!F || F.topped || UNIQ.words(F.src).length < 60 || uqMax(F) >= uqTarget(F) + 0.5) return;
+  F.topped = true;
+  uqSt('uqSt', 'Добираю правки для большей доли…');
+  try {
+    const more = (await uqEdits(F.src, F.v + 25)).filter((e) => !F.located.some((o) => e.s < o.e && o.s < e.e));
+    F.located = F.located.concat(more).sort((a, b) => a.s - b.s);
+    F.pool = UNIQ.pool(F.src, F.located); F.off = new Set();
+    uqSt('uqSt', '');
+  } catch (e) { uqSt('uqSt', uqMsg(e), 'err'); }
+}
+
+async function uqRun(nextVariant) {
+  if (UQ.busy) return;
+  const fields = [['title', $('uqTitleBox').hidden ? '' : $('uqTitle').value.trim()], ['text', $('uqText').value.trim()]].filter(([, t]) => t);
+  if (!fields.length) return uqSt('uqSt', 'Вставь текст или забери его по ссылке', 'err');
+  if (nextVariant) UQ.v = (UQ.v + 1) % 25;
+  UQ.busy = true; $('uqGo').disabled = true; $('uqAgain').disabled = true; uqClear();
+  uqSt('uqSt', 'Нейросеть подбирает правки, обычно 10-30 секунд…');
+  try {
+    for (const [key, raw] of fields) {
+      const orig = UQ.dash ? UNIQ.dashes(raw) : raw;   // тире меняются до правок: доля слов от них не растёт
+      let src = orig;
+      if (UQ.voice !== 'o') { uqSt('uqSt', `Перевожу текст ${UQ_VOICE_NAME[UQ.voice]}…`); src = await uqVoice(orig, UQ.voice); }
+      uqSt('uqSt', 'Нейросеть подбирает правки, обычно 10-30 секунд…');
+      const located = await uqEdits(src, UQ.v);
+      UQ.F[key] = { orig, src, basePct: UNIQ.pct(orig, src), voice: UQ.voice, located, pool: UNIQ.pool(src, located), off: new Set(), v: UQ.v };
+      await uqTopUp(key);
+    }
+    uqSt('uqSt', ''); uqRender();
+  } catch (e) { uqSt('uqSt', uqMsg(e), 'err'); }
+  UQ.busy = false; $('uqGo').disabled = false; $('uqAgain').disabled = false;
+}
+
+function uqRender() {
+  for (const [key, box, pctEl, out] of [['title', 'uqResTitle', 'uqPctTitle', 'uqOutTitle'], ['text', 'uqResText', 'uqPctText', 'uqOutText']]) {
+    const F = UQ.F[key];
+    $(out).hidden = !F;
+    if (!F) continue;
+    F.res = UNIQ.build(F.src, F.pool, UNIQ.pick(F.src, F.pool, uqTarget(F)), F.off);
+    F.res.pct = UNIQ.pct(F.orig, F.res.text);
+    const el = $(box); el.textContent = '';
+    for (const p of F.res.parts) {
+      if (p.i === undefined) { el.append(p.text); continue; }
+      const m = document.createElement('mark');
+      m.textContent = p.text; m.className = p.changed ? '' : 'back'; m.tabIndex = 0; m.setAttribute('role', 'button');
+      m.title = p.changed ? 'Было: ' + p.orig + '. Нажми, чтобы вернуть' : 'Нажми, чтобы снова изменить';
+      const flip = () => { if (F.off.has(p.i)) F.off.delete(p.i); else F.off.add(p.i); uqRender(); };
+      m.addEventListener('click', flip);
+      m.addEventListener('keydown', (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); flip(); } });
+      el.append(m);
+    }
+    const long = UNIQ.words(F.src).length >= 60;     // в коротком заголовке каждое слово = большой шаг доли, подсказка там шум
+    const short = !F.pool.length ? ' Правок для этого текста не нашлось, нажми «Другой вариант»'
+      : long && F.res.pct + 2 < UQ.pct ? ' Больше правок в этом варианте нет, нажми «Другой вариант»' : '';
+    const fmt = (x) => x.toFixed(1).replace('.', ',');
+    const voiced = F.voice !== 'o' ? (F.basePct > 0.05 ? ` Из них ${fmt(F.basePct)}% - перевод ${UQ_VOICE_NAME[F.voice]}, он не подсвечен.` : ' Рассказчика «я» в тексте нет, лицо менять не пришлось.') : '';
+    $(pctEl).textContent = `Изменено ${fmt(F.res.pct)}% слов.${voiced}${short}`;
+  }
+  $('uqOutTextH').textContent = $('uqTextLabel').textContent;
+  $('uqNote').hidden = !Object.keys(UQ.F).length;
+}
+
+async function uqCopy(key, btn) {
+  const t = UQ.F[key] && UQ.F[key].res ? UQ.F[key].res.text : '';
+  // буфер обмена бывает недоступен или висит (встроенные браузеры): через секунду запасной способ
+  const ok = await Promise.race([navigator.clipboard ? navigator.clipboard.writeText(t).then(() => true, () => false) : false, new Promise((r) => setTimeout(() => r(false), 1000))]);
+  if (!ok) { const a = document.createElement('textarea'); a.value = t; document.body.appendChild(a); a.select(); document.execCommand('copy'); a.remove(); }
+  const was = btn.textContent; btn.textContent = 'Скопировано'; setTimeout(() => { btn.textContent = was; }, 1500);
+}
+
+function uqMode(on) {
+  document.querySelector('.app').classList.toggle('uqmode', on);
+  $('uqOpen').setAttribute('aria-pressed', String(on)); $('uqOpen').textContent = on ? '← К ролику' : 'Уникализатор';
+  window.scrollTo(0, 0);
+}
+
+(function buildUniq() {
+  try { const d = JSON.parse(localStorage.getItem('uq-draft') || 'null'); if (d) { $('uqUrl').value = d.url || ''; $('uqTitle').value = d.title || ''; $('uqText').value = d.text || ''; } } catch (e) {}
+  const box = $('uqPcts');
+  UQ_PCTS.forEach((p) => {
+    const b = document.createElement('button');
+    b.type = 'button'; b.className = 'chip'; b.textContent = p + '%'; b.setAttribute('data-pct', String(p));
+    b.addEventListener('click', async () => {
+      UQ.pct = p; press(box, 'data-pct', String(p)); try { localStorage.setItem('uq-pct', String(p)); } catch (e) {}
+      uqRender();
+      if (!UQ.busy && Object.keys(UQ.F).length) { UQ.busy = true; for (const k of Object.keys(UQ.F)) await uqTopUp(k); UQ.busy = false; uqRender(); }
+    });
+    box.appendChild(b);
+  });
+  press(box, 'data-pct', String(UQ.pct));
+  const vbox = $('uqVoices');
+  UQ_VOICES.forEach(([id, name]) => {
+    const b = document.createElement('button');
+    b.type = 'button'; b.className = 'chip'; b.textContent = name; b.setAttribute('data-voice', id);
+    b.addEventListener('click', () => {
+      if (UQ.voice === id) return;
+      UQ.voice = id; press(vbox, 'data-voice', id); try { localStorage.setItem('uq-voice', id); } catch (e) {}
+      if (Object.keys(UQ.F).length) uqRun(false);      // лицо меняет весь текст: готовый результат пересобирается
+    });
+    vbox.appendChild(b);
+  });
+  press(vbox, 'data-voice', UQ.voice);
+  $('uqDash').setAttribute('aria-pressed', String(UQ.dash));
+  $('uqDash').addEventListener('click', () => {
+    UQ.dash = !UQ.dash; $('uqDash').setAttribute('aria-pressed', String(UQ.dash)); try { localStorage.setItem('uq-dash', UQ.dash ? '1' : '0'); } catch (e) {}
+    if (Object.keys(UQ.F).length) uqRun(false);
+  });
+  $('uqOpen').addEventListener('click', () => uqMode(!document.querySelector('.app').classList.contains('uqmode')));
+  $('uqFetch').addEventListener('click', uqFetch);
+  $('uqUrl').addEventListener('keydown', (e) => { if (e.key === 'Enter') uqFetch(); });
+  $('uqShot').addEventListener('change', uqShot);
+  ['uqUrl', 'uqTitle', 'uqText'].forEach((id) => $(id).addEventListener('input', uqDraft));
+  $('uqGo').addEventListener('click', () => uqRun(false));
+  $('uqAgain').addEventListener('click', () => uqRun(true));
+  $('uqCopyTitle').addEventListener('click', (e) => uqCopy('title', e.currentTarget));
+  $('uqCopyText').addEventListener('click', (e) => uqCopy('text', e.currentTarget));
+  $('uqToVideo').addEventListener('click', () => {
+    const t = UQ.F.title && UQ.F.title.res ? UQ.F.title.res.text : '';
+    if (!t) return;
+    S.text = t.split('\n').map((s) => s.trim()).filter(Boolean).slice(0, 5).join('\n');
+    $('txt').value = S.text; persist(); rebuild(0); hideDone();
+    uqMode(false);                                    // строку статуса редактора каждый кадр пишут рамки: подтверждение = заголовок в превью
+  });
+})();
