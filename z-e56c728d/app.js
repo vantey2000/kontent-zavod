@@ -928,9 +928,11 @@ const persist = () => { try { localStorage.setItem('zag-state', JSON.stringify(S
 const cv = $('cv'), ctx = cv.getContext('2d');
 const video = document.createElement('video');
 video.muted = true; video.playsInline = true; video.loop = true; video.preload = 'auto';
-video.setAttribute('playsinline', ''); video.setAttribute('muted', '');
+video.setAttribute('playsinline', ''); video.setAttribute('muted', ''); video.setAttribute('aria-hidden', 'true');
+// айфон не грузит и не играет видео вне страницы и невидимое, поэтому оно лежит на сцене под холстом
+video.className = 'vsrc'; $('stage').prepend(video);
 const demo = new Image(); demo.src = 'demo.jpg';
-let hasVideo = false, exporting = false, paused = false, L = null, snapGuide = false;
+let hasVideo = false, exporting = false, paused = false, L = null, snapGuide = false, vidWait = '';
 let lastStatus = '', fakeStart = performance.now(), atlasWarn = '';
 
 const look = () => STYLES.find(s => s.id === S.look) || STYLES[0];
@@ -986,7 +988,8 @@ function loop() {
   const b = L ? ENGINE.box(L, S.cx, S.cy, S.scale) : null;
   const chk = drawZones(ctx, { zones: S.zones, grid: S.grid }, b);
   if (snapGuide) { ctx.fillStyle = '#7fe3ff'; ctx.fillRect(539, 0, 2, 1920); }
-  if (atlasWarn) setStatus('В «Бархате» нет знаков: ' + atlasWarn + '. Они пропущены', 'bad');
+  if (vidWait) setStatus(vidWait);
+  else if (atlasWarn) setStatus('В «Бархате» нет знаков: ' + atlasWarn + '. Они пропущены', 'bad');
   else if (!S.zones || !chk) setStatus('Двигай заголовок пальцем, двумя пальцами меняй размер');
   else if (chk.bad.length) setStatus('Заголовок заходит под ' + chk.bad.map(z => z.name).join(', '), 'bad');
   else if (!chk.inAd) setStatus('В рилсе всё видно. Для рекламы держи заголовок внутри пунктира', 'good');
@@ -1115,7 +1118,7 @@ function buildDrag() {
     const dist = a.length > 1 ? Math.hypot(a[0].x - a[1].x, a[0].y - a[1].y) : 0;
     start = { mid, dist, cx: S.cx, cy: S.cy, scale: S.scale };
   };
-  st.addEventListener('pointerdown', e => { st.setPointerCapture(e.pointerId); pts.set(e.pointerId, pos(e)); snapshot(); });
+  st.addEventListener('pointerdown', e => { if (e.target.closest('.vtap')) return; st.setPointerCapture(e.pointerId); pts.set(e.pointerId, pos(e)); snapshot(); });
   st.addEventListener('pointermove', e => {
     if (!pts.has(e.pointerId) || !start) return;
     pts.set(e.pointerId, pos(e));
@@ -1150,14 +1153,37 @@ function buildText() {
   $('tCenter').addEventListener('click', () => { S.cx = 540; S.cy = DEF.cy; S.scale = 1; syncSize(); persist(); hideDone(); });
 }
 
+const BAD_VIDEO = 'Это видео браузер не открыл. Попробуй другой файл или в камере айфона включи формат «Наиболее совместимый»';
+let tapTimer = 0;
 function buildFile() {
+  // айфон не грузит видео, пока его не включили: нажатие на кнопку заранее разрешает включать его без нового нажатия
+  document.querySelector('.upl').addEventListener('click', () => { if (!hasVideo) { video.load(); video.play().catch(() => {}); } });
   $('file').addEventListener('change', () => {
     const f = $('file').files[0]; if (!f) return;
-    $('outErr').hidden = true;
-    setStatus('Открываю видео…');
+    $('file').value = '';                                    // тот же файл можно выбрать ещё раз
+    showErr(''); hideDone(); hasVideo = false; vidWait = 'Открываю видео…';
+    const old = video.src;
     video.src = URL.createObjectURL(f);
-    video.onloadeddata = () => { hasVideo = true; S.tIn = 0; S.tOut = null; syncTime(); hideDone(); video.play().catch(() => {}); };
-    video.onerror = () => { hasVideo = false; showErr('Это видео браузер не открыл. Попробуй другой файл или в камере айфона включи формат «Наиболее совместимый»'); };
+    if (old.startsWith('blob:')) URL.revokeObjectURL(old);
+    video.load(); video.play().catch(() => {});              // без play айфон не начнёт грузить и не даст loadeddata
+    clearTimeout(tapTimer);
+    tapTimer = setTimeout(() => { if (!hasVideo && !video.error) { vidWait = 'Нажми «Показать видео» на картинке'; $('vTap').hidden = false; } }, 2500);
+  });
+  const ready = () => {
+    if (hasVideo || !video.src) return;
+    clearTimeout(tapTimer); vidWait = ''; $('vTap').hidden = true;
+    if (!video.videoWidth) { video.pause(); return showErr(BAD_VIDEO); }   // звук открылся, картинка нет (HEVC в Chrome)
+    hasVideo = true; S.tIn = 0; S.tOut = null; syncTime(); hideDone();
+    if (paused) video.pause(); else video.play().catch(() => {});
+  };
+  video.addEventListener('loadeddata', ready); video.addEventListener('canplay', ready);
+  video.addEventListener('error', () => {
+    if (!video.src) return;
+    clearTimeout(tapTimer); hasVideo = false; vidWait = ''; $('vTap').hidden = true; showErr(BAD_VIDEO);
+  });
+  $('vTap').addEventListener('click', () => {
+    $('vTap').hidden = true; vidWait = 'Открываю видео…';
+    video.play().catch(e => { vidWait = ''; showErr('Видео не включилось (' + (e && e.name || e) + '). Открой ссылку в Safari и загрузи ещё раз'); });
   });
 }
 
@@ -1187,7 +1213,7 @@ async function make() {
 async function share() {
   if (!outFile) return;
   try {
-    if (navigator.canShare && navigator.canShare({ files: [outFile] })) await navigator.share({ files: [outFile], title: 'Заголовок для рилса' });
+    if (navigator.canShare && navigator.canShare({ files: [outFile] })) await navigator.share({ files: [outFile], title: 'Рилсовая' });
     else showErr('На этом устройстве «Поделиться» недоступно. Нажми «Скачать» или открой страницу с телефона');
   } catch (e) {
     if (e && e.name === 'NotAllowedError') showErr('Видео готово, нажми «Поделиться» ещё раз');
