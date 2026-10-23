@@ -1,0 +1,451 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="robots" content="noindex, nofollow">
+<meta name="theme-color" content="#faf7f2">
+<title>План Натальи</title>
+<style>
+  :root {
+    --bg: #faf7f2; --card: #ffffff; --ink: #1d1b19; --muted: #6b655d; --line: #ebe4d9;
+    --accent: #c2410c; --accent-soft: #fff1e8; --calm: #0f5c4d; --calm-soft: #e8f4ef;
+    --warn: #9f1239; --warn-soft: #fdecef; --chip: #f3efe8; --shadow: 0 1px 2px rgba(60,40,20,.06), 0 6px 24px rgba(60,40,20,.06);
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #141312; --card: #1d1b19; --ink: #f2eee8; --muted: #a59d92; --line: #2e2a26;
+      --accent: #fb923c; --accent-soft: #2a1c12; --calm: #5fd0b0; --calm-soft: #12241f;
+      --warn: #fb7185; --warn-soft: #2a1418; --chip: #26231f; --shadow: none;
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg: #141312; --card: #1d1b19; --ink: #f2eee8; --muted: #a59d92; --line: #2e2a26;
+    --accent: #fb923c; --accent-soft: #2a1c12; --calm: #5fd0b0; --calm-soft: #12241f;
+    --warn: #fb7185; --warn-soft: #2a1418; --chip: #26231f; --shadow: none;
+  }
+  * { box-sizing: border-box; }
+  html { -webkit-text-size-adjust: 100%; scroll-behavior: smooth; }
+  body { margin: 0; background: var(--bg); color: var(--ink);
+    font: 17px/1.55 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif; }
+  .wrap { max-width: 640px; margin: 0 auto; padding: 20px 16px 56px; }
+  a { color: var(--calm); text-underline-offset: 3px; }
+  b, strong { font-weight: 650; }
+
+  .hero { padding: 18px 0 8px; }
+  .kicker { font-size: 13px; letter-spacing: 1.4px; text-transform: uppercase; color: var(--muted); margin-bottom: 10px; }
+  h1 { font-family: Georgia, "Noto Serif", "Times New Roman", serif; font-weight: 700; font-size: 34px; line-height: 1.12;
+    letter-spacing: -0.4px; margin: 0 0 14px; }
+  h1 em { font-style: normal; color: var(--accent); }
+  .lead { font-size: 18px; margin: 0 0 18px; }
+
+  .stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin: 0 0 22px; }
+  .stat { background: var(--card); border: 1px solid var(--line); border-radius: 14px; padding: 12px 10px; box-shadow: var(--shadow); }
+  .stat .v { font-family: Georgia, "Noto Serif", serif; font-weight: 700; font-size: 22px; line-height: 1.1; color: var(--accent); white-space: nowrap; }
+  .stat .l { font-size: 12.5px; line-height: 1.3; color: var(--muted); margin-top: 4px; }
+
+  .toc { display: flex; gap: 8px; overflow-x: auto; padding: 2px 0 12px; margin: 0 0 8px; scrollbar-width: none; }
+  .toc::-webkit-scrollbar { display: none; }
+  .toc a { flex: 0 0 auto; text-decoration: none; color: var(--ink); background: var(--chip); border-radius: 999px;
+    padding: 7px 13px; font-size: 14px; }
+
+  section { background: var(--card); border: 1px solid var(--line); border-radius: 18px; padding: 20px 18px 8px;
+    margin: 0 0 16px; box-shadow: var(--shadow); scroll-margin-top: 12px; }
+  h2 { font-size: 22px; line-height: 1.2; margin: 0 0 12px; letter-spacing: -0.2px; display: flex; gap: 10px; align-items: baseline; }
+  h2 .n { flex: 0 0 auto; display: inline-flex; align-items: center; justify-content: center; width: 30px; height: 30px;
+    border-radius: 50%; background: var(--accent); color: #fff; font-size: 15px; font-weight: 700; transform: translateY(-2px); }
+  h3 { font-size: 17px; margin: 18px 0 8px; }
+  p { margin: 0 0 12px; }
+  ul, ol { margin: 0 0 12px; padding-left: 22px; }
+  li { margin: 0 0 8px; }
+  li::marker { color: var(--accent); font-weight: 700; }
+
+  .steps { list-style: none; padding: 0; counter-reset: s; }
+  .steps > li { counter-increment: s; position: relative; padding-left: 36px; margin-bottom: 12px; }
+  .steps > li::before { content: counter(s); position: absolute; left: 0; top: 1px; width: 24px; height: 24px; border-radius: 50%;
+    background: var(--accent-soft); color: var(--accent); font-size: 13px; font-weight: 700; text-align: center; line-height: 24px; }
+
+  .check { display: flex; gap: 12px; align-items: flex-start; padding: 12px 0; border-bottom: 1px solid var(--line); cursor: pointer; }
+  .check:last-child { border-bottom: 0; }
+  .check input { appearance: none; -webkit-appearance: none; flex: 0 0 auto; width: 26px; height: 26px; margin: 0;
+    border: 2px solid var(--accent); border-radius: 8px; display: grid; place-content: center; cursor: pointer; background: var(--card); }
+  .check input::after { content: ""; width: 12px; height: 7px; border: solid #fff; border-width: 0 0 3px 3px; transform: rotate(-45deg) translate(1px, -1px); opacity: 0; }
+  .check input:checked { background: var(--accent); }
+  .check input:checked::after { opacity: 1; }
+  .check .tx { flex: 1; }
+  .check .tx b { display: block; }
+  .check .tx span { display: block; font-size: 15px; color: var(--muted); }
+  .check input:checked + .tx b { text-decoration: line-through; text-decoration-color: var(--accent); color: var(--muted); }
+  .progress { font-size: 14px; color: var(--muted); margin: 4px 0 14px; }
+  .bar { height: 6px; background: var(--chip); border-radius: 99px; overflow: hidden; margin-top: 6px; }
+  .bar i { display: block; height: 100%; width: 0; background: var(--accent); border-radius: 99px; transition: width .3s; }
+
+  .box { border-radius: 14px; padding: 14px 15px; margin: 0 0 14px; font-size: 16px; }
+  .box .t { font-weight: 700; margin-bottom: 5px; }
+  .box p:last-child, .box ul:last-child { margin-bottom: 0; }
+  .box.accent { background: var(--accent-soft); } .box.accent .t { color: var(--accent); }
+  .box.calm { background: var(--calm-soft); } .box.calm .t { color: var(--calm); }
+  .box.warn { background: var(--warn-soft); } .box.warn .t { color: var(--warn); }
+
+  .ladder { width: 100%; border-collapse: collapse; margin: 4px 0 14px; font-size: 16px; }
+  .ladder th, .ladder td { padding: 9px 4px; border-bottom: 1px solid var(--line); text-align: center; }
+  .ladder th { font-size: 11px; text-transform: uppercase; letter-spacing: .2px; color: var(--muted); font-weight: 600; }
+  .ladder td:first-child, .ladder th:first-child { text-align: left; }
+  .ladder td.d { white-space: nowrap; }
+  .ladder td.d small { color: var(--muted); font-size: 13px; }
+  .ladder tr.today td { background: var(--accent-soft); font-weight: 700; }
+  .ladder tr.today td.d::after { content: "сегодня"; display: table; margin-top: 3px; font-size: 11px; font-weight: 700;
+    color: #fff; background: var(--accent); border-radius: 99px; padding: 1px 7px; }
+  .ladder tr.past td { color: var(--muted); }
+
+  .btn { display: inline-flex; align-items: center; gap: 8px; text-decoration: none; background: var(--accent); color: #fff;
+    border: 0; border-radius: 12px; padding: 12px 16px; font: inherit; font-weight: 650; font-size: 16px; cursor: pointer; margin: 2px 0 14px; }
+  .btn.ghost { background: var(--chip); color: var(--ink); }
+
+  .copy { position: relative; background: var(--chip); border-radius: 12px; margin: 0 0 14px; }
+  .copy pre { margin: 0; padding: 13px 14px 50px; white-space: pre-wrap; word-break: break-word;
+    font: 14.5px/1.5 ui-monospace, "SF Mono", Menlo, Consolas, monospace; color: var(--ink); max-height: 340px; overflow: auto; }
+  .copy.short pre { padding-bottom: 50px; max-height: none; }
+  .copy button { position: absolute; right: 8px; bottom: 8px; border: 0; border-radius: 9px; padding: 7px 12px;
+    background: var(--accent); color: #fff; font: 600 14px/1.2 -apple-system, Roboto, sans-serif; cursor: pointer; }
+  .copy button.ok { background: var(--calm); }
+
+  details { border: 1px solid var(--line); border-radius: 14px; margin: 0 0 14px; }
+  details > summary { cursor: pointer; padding: 13px 15px; font-weight: 650; list-style: none; display: flex; justify-content: space-between; gap: 10px; }
+  details > summary::-webkit-details-marker { display: none; }
+  details > summary::after { content: "+"; color: var(--accent); font-size: 22px; line-height: 1; }
+  details[open] > summary::after { content: "−"; }
+  details > .in { padding: 0 15px 4px; }
+
+  .vid { display: flex; gap: 12px; align-items: flex-start; padding: 10px 0; border-bottom: 1px solid var(--line); }
+  .vid:last-child { border-bottom: 0; }
+  .vid .ic { flex: 0 0 auto; width: 38px; height: 38px; border-radius: 10px; background: var(--accent-soft); color: var(--accent);
+    display: grid; place-content: center; font-size: 15px; }
+  .vid .m { font-size: 14px; color: var(--muted); }
+
+  .sign { text-align: center; color: var(--muted); font-size: 14px; margin-top: 26px; }
+  .sign b { color: var(--ink); }
+  @media (max-width: 380px) { h1 { font-size: 29px; } .stat .v { font-size: 19px; } .ladder { font-size: 15px; } }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header class="hero">
+  <div class="kicker">Взрывные алгоритмы · созвон 23.10</div>
+  <h1>Наталья, ваш план <em>после созвона</em></h1>
+  <p class="lead">Цель была 1 000 подписчиков, с неё мы и подключаем карусели. У вас уже больше 1 800 и рилс на 250 тысяч: вы полетели быстрее, чем обычно. Поэтому переходим на следующий уровень - пробный режим и карусели</p>
+  <div class="stats">
+    <div class="stat"><div class="v">250 тыс.</div><div class="l">просмотров на лучшем рилсе</div></div>
+    <div class="stat"><div class="v">~10</div><div class="l">рилсов больше 100 тыс.</div></div>
+    <div class="stat"><div class="v">1 800+</div><div class="l">подписчиков</div></div>
+  </div>
+</header>
+
+<nav class="toc" aria-label="Разделы">
+  <a href="#segodnya">Сегодня</a><a href="#norma">Норма на день</a><a href="#probnyy">Пробный режим</a><a href="#karuseli">Карусели</a>
+  <a href="#chatgpt">ChatGPT</a><a href="#shapka">Шапка</a><a href="#foto">Фото</a><a href="#sklad">Склад текстов</a><a href="#video">Видео-уроки</a><a href="#svyaz">Связь</a>
+</nav>
+
+<section id="segodnya">
+  <h2><span class="n">1</span>Сегодня обязательно</h2>
+  <div class="progress"><span id="pr-t">Отмечайте галочками, что сделали</span><div class="bar"><i id="pr-b"></i></div></div>
+
+  <label class="check"><input type="checkbox" data-k="t1"><span class="tx"><b>Пробный рилс, прямо сейчас и первым делом</b><span>Самый залетевший, текст уникализирован на 10%, подложка и обложка новые. Как делать - <a href="#probnyy">в разделе 3</a></span></span></label>
+  <label class="check"><input type="checkbox" data-k="t2"><span class="tx"><b>Доложить сегодняшние 10 рилсов в ленту</b><span>Как и делаете: по будильнику, по времени</span></span></label>
+  <label class="check"><input type="checkbox" data-k="t3"><span class="tx"><b>Оплатить ChatGPT</b><span><a href="#chatgpt">Ссылка и как оплатить</a></span></span></label>
+  <label class="check"><input type="checkbox" data-k="t4"><span class="tx"><b>Распаковка заново в ChatGPT и шапка профиля из неё</b><span><a href="#shapka">Что написать нейросети</a></span></span></label>
+  <label class="check"><input type="checkbox" data-k="t5"><span class="tx"><b>Нагенерировать свои фото в ChatGPT</b><span>По видео-уроку, он у вас в личке. Промпты <a href="#foto">в разделе 7</a></span></span></label>
+
+  <h3>Следом</h3>
+  <label class="check"><input type="checkbox" data-k="t6"><span class="tx"><b>Первая карусель в конструкторе</b><span>Первые 5 каруселей бесплатно. Первую скиньте мне, посмотрю, что получилось. <a href="#karuseli">Как сделать</a></span></span></label>
+  <label class="check"><input type="checkbox" data-k="t7"><span class="tx"><b>Своя группа в Телеграме для текстов</b><span>Чтобы тексты больше не терялись. <a href="#sklad">Как завести</a></span></span></label>
+</section>
+
+<section id="norma">
+  <h2><span class="n">2</span>Норма на каждый день</h2>
+  <p>Рилсы в общую ленту держим на 10 в день и выше не поднимаем: <b>10 - это наш нижний уровень</b>, его делаем всегда. По одному в день прибавляем пробные и карусели</p>
+  <table class="ladder" id="ladder">
+    <thead><tr><th>День</th><th>Рилсы</th><th>Пробные</th><th>Карусели</th></tr></thead>
+    <tbody>
+      <tr data-d="2026-10-23"><td class="d">23.10 <small>пт</small></td><td>10</td><td>1</td><td>1</td></tr>
+      <tr data-d="2026-10-24"><td class="d">24.10 <small>сб</small></td><td>10</td><td>2</td><td>2</td></tr>
+      <tr data-d="2026-10-25"><td class="d">25.10 <small>вс</small></td><td>10</td><td>3</td><td>3</td></tr>
+      <tr data-d="2026-10-26"><td class="d">26.10 <small>пн</small></td><td>10</td><td>4</td><td>3</td></tr>
+      <tr data-d="2026-10-27"><td class="d">27.10 <small>вт</small></td><td>10</td><td>5</td><td>3</td></tr>
+      <tr data-d="2026-10-28"><td class="d">28.10 <small>ср</small></td><td>10</td><td>6</td><td>3</td></tr>
+      <tr data-d="2026-10-29"><td class="d">29.10 <small>чт</small></td><td>10</td><td>7</td><td>3</td></tr>
+      <tr data-d="2026-10-30"><td class="d">30.10 <small>пт</small></td><td>10</td><td>8</td><td>3</td></tr>
+      <tr data-d="2026-10-31"><td class="d">31.10 <small>сб</small></td><td>10</td><td>9</td><td>3</td></tr>
+      <tr data-d="2026-11-01"><td class="d">01.11 <small>вс</small></td><td>10</td><td>10</td><td>3</td></tr>
+    </tbody>
+  </table>
+  <div class="box calm">
+    <div class="t">Почему карусели стоят на трёх</div>
+    <p>Если карусели не набирают, смысла их увеличивать нет. Доходим до трёх в день и ждём момента, когда они начнут залетать. Начнут простреливать - тогда и добавим. Пробные при этом смело поднимаем до 10</p>
+  </div>
+  <p>Со временем пропорцию можно менять как захотите: хоть по 10 рилсов, каруселей и пробных, хоть по 5</p>
+</section>
+
+<section id="probnyy">
+  <h2><span class="n">3</span>Пробный режим: снимаем сливки повторно</h2>
+  <p>Пробные рилсы показывают тем, кто на вас ещё не подписан, поэтому с них приходят новые люди. На новых аккаунтах пробный режим работает особенно хорошо: рост пойдёт ещё в 2-3 раза быстрее</p>
+  <ol class="steps">
+    <li><b>Выбираете свои самые залетевшие рилсы.</b> Тот, что на 250 тысяч, и те, что за 100 тысяч</li>
+    <li><b>Текст уникализируете на 10%</b> в ChatGPT или в DeepSeek. Запрос такой:</li>
+  </ol>
+  <div class="copy short"><pre id="c-uniq">Уникализируй текст на 10%, больше ничего не меняй</pre><button type="button" data-copy="c-uniq">Скопировать</button></div>
+  <ol class="steps" start="3" style="counter-reset: s 2">
+    <li><b>Подложку берёте другую и делаете новую обложку,</b> чтобы рилс не совпадал с прошлым</li>
+    <li><b>Выкладываете в пробный режим</b></li>
+  </ol>
+  <div class="box accent">
+    <div class="t">Залетевшие кончились - идём по кругу</div>
+    <p>Со временем у вас наберётся около 10 своих залетевших тем. Их можно выкладывать в пробный режим хоть каждый день, главное каждый раз другая подложка и чуть изменённый текст. Каждый раз они попадают на новую аудиторию</p>
+  </div>
+  <div class="box warn">
+    <div class="t">Пробный и общая лента - разные правила</div>
+    <p>В пробный режим можно выкладывать каждый день. А в общую ленту свой залетевший повторяем не чаще раза в месяц: я так перевыкладываю свои самые залетевшие, и они снова набирают. Если повторять чаще, Инстаграм реагирует плохо</p>
+  </div>
+  <div class="box calm">
+    <div class="t">Инстаграм сам подсказывает, что заходит</div>
+    <p>Вы уже это увидели: рилсы, где вы в рубашке за столом с нейрографикой, почти не набрали. Всё подряд не выкладываем, для повторов берём подложки, которые набирают больше</p>
+  </div>
+</section>
+
+<section id="karuseli">
+  <h2><span class="n">4</span>Карусели: подключаем тяжёлую артиллерию</h2>
+  <ul>
+    <li><b>Темы те же самые, что в пробных.</b> Берёте свои залетевшие рилсы и из них же делаете карусели: тема карусели точно такая же, как у пробника</li>
+    <li><b>Сразу могут не залететь, и это нормально.</b> У некоторых учеников залетают с первых дней, у кого-то месяц не набирают, а потом пробиваются, и люди начинают подписываться ещё в 3 раза быстрее</li>
+    <li><b>Первую карусель скиньте мне,</b> посмотрю, что получилось</li>
+  </ul>
+
+  <h3>Конструктор каруселей</h3>
+  <p>Делается в нём гораздо быстрее, чем руками. Первые 5 каруселей бесплатно, сразу после регистрации по почте и без карты. Дальше подписка 1 500 ₽ в месяц</p>
+  <a class="btn" href="https://ivan-loginov.ru/karusel/">Открыть конструктор →</a>
+  <ol class="steps">
+    <li>Загрузите вертикальное фото, где вы сбоку кадра</li>
+    <li>Впишите свой ник, он встанет на каждый слайд</li>
+    <li>Укажите, с какой стороны вы на фото: «Справа» или «Слева». Текст сам обойдёт лицо</li>
+    <li>Вставьте текст поста: первая строка - обложка, пункты 1. 2. 3. - слайды, финальный вопрос - последний слайд. Каким должен быть текст, покажет кнопка «Демо-текст»</li>
+    <li>С телефона жмёте «Поделиться» и выбираете Instagram: слайды падают прямо в новый пост. С компьютера - «Скачать ZIP» и перекидываете на телефон</li>
+  </ol>
+  <p>Фото для карусели генерируете в ChatGPT, про это <a href="#foto">раздел 7</a></p>
+  <div class="box warn">
+    <div class="t">Отложенный постинг - только для каруселей</div>
+    <p>Рилсы в отложенный постинг не ставим: просмотров у них будет в 2 раза меньше. Рилсы выкладываете сами, как сейчас по будильнику. В отложку идут только посты-карусели</p>
+  </div>
+</section>
+
+<section id="chatgpt">
+  <h2><span class="n">5</span>ChatGPT</h2>
+  <p>Нужен в первую очередь для фото: в нём генерируем ваши фотографии для каруселей. Тексты он тоже классно пишет, уникализировать можно в нём</p>
+  <ol class="steps">
+    <li>Заходите в ChatGPT с ноутбука и логинитесь</li>
+    <li>Подписку берёте у продавца, у которого беру сам. Выйдет примерно 1 900 ₽ в месяц, тариф Plus</li>
+  </ol>
+  <a class="btn" href="https://plati.market/itm/auto-issue-24-7-chatgpt-6-astra-go-plus-pro-no-login-remove/5794510">Подписка ChatGPT →</a>
+  <ol class="steps" start="3" style="counter-reset: s 2">
+    <li>После оплаты жмёте «Получить товар» и дальше по инструкции продавца. Подписка встаёт на ваш же аккаунт, он в этот момент должен быть на бесплатном тарифе</li>
+  </ol>
+  <div class="box calm">
+    <div class="t">Доверяй, но проверяй</div>
+    <p>На 100% ChatGPT не доверяйте: иногда он ошибается, причём уверенно, и ещё похвалит, что вы всё правильно делаете. Сомневаетесь - перепроверьте или спросите меня</p>
+  </div>
+</section>
+
+<section id="shapka">
+  <h2><span class="n">6</span>Шапка профиля</h2>
+  <p>Распаковку вы уже сделали. Теперь в том же окне, где нейросеть её выдала, пишете:</p>
+  <div class="copy short"><pre id="c-shapka">Теперь, исходя из этого, сделай мне описание в шапку профиля для Инстаграм</pre><button type="button" data-copy="c-shapka">Скопировать</button></div>
+  <p>Она уже знает о вас всё и сама уложит в формат Инстаграма: коротко, чётко, сколько нужно строк и символов</p>
+  <div class="box accent">
+    <div class="t">Потом распаковку заново в ChatGPT</div>
+    <p>Когда оплатите ChatGPT, пройдите распаковку ещё раз в нём и так же попросите шапку. Вам и в первый раз зашло, а там выйдет ещё сильнее</p>
+  </div>
+</section>
+
+<section id="foto">
+  <h2><span class="n">7</span>Фото для каруселей в ChatGPT</h2>
+  <p>Схема из видео-урока: находите на Pinterest фото, которое нравится (поза, свет, место, одежда), и вместе со своим портретом отправляете в ChatGPT</p>
+  <ol class="steps">
+    <li>В одно сообщение прикрепляете два фото: первое - понравившееся, второе - ваш портрет, где хорошо видно лицо</li>
+    <li>Пишете следом:</li>
+  </ol>
+  <div class="copy short"><pre id="c-lico">Замени лицо на 1 фото лицом со второго, формат фото сделай 3:4</pre><button type="button" data-copy="c-lico">Скопировать</button></div>
+  <ol class="steps" start="3" style="counter-reset: s 2">
+    <li>Нагенерировали фото - загружаете их в конструктор и собираете карусель</li>
+  </ol>
+
+  <details>
+    <summary>Лицо село плохо - подробный промпт</summary>
+    <div class="in">
+      <p>Портрет берите резкий, лицо хорошо видно, без тёмных очков и сильной тени. Первым фото - референс, вторым - ваш портрет, следом этот текст:</p>
+      <div class="copy"><pre id="c-identity">Задача: фотореалистичный перенос идентичности (identity transfer), не стилизация и не новая генерация.
+
+ИЗОБРАЖЕНИЕ 1 = РЕФЕРЕНС. Это базовый кадр. Сохраняется на 100%: композиция, кроп, ракурс камеры, поза тела и головы, одежда, руки, фон, цветокор, схема освещения, глубина резкости, зерно и характер съёмки. Ничего в кадре не перерисовывается и не «улучшается».
+
+ИЗОБРАЖЕНИЕ 2 = ИСТОЧНИК ЛИЦА. Отсюда берётся только идентичность человека.
+
+ПЕРЕНЕСТИ с изображения 2:
+- геометрию черт: форма и ширина носа, разрез и посадка глаз, межзрачковое расстояние, форма и толщина губ, линия челюсти и подбородок, скулы, форма лба, уши
+- брови: форма, густота, направление роста
+- линию роста волос, растительность на лице, родинки, шрамы, естественную асимметрию лица
+- реальную текстуру кожи: поры, неровный тон, мелкие морщины, естественные покраснения
+- возраст и полноту лица как есть
+
+НЕ ПЕРЕНОСИТЬ с изображения 2: освещение, цветовую температуру, фон, выражение лица, угол головы, качество съёмки.
+
+СОГЛАСОВАНИЕ С РЕФЕРЕНСОМ (критично):
+1. Свет. Лицо освещается ровно той же схемой, что и весь кадр: то же направление ключевого света, та же жёсткость (жёсткий/мягкий), та же высота источника. Тени под бровями, носом, нижней губой и подбородком идут в ту же сторону, что тени на шее, плечах и фоне референса. Глубина теней и контраст совпадают с кадром.
+2. Цвет. Тон кожи лица совпадает с тоном шеи, ушей и рук на референсе по яркости, насыщенности и температуре. Блики на коже той же силы и того же оттенка, что на остальном теле.
+3. Масштаб и перспектива. Размер головы относительно плеч и кадра остаётся как в референсе. Линия глаз, наклон и поворот головы не меняются. Перспективное искажение лица соответствует фокусному расстоянию референса (широкий угол = крупнее нос и уши, телевик = более плоское лицо).
+4. Матчинг камеры. На лицо накладываются те же свойства съёмки, что у кадра: уровень зерна и шума, резкость, микроконтраст, степень размытия по глубине резкости, лёгкая хроматика и артефакты сжатия. Лицо не должно быть резче и чище остального кадра.
+5. Границы. Переход по линии челюсти, шее, ушам и волосам бесшовный: без ореола, без размытой рамки, без разницы в зерне. Линия роста волос естественно совмещена с причёской референса.
+
+ЗАПРЕЩЕНО:
+- бьютификация, сглаживание кожи, airbrush, «пластиковая» кожа
+- симметрирование лица, увеличение глаз, сужение носа, изменение возраста, похудение лица
+- изменение выражения лица и направления взгляда относительно референса
+- добавление макияжа, фильтров, свечения, HDR, повышенной резкости
+- признаки генерации: кривые зубы и уши, лишние пальцы, съехавшие украшения, деформированный фон, любой текст и водяные знаки
+
+САМОПРОВЕРКА ПЕРЕД ВЫДАЧЕЙ. Ответь себе да/нет по каждому пункту и исправь то, где «нет»:
+- тени на лице идут в ту же сторону, что тени на шее и фоне?
+- тон кожи лица и шеи совпадает?
+- размер головы и линия глаз не сдвинулись относительно референса?
+- лицо не чище и не резче остального кадра?
+- человека можно узнать: нос, глаза, линия челюсти совпадают с изображением 2?
+- нет мыла и светлого ореола по контуру лица?
+
+РЕЗУЛЬТАТ: один кадр, тот же кроп и то же соотношение сторон, что у референса. Фотография, снятая камерой, а не рендер.</pre><button type="button" data-copy="c-identity">Скопировать</button></div>
+      <p><b>Не село с первого раза</b> - промпт заново не переписываете, а дожимаете короткой фразой следующим сообщением:</p>
+      <ul>
+        <li>Лицо не похоже: «Идентичность считана слабо. Сильнее прижми геометрию к изображению 2: ширина и кончик носа, разрез глаз, линия челюсти, форма губ. Остальной кадр не трогай»</li>
+        <li>Кожа пластиковая: «Кожа слишком чистая. Верни поры, неровный тон и микроморщины, убавь сглаживание. Детализация кожи как на изображении 2»</li>
+        <li>Голова не того размера: «Масштаб головы сбился. Верни размер головы относительно плеч и линию глаз ровно как в референсе»</li>
+        <li>Видно склейку: «По линии челюсти и шеи виден переход. Убери ореол, выровняй зерно и резкость лица с остальным кадром»</li>
+        <li>Лицо светлее или темнее шеи: «Подгони яркость и температуру кожи лица под шею и руки референса»</li>
+      </ul>
+      <p>Референсы берите не «красивые», а рабочие: где свет и ракурс похожи на ваши обычные фото. Тогда сядет с первого-второго раза</p>
+    </div>
+  </details>
+
+  <details>
+    <summary>Фото-фон: вы справа, слева место под текст</summary>
+    <div class="in">
+      <p>Загружаете в ChatGPT своё фото и следом этот текст. Получится вертикальный кадр, где вас не режет ни сверху, ни снизу, а текст не лезет на лицо:</p>
+      <div class="copy"><pre id="c-fon">Вот моё фото. Сделай из него вертикальный кадр-фон для карусели:
+1) вырежи меня, фон замени на однотонный тёмный матовый графит (#1A1A1C) - без градиентов, текстур и бликов
+2) поставь меня справа: голова и плечи в правой верхней трети кадра, тело уходит вниз к правому краю
+3) левые две трети кадра - чистый тёмный фон, там пусто, ничего не размещай
+4) кадр вертикальный, я по пояс, целиком, ничего не обрезано; над головой оставь воздух ~10% высоты и снизу такой же запас
+5) свет мягкий, лицо не пересвечено, края фигуры чистые, без белого ореола
+6) никакого текста, логотипов и рамок - только я и фон</pre><button type="button" data-copy="c-fon">Скопировать</button></div>
+      <p>В конструкторе ставите «Справа» и убавляете затемнение фона до 20-25%: фон и так тёмный. Хотите себя слева - в пунктах 2 и 3 меняете «справа» на «слева», в конструкторе тоже «Слева»</p>
+    </div>
+  </details>
+</section>
+
+<section id="sklad">
+  <h2><span class="n">8</span>Своя группа для текстов в Телеграме</h2>
+  <p>Тексты, которые удалили, - ничего страшного. Чтобы дальше ничего не терялось, заведите себе в Телеграме группу. Именно группу, а не канал: в ней можно сделать вкладки</p>
+  <ol class="steps">
+    <li>Создаёте новую группу, например «Мои тексты»</li>
+    <li>В настройках группы включаете «Темы» и заводите вкладки: «Рилсы», «Карусели», «Пробные»</li>
+    <li>Каждый день скидываете туда уже уникализированные тексты: заголовок отдельным сообщением, описание вторым. Потом удобно копировать</li>
+  </ol>
+  <div class="box calm">
+    <div class="t">По нишам не делим</div>
+    <p>Эзотерика отдельно, психология отдельно - замучаетесь. Принцип как в «ТОП-каруселях»</p>
+  </div>
+  <div class="box accent">
+    <div class="t">Через полгода это ваш банк идей</div>
+    <p>У меня там уже около 3 000 текстов. Когда нет времени, захожу, отматываю хоть на январь и выкладываю оттуда. Полгода прошло, и всё отлично работает</p>
+  </div>
+  <p>А готовые тексты лежат у меня в «ТОП-каруселях»: заходите, копируете, вставляете, полчасика посидели. Где текст от мужского лица, переделываете на женское</p>
+  <a class="btn ghost" href="https://t.me/+Z8WfRzumyfs5NjQ6">Открыть «ТОП-карусели» →</a>
+</section>
+
+<section id="video">
+  <h2><span class="n">9</span>Видео-уроки</h2>
+  <p>Переслал вам в личку сразу за ссылкой на эту страницу:</p>
+  <div class="vid"><div class="ic">▶</div><div><b>Как делать карусели: фото в ChatGPT и сборка в конструкторе</b><div class="m">5 минут · Pinterest, замена лица в ChatGPT, текст и слайды в конструкторе</div></div></div>
+  <div class="vid"><div class="ic">▶</div><div><b>Как выложить карусель из конструктора в Инстаграм</b><div class="m">1,5 минуты · «Поделиться», музыка, проверка порядка слайдов</div></div></div>
+  <div class="vid"><div class="ic">▶</div><div><b>Как поставить карусель в отложенный постинг</b><div class="m">3 минуты · музыка, «Ещё», «Запланировать публикацию»</div></div></div>
+  <p style="margin-top:12px">В видео конструктор ещё по старому адресу. Сейчас он живёт здесь: <a href="https://ivan-loginov.ru/karusel/">ivan-loginov.ru/karusel</a></p>
+</section>
+
+<section id="svyaz">
+  <h2><span class="n">10</span>Связь</h2>
+  <ul>
+    <li><b>Созваниваемся минимум раз в неделю,</b> независимо от результатов. На следующей неделе созвонимся в любом случае</li>
+    <li><b>Срочное</b> - пишите в любое время, подстроимся под графики друг друга и созвонимся</li>
+    <li><b>Любые вопросы, даже мелочь,</b> где сомневаетесь, куда нажать, - сразу в личку. Самый плохой вопрос - незаданный, а мне ответить - минута дела</li>
+  </ul>
+  <div class="box calm">
+    <div class="t">Почему у вас хорошие результаты</div>
+    <p>Потому что делаете, как доктор прописал. Мои лучшие ученики делают ровно то, что я говорю, один в один, и всегда растут. А у тех, кто начинает добавлять от себя, результаты идут дольше. Технология проверена на десятках людей</p>
+  </div>
+  <div class="box accent">
+    <div class="t">Идея на будущее</div>
+    <p>Когда будете продавать личную работу, особенно дорогую, лучше всего это делать на созвоне. Человек сразу видит живого человека и чувствует, хочется ли ему с вами работать</p>
+  </div>
+</section>
+
+<p class="sign">Жду пробник и первую карусель 🚀<br><b>Иван Логинов</b> · Взрывные алгоритмы</p>
+</div>
+
+<script>
+(function () {
+  var KEY = "nat-plan-2310";
+  var state = {};
+  try { state = JSON.parse(localStorage.getItem(KEY) || "{}") || {}; } catch (e) { state = {}; }
+  var boxes = Array.prototype.slice.call(document.querySelectorAll(".check input"));
+  function paint() {
+    var done = boxes.filter(function (b) { return b.checked; }).length;
+    document.getElementById("pr-b").style.width = (done / boxes.length * 100) + "%";
+    document.getElementById("pr-t").textContent = done === 0 ? "Отмечайте галочками, что сделали"
+      : done === boxes.length ? "Всё сделано, вы огонь 🔥" : "Сделано " + done + " из " + boxes.length;
+  }
+  boxes.forEach(function (b) {
+    b.checked = !!state[b.dataset.k];
+    b.addEventListener("change", function () {
+      state[b.dataset.k] = b.checked;
+      try { localStorage.setItem(KEY, JSON.stringify(state)); } catch (e) {}
+      paint();
+    });
+  });
+  paint();
+
+  var d = new Date();
+  var today = d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0") + "-" + String(d.getDate()).padStart(2, "0");
+  document.querySelectorAll("#ladder tbody tr").forEach(function (tr) {
+    if (tr.dataset.d === today) tr.classList.add("today");
+    else if (tr.dataset.d < today) tr.classList.add("past");
+  });
+
+  function fallbackCopy(text) {
+    var ta = document.createElement("textarea");
+    ta.value = text; ta.setAttribute("readonly", ""); ta.style.position = "fixed"; ta.style.opacity = "0";
+    document.body.appendChild(ta); ta.select();
+    try { document.execCommand("copy"); } catch (e) {}
+    document.body.removeChild(ta);
+  }
+  document.querySelectorAll("[data-copy]").forEach(function (btn) {
+    btn.addEventListener("click", function () {
+      var text = document.getElementById(btn.dataset.copy).textContent;
+      var ok = function () {
+        btn.textContent = "Скопировано ✓"; btn.classList.add("ok");
+        setTimeout(function () { btn.textContent = "Скопировать"; btn.classList.remove("ok"); }, 1800);
+      };
+      if (navigator.clipboard && window.isSecureContext) {
+        navigator.clipboard.writeText(text).then(ok, function () { fallbackCopy(text); ok(); });
+      } else { fallbackCopy(text); ok(); }
+    });
+  });
+})();
+</script>
+</body>
+</html>
