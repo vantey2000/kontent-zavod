@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta name="format-detection" content="telephone=no">
 <title>Иван Логинов - курс, приложения и бесплатные материалы</title>
-<meta name="description" content="Иван Логинов строит контент-заводы на нейросетях. Курс «Взрывные алгоритмы», конструктор каруселей, скорочтение и бесплатная распаковка в Claude">
+<meta name="description" content="Иван Логинов строит контент-заводы на нейросетях. Курс «Взрывные алгоритмы», конструктор каруселей, Рилсовая и бесплатная распаковка в Claude">
 <meta name="theme-color" content="#1C1815">
 <link rel="canonical" href="https://ivan-loginov.ru/">
 <meta property="og:type" content="website">
@@ -95,34 +95,20 @@
   },
   {
    "@type": "SoftwareApplication",
-   "@id": "https://ivan-loginov.ru/skorochtenie/#item",
-   "name": "Скорочтение",
-   "url": "https://ivan-loginov.ru/skorochtenie/",
-   "description": "Скорочтение: тест скорости бесплатно, подписка 490 ₽ в месяц или 1 490 ₽ навсегда",
+   "@id": "https://ivan-loginov.ru/z-e56c728d/#item",
+   "name": "Рилсовая",
+   "url": "https://ivan-loginov.ru/z-e56c728d/",
+   "description": "Рилсовая: заголовок на видео для рилса и уникализатор текста, без оплаты и регистрации",
    "author": {
     "@id": "https://ivan-loginov.ru/#ivan"
    },
-   "applicationCategory": "EducationalApplication",
+   "applicationCategory": "MultimediaApplication",
    "operatingSystem": "Web",
    "offers": [
     {
      "@type": "Offer",
-     "name": "Тест скорости",
+     "name": "Бесплатно",
      "price": "0",
-     "priceCurrency": "RUB",
-     "availability": "https://schema.org/InStock"
-    },
-    {
-     "@type": "Offer",
-     "name": "Подписка, месяц",
-     "price": "490",
-     "priceCurrency": "RUB",
-     "availability": "https://schema.org/InStock"
-    },
-    {
-     "@type": "Offer",
-     "name": "Навсегда",
-     "price": "1490",
      "priceCurrency": "RUB",
      "availability": "https://schema.org/InStock"
     }
@@ -162,9 +148,9 @@
     {
      "@type": "ListItem",
      "position": 3,
-     "url": "https://ivan-loginov.ru/skorochtenie/",
+     "url": "https://ivan-loginov.ru/z-e56c728d/",
      "item": {
-      "@id": "https://ivan-loginov.ru/skorochtenie/#item"
+      "@id": "https://ivan-loginov.ru/z-e56c728d/#item"
      }
     },
     {
@@ -503,7 +489,7 @@ h1,h2,h3,p,li{text-wrap:pretty}
           <ul>
             <li><a href="/vzryv/"><q>не о чем снимать</q><svg aria-hidden="true"><use href="#i-go"/></svg></a></li>
             <li><a href="/karusel/"><q>нет сил на карусели</q><svg aria-hidden="true"><use href="#i-go"/></svg></a></li>
-            <li><a href="/skorochtenie/"><q>читаю медленно</q><svg aria-hidden="true"><use href="#i-go"/></svg></a></li>
+            <li><a href="/z-e56c728d/"><q>нет цепляющих заголовков на&nbsp;рилсы</q><svg aria-hidden="true"><use href="#i-go"/></svg></a></li>
             <li><a href="/guide-raspakovka-claude/"><q>не понимаю, как себя упаковать</q><svg aria-hidden="true"><use href="#i-go"/></svg></a></li>
           </ul>
         </nav>
@@ -520,10 +506,10 @@ h1,h2,h3,p,li{text-wrap:pretty}
             <a class="btn2" href="/karusel/">Открыть конструктор</a>
           </article>
           <article class="row">
-            <h3>Скорочтение</h3>
-            <p>Тест скорости чтения</p>
-            <p class="cond">тест бесплатно<br>490&nbsp;₽ в&nbsp;месяц или 1&nbsp;490&nbsp;₽ навсегда</p>
-            <a class="btn2" href="/skorochtenie/">Пройти тест</a>
+            <h3>Рилсовая</h3>
+            <p>Заголовок на&nbsp;твоё видео для рилса</p>
+            <p class="cond">внутри уникализатор текста<br>без оплаты и&nbsp;регистрации</p>
+            <a class="btn2" href="/z-e56c728d/">Открыть Рилсовую</a>
           </article>
         </div>
       </div>
@@ -647,7 +633,6 @@ h1,h2,h3,p,li{text-wrap:pretty}
       <ul class="docs">
         <li><a href="/vzryv/oferta.html">Оферта курса</a></li>
         <li><a href="/karusel/oferta.html">Оферта конструктора</a></li>
-        <li><a href="/skorochtenie/oferta.html">Оферта Скорочтения</a></li>
         <li><a href="/privacy.html">Политика конфиденциальности</a></li>
       </ul>
     </div>
@@ -671,7 +656,7 @@ h1,h2,h3,p,li{text-wrap:pretty}
    ON включается вместе со своим счётчиком glavnaya-events (Cloudflare Worker). До этого ничего не отправляется */
 (function(){
   var EP='https://glavnaya-events.aivan-loginov.workers.dev/e', ON=false, K='ivl_src';
-  var P={'/vzryv/':'vzryv','/karusel/':'karusel','/skorochtenie/':'skoro','/guide-raspakovka-claude/':'raspak'};
+  var P={'/vzryv/':'vzryv','/karusel/':'karusel','/z-e56c728d/':'rils','/guide-raspakovka-claude/':'raspak'};
   var src=null, m=/^#?([a-z0-9-]{1,16})$/i.exec(location.hash||'');
   // метка площадки после # (ivan-loginov.ru/#ig): запоминаем на 30 дней, адрес чистим; якоря страницы не трогаем
   if(m && !/^kupit/i.test(m[1]) && !document.getElementById(m[1])){
@@ -692,7 +677,7 @@ h1,h2,h3,p,li{text-wrap:pretty}
   document.addEventListener('click',function(ev){var a=ev.target.closest&&ev.target.closest('a[href]');
     if(a&&a.getAttribute('href').charAt(0)!=='#')send('e=klik&m='+mesto(a)+'&p='+prod(a))},true);
   addEventListener('load',function(){
-    // метка доезжает до страницы продукта: /skorochtenie/#ig
+    // метка доезжает до страницы продукта: /karusel/#ig
     if(src)[].forEach.call(document.querySelectorAll('a[href]'),function(a){
       try{var u=new URL(a.href,location.href);if(u.host===location.host&&P[u.pathname]&&!u.hash)a.href=u.pathname+'#'+src}catch(e){}});
     (window.requestIdleCallback||setTimeout)(function(){send('e=open')});
