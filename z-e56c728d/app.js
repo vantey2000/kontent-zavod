@@ -1571,12 +1571,19 @@ async function uqTopUp(key) {
   } catch (e) { uqSt('uqSt', uqMsg(e), 'err'); }
 }
 
+// одна обработка за раз; нажатие во время неё (голос, тире, «Другой вариант») выполняется сразу после
+function uqLock(on) { UQ.busy = on; $('uqGo').disabled = on; $('uqAgain').disabled = on; }
+function uqNext() {
+  const p = UQ.pending; UQ.pending = null;
+  if (p) uqRun(p === 'next');
+}
+
 async function uqRun(nextVariant) {
-  if (UQ.busy) return;
+  if (UQ.busy) { UQ.pending = nextVariant || UQ.pending === 'next' ? 'next' : 'same'; uqSt('uqSt', 'Пересоберу сразу после текущей обработки…'); return; }
   const fields = [['title', $('uqTitleBox').hidden ? '' : $('uqTitle').value.trim()], ['text', $('uqText').value.trim()]].filter(([, t]) => t);
   if (!fields.length) return uqSt('uqSt', 'Вставь текст или забери его по ссылке', 'err');
   if (nextVariant) UQ.v = (UQ.v + 1) % 25;
-  UQ.busy = true; $('uqGo').disabled = true; $('uqAgain').disabled = true; uqClear();
+  uqLock(true); uqClear();
   uqSt('uqSt', 'Нейросеть подбирает правки, обычно 10-30 секунд…');
   try {
     for (const [key, raw] of fields) {
@@ -1590,7 +1597,7 @@ async function uqRun(nextVariant) {
     }
     uqSt('uqSt', ''); uqRender();
   } catch (e) { uqSt('uqSt', uqMsg(e), 'err'); }
-  UQ.busy = false; $('uqGo').disabled = false; $('uqAgain').disabled = false;
+  uqLock(false); uqNext();
 }
 
 function uqRender() {
@@ -1645,7 +1652,7 @@ function uqMode(on) {
     b.addEventListener('click', async () => {
       UQ.pct = p; press(box, 'data-pct', String(p)); try { localStorage.setItem('uq-pct', String(p)); } catch (e) {}
       uqRender();
-      if (!UQ.busy && Object.keys(UQ.F).length) { UQ.busy = true; for (const k of Object.keys(UQ.F)) await uqTopUp(k); UQ.busy = false; uqRender(); }
+      if (!UQ.busy && Object.keys(UQ.F).length) { uqLock(true); for (const k of Object.keys(UQ.F)) await uqTopUp(k); uqLock(false); uqRender(); uqNext(); }
     });
     box.appendChild(b);
   });
@@ -1657,7 +1664,7 @@ function uqMode(on) {
     b.addEventListener('click', () => {
       if (UQ.voice === id) return;
       UQ.voice = id; press(vbox, 'data-voice', id); try { localStorage.setItem('uq-voice', id); } catch (e) {}
-      if (Object.keys(UQ.F).length) uqRun(false);      // лицо меняет весь текст: готовый результат пересобирается
+      if (Object.keys(UQ.F).length || UQ.busy) uqRun(false);   // лицо меняет весь текст: результат пересобирается, во время обработки - после неё
     });
     vbox.appendChild(b);
   });
@@ -1665,7 +1672,7 @@ function uqMode(on) {
   $('uqDash').setAttribute('aria-pressed', String(UQ.dash));
   $('uqDash').addEventListener('click', () => {
     UQ.dash = !UQ.dash; $('uqDash').setAttribute('aria-pressed', String(UQ.dash)); try { localStorage.setItem('uq-dash', UQ.dash ? '1' : '0'); } catch (e) {}
-    if (Object.keys(UQ.F).length) uqRun(false);
+    if (Object.keys(UQ.F).length || UQ.busy) uqRun(false);
   });
   $('uqOpen').addEventListener('click', () => uqMode(!document.querySelector('.app').classList.contains('uqmode')));
   $('uqFetch').addEventListener('click', uqFetch);
