@@ -528,6 +528,8 @@ const ENGINE = (() => {
     });
     const last = parts[parts.length - 1];
     const height = last ? (last.bottom != null ? last.bottom : last.top + last.size * 1.05) : 0;
+    // длинный заголовок не вылезает из видимой части кадра: все строки уменьшаются в одной пропорции
+    if (t.maxH && height > t.maxH) return layout(Object.assign({}, t, { maxH: 0, lines: t.lines.map((l, i) => Object.assign({}, l, { size: Math.floor(parts[i].size * t.maxH / height) })) }));
     parts.forEach(p => { p.y -= height / 2; p.top -= height / 2; if (p.heart) p.heart.y -= height / 2; });
     const width = parts.reduce((s, p) => Math.max(s, p.tw + (p.heart ? p.size * 0.9 : 0)), 0);
     return { parts, width, height };
@@ -669,11 +671,9 @@ function buildTitle(st, text, o) {
     const edge = st.edge || (st.style === 'extrude' ? shadeHex(p.d, -0.7) : other);
     return { text: s, size: st.sizes[i % st.sizes.length], color, sheen: shadeHex(color, 0.55), edge, set: fset || (role === 'l' ? 'light' : 'dark'), overlap: fset ? 0.08 : st.overlap, vcolor: fset ? (role === 'l' ? (p.vl || p.l) : (p.vd || shadeHex(p.d, 0.1))) : undefined };
   });
-  // сердечко в конце заголовка - по переключателю, по умолчанию выключено
-  if (o.heart && lines.length) lines[lines.length - 1].heart = p.h;
   const weight = (!o.font && st.weight) || FONT_W[font] || 400;
   const style = fset ? 'atlas' : st.style === 'atlas' && o.font ? 'velvet' : st.style;
-  return { font, weight, style, tracking: st.tracking, fatten: st.fatten, round: st.round, squeeze: fset ? 1 : st.squeeze, puff: st.puff, leading: fset && st.style === 'velvet' ? 0.72 : st.leading, shadow: st.shadow, lines, maxW: 800 };
+  return { font, weight, style, tracking: st.tracking, fatten: st.fatten, round: st.round, squeeze: fset ? 1 : st.squeeze, puff: st.puff, leading: fset && st.style === 'velvet' ? 0.72 : st.leading, shadow: st.shadow, lines, maxW: 800, maxH: 940 };
 }
 
 // безопасные рамки рилса 1080×1920. Верх и края по требованиям Meta (14% сверху, 6% с боков),
@@ -921,7 +921,7 @@ const FONTS = (() => {
 
 // состояние экрана, превью и общий рисовальщик кадра (превью и экспорт рисуют одно и то же)
 const $ = (id) => document.getElementById(id);
-const DEF = { look: 'barhat', font: null, pal: null, cL: null, cD: null, anim: 'pop', heart: false, text: 'САМЫЙ ТОПОВЫЙ\nДОМАШНИЙ\nДЕВАЙС\nДЛЯ ЛИЦА', scale: 1, cx: 540, cy: 1180, tIn: 0, tOut: null, zones: true, grid: false };
+const DEF = { look: 'barhat', font: null, pal: null, cL: null, cD: null, anim: 'pop', text: 'САМЫЙ ТОПОВЫЙ\nДОМАШНИЙ\nДЕВАЙС\nДЛЯ ЛИЦА', scale: 1, cx: 540, cy: 1180, tIn: 0, tOut: null, zones: true, grid: false };
 let S = Object.assign({}, DEF);
 try { const saved = JSON.parse(localStorage.getItem('zag-state') || 'null'); if (saved) S = Object.assign(S, saved, { tIn: 0, tOut: null }); } catch (e) {}
 const persist = () => { try { localStorage.setItem('zag-state', JSON.stringify(S)); } catch (e) {} };
@@ -937,7 +937,7 @@ let hasVideo = false, exporting = false, paused = false, L = null, snapGuide = f
 let lastStatus = '', fakeStart = performance.now(), atlasWarn = '';
 
 const look = () => STYLES.find(s => s.id === S.look) || STYLES[0];
-const lines = () => S.text.split('\n').map(s => s.trim()).filter(Boolean).slice(0, 5);
+const lines = () => S.text.split('\n').map(s => s.trim()).filter(Boolean);
 const dur = () => (hasVideo && isFinite(video.duration) ? video.duration : 4);
 const tOut = () => (S.tOut == null ? dur() : Math.min(S.tOut, dur()));
 
@@ -965,7 +965,7 @@ function rebuild(delay) {
     if ((st.style === 'atlas' && !S.font) || fset) { await ENGINE.atlasLoad(lines().join('').toUpperCase(), fset ? ['light', fset] : ['light', 'dark']); atlasWarn = ENGINE.atlasMissing(lines().join(''), fset); }
     else { atlasWarn = ''; await FONTS.loadFont(font, (!S.font && st.weight) || FONT_W[font]); }
     if (n !== rebuildN) return;
-    const opts = { font: S.font, pal: S.pal, colorL: S.cL, colorD: S.cD, heart: S.heart };
+    const opts = { font: S.font, pal: S.pal, colorL: S.cL, colorD: S.cD };
     L = lines().length ? ENGINE.layout(buildTitle(st, lines(), opts)) : null;
     hideDone();
   }, delay == null ? 120 : delay);
@@ -1145,7 +1145,6 @@ function buildText() {
   syncSize();
   const tog = (id, key) => { const b = $(id); b.setAttribute('aria-pressed', String(!!S[key])); b.addEventListener('click', () => { S[key] = !S[key]; b.setAttribute('aria-pressed', String(S[key])); persist(); }); };
   tog('tZones', 'zones'); tog('tGrid', 'grid');
-  tog('tHeart', 'heart'); $('tHeart').addEventListener('click', () => rebuild(0));
   $('tPlay').addEventListener('click', () => {
     paused = !paused; $('tPlay').setAttribute('aria-pressed', String(paused));
     if (hasVideo) { if (paused) video.pause(); else video.play().catch(() => {}); }
@@ -1762,7 +1761,7 @@ function uqBox(key) {
   $('uqToVideo').addEventListener('click', () => {
     const B = UQ.B.title, t = B.F && B.F.res ? B.F.res.text : B.area.value.trim();
     if (!t) return uqBoxSt(B, 'Сначала впиши заголовок или забери его по ссылке', 'err');
-    S.text = t.split('\n').map((s) => s.trim()).filter(Boolean).slice(0, 5).join('\n');
+    S.text = t.split('\n').map((s) => s.trim()).filter(Boolean).join('\n');
     $('txt').value = S.text; persist(); rebuild(0); hideDone();
     uqMode(false);                                    // строку статуса редактора каждый кадр пишут рамки: подтверждение = заголовок в превью
   });
