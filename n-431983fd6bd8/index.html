@@ -1,0 +1,292 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="robots" content="noindex, nofollow">
+<meta name="theme-color" content="#faf7f2">
+<title>Как работают заголовки</title>
+<style>
+  :root {
+    --bg: #faf7f2; --card: #ffffff; --ink: #1d1b19; --muted: #6b655d; --line: #ebe4d9;
+    --accent: #c2410c; --accent-soft: #fff1e8; --calm: #0f5c4d; --calm-soft: #e8f4ef;
+    --warn: #9f1239; --warn-soft: #fdecef; --chip: #f3efe8; --shadow: 0 1px 2px rgba(60,40,20,.06), 0 6px 24px rgba(60,40,20,.06);
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #141312; --card: #1d1b19; --ink: #f2eee8; --muted: #a59d92; --line: #2e2a26;
+      --accent: #fb923c; --accent-soft: #2a1c12; --calm: #5fd0b0; --calm-soft: #12241f;
+      --warn: #fb7185; --warn-soft: #2a1418; --chip: #26231f; --shadow: none;
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg: #141312; --card: #1d1b19; --ink: #f2eee8; --muted: #a59d92; --line: #2e2a26;
+    --accent: #fb923c; --accent-soft: #2a1c12; --calm: #5fd0b0; --calm-soft: #12241f;
+    --warn: #fb7185; --warn-soft: #2a1418; --chip: #26231f; --shadow: none;
+  }
+  * { box-sizing: border-box; }
+  html { -webkit-text-size-adjust: 100%; scroll-behavior: smooth; }
+  body { margin: 0; background: var(--bg); color: var(--ink);
+    font: 17px/1.55 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif; }
+  .wrap { max-width: 640px; margin: 0 auto; padding: 20px 16px 56px; }
+  a { color: var(--calm); text-underline-offset: 3px; }
+  b, strong { font-weight: 650; }
+
+  .hero { padding: 18px 0 8px; }
+  .kicker { font-size: 13px; letter-spacing: 1.4px; text-transform: uppercase; color: var(--muted); margin-bottom: 10px; }
+  h1 { font-family: Georgia, "Noto Serif", "Times New Roman", serif; font-weight: 700; font-size: 34px; line-height: 1.12;
+    letter-spacing: -0.4px; margin: 0 0 14px; }
+  h1 em { font-style: normal; color: var(--accent); }
+  .lead { font-size: 18px; margin: 0 0 18px; }
+
+  .stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin: 0 0 22px; }
+  .stat { background: var(--card); border: 1px solid var(--line); border-radius: 14px; padding: 12px 10px; box-shadow: var(--shadow); }
+  .stat .v { font-family: Georgia, "Noto Serif", serif; font-weight: 700; font-size: 22px; line-height: 1.1; color: var(--accent); white-space: nowrap; }
+  .stat .l { font-size: 12.5px; line-height: 1.3; color: var(--muted); margin-top: 4px; }
+
+  .toc { display: flex; gap: 8px; overflow-x: auto; padding: 2px 0 12px; margin: 0 0 8px; scrollbar-width: none; }
+  .toc::-webkit-scrollbar { display: none; }
+  .toc a { flex: 0 0 auto; text-decoration: none; color: var(--ink); background: var(--chip); border-radius: 999px;
+    padding: 7px 13px; font-size: 14px; }
+
+  section { background: var(--card); border: 1px solid var(--line); border-radius: 18px; padding: 20px 18px 8px;
+    margin: 0 0 16px; box-shadow: var(--shadow); scroll-margin-top: 12px; }
+  h2 { font-size: 22px; line-height: 1.2; margin: 0 0 12px; letter-spacing: -0.2px; display: flex; gap: 10px; align-items: baseline; }
+  h2 .n { flex: 0 0 auto; display: inline-flex; align-items: center; justify-content: center; width: 30px; height: 30px;
+    border-radius: 50%; background: var(--accent); color: #fff; font-size: 15px; font-weight: 700; transform: translateY(-2px); }
+  h3 { font-size: 17px; margin: 18px 0 8px; }
+  p { margin: 0 0 12px; }
+  ul, ol { margin: 0 0 12px; padding-left: 22px; }
+  li { margin: 0 0 8px; }
+  li::marker { color: var(--accent); font-weight: 700; }
+
+  .steps { list-style: none; padding: 0; counter-reset: s; }
+  .steps > li { counter-increment: s; position: relative; padding-left: 36px; margin-bottom: 12px; }
+  .steps > li::before { content: counter(s); position: absolute; left: 0; top: 1px; width: 24px; height: 24px; border-radius: 50%;
+    background: var(--accent-soft); color: var(--accent); font-size: 13px; font-weight: 700; text-align: center; line-height: 24px; }
+
+  .check { display: flex; gap: 12px; align-items: flex-start; padding: 12px 0; border-bottom: 1px solid var(--line); cursor: pointer; }
+  .check:last-child { border-bottom: 0; }
+  .check input { appearance: none; -webkit-appearance: none; flex: 0 0 auto; width: 26px; height: 26px; margin: 0;
+    border: 2px solid var(--accent); border-radius: 8px; display: grid; place-content: center; cursor: pointer; background: var(--card); }
+  .check input::after { content: ""; width: 12px; height: 7px; border: solid #fff; border-width: 0 0 3px 3px; transform: rotate(-45deg) translate(1px, -1px); opacity: 0; }
+  .check input:checked { background: var(--accent); }
+  .check input:checked::after { opacity: 1; }
+  .check .tx { flex: 1; }
+  .check .tx b { display: block; }
+  .check .tx span { display: block; font-size: 15px; color: var(--muted); }
+  .check input:checked + .tx b { text-decoration: line-through; text-decoration-color: var(--accent); color: var(--muted); }
+  .progress { font-size: 14px; color: var(--muted); margin: 4px 0 14px; }
+  .bar { height: 6px; background: var(--chip); border-radius: 99px; overflow: hidden; margin-top: 6px; }
+  .bar i { display: block; height: 100%; width: 0; background: var(--accent); border-radius: 99px; transition: width .3s; }
+
+  .box { border-radius: 14px; padding: 14px 15px; margin: 0 0 14px; font-size: 16px; }
+  .box .t { font-weight: 700; margin-bottom: 5px; }
+  .box p:last-child, .box ul:last-child { margin-bottom: 0; }
+  .box.accent { background: var(--accent-soft); } .box.accent .t { color: var(--accent); }
+  .box.calm { background: var(--calm-soft); } .box.calm .t { color: var(--calm); }
+  .box.warn { background: var(--warn-soft); } .box.warn .t { color: var(--warn); }
+
+  .ladder { width: 100%; border-collapse: collapse; margin: 4px 0 14px; font-size: 16px; }
+  .ladder th, .ladder td { padding: 9px 4px; border-bottom: 1px solid var(--line); text-align: center; }
+  .ladder th { font-size: 11px; text-transform: uppercase; letter-spacing: .2px; color: var(--muted); font-weight: 600; }
+  .ladder td:first-child, .ladder th:first-child { text-align: left; }
+  .ladder td.d { white-space: nowrap; }
+  .ladder td.d small { color: var(--muted); font-size: 13px; }
+  .ladder tr.today td { background: var(--accent-soft); font-weight: 700; }
+  .ladder tr.today td.d::after { content: "сегодня"; display: table; margin-top: 3px; font-size: 11px; font-weight: 700;
+    color: #fff; background: var(--accent); border-radius: 99px; padding: 1px 7px; }
+  .ladder tr.past td { color: var(--muted); }
+
+  .btn { display: inline-flex; align-items: center; gap: 8px; text-decoration: none; background: var(--accent); color: #fff;
+    border: 0; border-radius: 12px; padding: 12px 16px; font: inherit; font-weight: 650; font-size: 16px; cursor: pointer; margin: 2px 0 14px; }
+  .btn.ghost { background: var(--chip); color: var(--ink); }
+
+  .copy { position: relative; background: var(--chip); border-radius: 12px; margin: 0 0 14px; }
+  .copy pre { margin: 0; padding: 13px 14px 50px; white-space: pre-wrap; word-break: break-word;
+    font: 14.5px/1.5 ui-monospace, "SF Mono", Menlo, Consolas, monospace; color: var(--ink); max-height: 340px; overflow: auto; }
+  .copy.short pre { padding-bottom: 50px; max-height: none; }
+  .copy button { position: absolute; right: 8px; bottom: 8px; border: 0; border-radius: 9px; padding: 7px 12px;
+    background: var(--accent); color: #fff; font: 600 14px/1.2 -apple-system, Roboto, sans-serif; cursor: pointer; }
+  .copy button.ok { background: var(--calm); }
+
+  details { border: 1px solid var(--line); border-radius: 14px; margin: 0 0 14px; }
+  details > summary { cursor: pointer; padding: 13px 15px; font-weight: 650; list-style: none; display: flex; justify-content: space-between; gap: 10px; }
+  details > summary::-webkit-details-marker { display: none; }
+  details > summary::after { content: "+"; color: var(--accent); font-size: 22px; line-height: 1; }
+  details[open] > summary::after { content: "−"; }
+  details > .in { padding: 0 15px 4px; }
+
+  .vid { display: flex; gap: 12px; align-items: flex-start; padding: 10px 0; border-bottom: 1px solid var(--line); }
+  .vid:last-child { border-bottom: 0; }
+  .vid .ic { flex: 0 0 auto; width: 38px; height: 38px; border-radius: 10px; background: var(--accent-soft); color: var(--accent);
+    display: grid; place-content: center; font-size: 15px; }
+  .vid .m { font-size: 14px; color: var(--muted); }
+
+  .sign { text-align: center; color: var(--muted); font-size: 14px; margin-top: 26px; }
+  .sign b { color: var(--ink); }
+  @media (max-width: 380px) { h1 { font-size: 29px; } .stat .v { font-size: 19px; } .ladder { font-size: 15px; } }
+</style>
+</head>
+<body>
+<div class="wrap">
+<header class="hero">
+  <div class="kicker">Взрывные алгоритмы · 4 поток · заголовки</div>
+  <h1>Как работают <em>заголовки рилсов</em></h1>
+  <p class="lead">Почему один заголовок открывают, а другой листают. Разбор настоящих рилсов на миллионы просмотров и на полторы тысячи, ошибки и проверка, по которой выбирать лучший из пятёрки агента</p>
+  <div class="stats"><div class="stat"><div class="v">1,2 млн</div><div class="l">просмотров с сильным заголовком</div></div><div class="stat"><div class="v">1,5 тыс</div><div class="l">та же картинка, слабый заголовок</div></div><div class="stat"><div class="v">7</div><div class="l">вопросов проверки перед выкладкой</div></div></div>
+</header>
+
+<nav class="toc" aria-label="Разделы"><a href="#zachem">Зачем</a><a href="#pravilo">Главное правило</a><a href="#sostav">Из чего собран</a><a href="#ugly">5 углов</a><a href="#oshibki">Ошибки</a><a href="#skobki">Скобки</a><a href="#melochi">Мелочи</a><a href="#video">На видео</a><a href="#proverka">Проверка</a><a href="#formuly">23 формулы</a></nav>
+
+<section id="zachem">
+  <h2><span class="n">1</span>Зачем вообще заголовок</h2>
+<p>Рилс проходит три ступеньки, и на каждой человек может уйти</p>
+<ol class="steps"><li><b>Картинка цепляет взгляд.</b> Палец замедлился на ролике</li><li><b>Заголовок решает, открыть ли описание.</b> Тут человек за секунду выбирает: читать или листать дальше</li><li><b>Описание даёт пользу.</b> Если открыл и дочитал, рилс уходит в рекомендации</li></ol>
+<p>Я на зуме говорил: <b>90% успеха - это сам заголовок и сам текст.</b> Видео под ним - просто видеоряд, чтобы люди привыкали к вашему лицу и узнавали вас</p>
+<div class="box accent"><div class="t">Одна и та же картинка: 1,2 млн и 1,5 тыс</div><p>Один блогер выложил ролик с заголовком «Фильмы, после которых люди увольнялись, разводились и меняли жизнь за ночь (не смотри один):» и получил 1,2 млн просмотров. Через неделю на ту же самую картинку поставил «Мозг - это не разум. Разум - не физическое тело. Он живёт за пределами материи...» и получил полторы тысячи. Картинка одна, разница только в заголовке</p></div>
+</section>
+
+<section id="pravilo">
+  <h2><span class="n">2</span>Главное правило: недосказанность</h2>
+<p>Заголовок должен быть недосказанным. Он вызывает интерес, и человек стоит перед выбором: <b>открыть описание гораздо интереснее, чем пролистнуть</b></p>
+<div class="box accent"><div class="t">После 35 лицо плывёт не от возраста, а от этого</div><p>Это заголовок, который агент написал нам на зуме для косметологии. А от чего «от этого»? Ну-ка, ну-ка. Каждая женщина после 35, которая смотрит в зеркало и видит, что кожа уже не такая упругая, откроет описание, чтобы узнать</p></div>
+<p>Проверка простая: <b>пролистать должно быть страшнее, чем потратить 30 секунд на описание.</b> Человек боится упустить что-то важное про себя, своё здоровье, свои отношения, свои деньги</p>
+<div class="box warn"><div class="t">Ответ в заголовке убивает интерес</div><p>«Чем больше игрушек у ребенка - тем хуже он развивается:» Человек прочитал, получил ответ, согласился или нет и листает дальше. Открывать описание незачем. Спросите себя про каждый заголовок: <b>можно ли его пролистать, уже получив ответ?</b> Если да, ответ надо спрятать</p></div>
+</section>
+
+<section id="sostav">
+  <h2><span class="n">3</span>Из чего собран заголовок</h2>
+<p>Разберём на одном заголовке, который у меня в эталонах:</p>
+<div class="box accent"><div class="t">ЭТОТ копеечный овощ чистит сосуды ЛУЧШЕ капельницы (кардиологи офигели):</div><p>Короткий, понятный с первого раза, ответа нет. Смотрим, из чего он состоит</p></div>
+<ol class="steps"><li><b>Крючок.</b> «ЭТОТ копеечный овощ» - конкретная вещь, которую можно представить, но какая именно, не сказано</li><li><b>Конфликт с привычным.</b> «Чистит сосуды ЛУЧШЕ капельницы» - простая вещь побеждает то, во что все верят</li><li><b>1-2 слова капсом.</b> ЭТОТ и ЛУЧШЕ - глаз цепляется за них первыми. Капсом выделяйте главное, а не полстроки</li><li><b>Скобка-добивка.</b> «(кардиологи офигели)» - реакция и живое разговорное слово. Скобка усиливает интригу и не подсказывает ответ</li><li><b>Двоеточие в конце.</b> Значит, продолжение в описании</li></ol>
+<h3>Какие бывают крючки</h3>
+<ul><li><b>Цифра, процент, срок:</b> «90% людей», «30 дней», «за 3 дня»</li><li><b>Персонаж из этой темы:</b> врач говорит про здоровье, инструктор по вождению про скорость, косметолог про кожу</li><li><b>Осязаемая деталь:</b> «копеечный овощ», «одно движение», «одна фраза»</li><li><b>Личная история с действием и ставкой:</b> «Я пил воду ТАКИМ способом 30 дней (анализы крови изменились так, что врач был в ШОКЕ):»</li></ul>
+<div class="box calm"><div class="t">Длина</div><p>8-12 слов до скобки, вместе со скобкой не больше 18. Длиннее до конца никто не дочитает</p></div>
+</section>
+
+<section id="ugly">
+  <h2><span class="n">4</span>5 углов, которые залетают</h2>
+<p>Один психолог-блогер разобрал 100-120 своих рилсов и вывел пять углов, на которые заходят миллионы. Все заголовки ниже - его настоящие ролики</p>
+<div class="box accent"><div class="t">1. Удар по тому, кем человек себя считает</div><p>Читатель думает: «если это правда, со мной что-то не так». Заголовок заставляет усомниться в себе, своей роли, своём выборе. Пример: «Успешные мужчины никогда не ищут женщину, которая «понимает» - они ищут ВОТ ТАКУЮ (и ей легко стать)»</p></div>
+<div class="box accent"><div class="t">2. Привычный образ против реальности</div><p>Все думают одно, а на деле другое. «Врачи молчат: холодный душ не «закаляет», а запускает НЕОБРАТИМУЮ реакцию в сосудах (и вот что реально происходит)» - 294 тыс. просмотров. Все думали, что холодный душ полезен, а тут оказывается</p></div>
+<div class="box accent"><div class="t">3. Жёсткая правда и обещание ясности</div><p>Человеку больно, но он чувствует: «зато я наконец пойму». «Женская неухоженность глазами мужчины: вот что мы считываем первым (и это не про причёску)»</p></div>
+<div class="box accent"><div class="t">4. Готовая фраза или ход</div><p>Мозг видит выгоду, которую можно применить прямо сейчас. «После этих 5 фраз уважение пропадает мгновенно (и последняя - самая жёсткая)». «Если мужчину не любил отец - он проявляет себя в отношениях вот так...» - 447 тыс.</p></div>
+<div class="box accent"><div class="t">5. История с высокой ставкой</div><p>Сюжет, где на кону жизнь, брак, здоровье. «Я ложился спать в 4 утра КАЖДЫЙ день и не понимал, что ПОГИБАЮ (последствия не для слабонервных)» - больше 16 млн. «Мужчина, проживший 37 лет без измен, сболтнул за столом фразу, от которой у женщин мурашки (и ступор у психологов)»</p></div>
+<h3>Ещё три залетевших и почему</h3>
+<ul><li>«Раньше я не знала, что капельница железа может привести к ОНКОЛОГИИ (дура)» - <b>33 млн.</b> Резко и конкретно, страшное слово капсом, касается почти каждой женщины, а на видео девушка под капельницей</li><li>«90% людей пахнут старостью из-за одного забытого места на теле (и душ тут не спасает)» - <b>больше 17 млн.</b> «90%» значит каждый, место не названо, скобка закрывает привычное решение. В комментариях спорили, и это толкнуло ролик дальше</li><li>«Психолог на тренинге сказал: когда тебя ОБВИНЯЮТ, не оправдывайся - задай один вопрос (и это гасит даже самый тяжёлый конфликт)» - <b>462 тыс.</b> Боль, которая есть у всех, и простое решение: всего один вопрос</li></ul>
+</section>
+
+<section id="oshibki">
+  <h2><span class="n">5</span>7 ошибок, из-за которых листают</h2>
+<p>Все примеры ниже - настоящие заголовки, которые не залетели</p>
+<div class="box warn"><div class="t">1. Ответ уже в заголовке</div><p>«Уральский учитель проболтался: ЖИР тает за 5 дней - просто выкинь ОВСЯНКУ с утра (народный рецепт)». Узнал про овсянку - открывать незачем. <b>Как исправить:</b> «просто выкинь ЭТОТ продукт из холодильника». Ответ прячем за словами ЭТОТ, ВОТ ТАК, ОДНО движение. Скобка тоже не должна выдавать ответ: «(окружение, стабильный доход, мечта)» выдала все три шага разом</p></div>
+<div class="box warn"><div class="t">2. Два смысла в одном заголовке</div><p>«Мама не надоедает - она просто хочет знать, что ты жив». Мысль законченная, спорить и узнавать нечего, а следом идёт вторая. <b>Как исправить:</b> выберите боль одной стороны. Либо мама тревожится, либо тебя душит её контроль, и пообещайте решение</p></div>
+<div class="box warn"><div class="t">3. Непонятно с первого раза</div><p>«Трихолог на приеме ОБМОЛВИЛСЯ о привычке, от которой утром тупеет голова» - тупеет это болит или глупеет? «Нейробиолог в подвале университета перестал анализировать обиды...» - сцену невозможно представить. В ленте никто не будет перечитывать. <b>Как исправить:</b> заголовок должен сразу складываться в картинку, как кадр из фильма</p></div>
+<div class="box warn"><div class="t">4. Персонаж не из этой темы</div><p>«Слесарь из Брюсселя перед сном меняет один ЖЕСТ - и за 3 дня исчезает вечерний провал». Текст психолога в устах слесаря, доверия ноль. <b>Как исправить:</b> персонаж говорит про своё: механик - про машину, косметолог - про кожу. Профессия понятная, без выдуманных вроде «алгоритмист»</p></div>
+<div class="box warn"><div class="t">5. Абстракция и тон учителя</div><p>«Психолог в старом доме сказал: берите то, что судьба дает в ТИШИНЕ - шум мира крадет чудо». Ни о чём и обо всём, человек не видит в этом себя. «Убеждения людей из Древнего Египта, которые до сих пор работают» звучит как лекция. <b>Как исправить:</b> бытовая ситуация и шкурный интерес. Вместо Египта - «5 принципов финансового благополучия фараонов»</p></div>
+<div class="box warn"><div class="t">6. Нет врага и ставки</div><p>«Не строй иллюзий: мужчина остаётся там, где легко дышать, а не красиво говорят». Правильно, умно, и что? Ни боли, ни выгоды. «Если тебя НЕ УВАЖАЮТ - значит, ты САМ(А) разрешил(а) это делать» - виноват сам читатель, цепляться не за что. <b>Как исправить:</b> дайте врага. Это привычка, подход или система, а не сам человек и не целая группа людей</p></div>
+<div class="box warn"><div class="t">7. «Мои инсайты» от незнакомого человека</div><p>«Мои 5 инсайтов о спорте, которые не расскажут в книгах». Зритель вас пока не знает, почему ему важны ваши инсайты? <b>Как исправить:</b> личная история работает только с действием, сроком и ставкой: «Я пил воду ТАКИМ способом 30 дней...»</p></div>
+<div class="box calm"><div class="t">Про «психолог объяснил:»</div><p>Специалист в начале - только один из крючков, а не обязательная часть. Схема «психолог предупредил / эндокринолог объяснил:» уже приелась. В пятёрке заголовков она бывает максимум один раз, остальные на цифре, сцене, истории, парадоксе. И без городов ради экзотики: «эндокринолог из Бостона» доверия не добавляет</p></div>
+</section>
+
+<section id="skobki">
+  <h2><span class="n">6</span>Скобка-добивка</h2>
+<p>Скобка в конце - последний толчок открыть описание. Рабочие образцы из разборов:</p>
+<ul><li><b>«(и его делают почти все)»</b>, <b>«(и ты даже не замечаешь)»</b> - касается каждого, читатель проверяет себя</li><li><b>«(и последняя - самая жёсткая)»</b> - заставляет дочитать список до конца</li><li><b>«(и душ тут не спасает)»</b>, <b>«(иначе пользы ноль)»</b> - закрывает привычное решение, значит, есть другое</li><li><b>«(водители офигеют, когда узнают почему)»</b> - реакция людей и живое слово</li><li><b>«(5 признаков, проверь себя)»</b> - конкретика и маленькое число</li><li><b>«(не смотри один)»</b> - лёгкий запрет, который хочется нарушить</li></ul>
+<div class="box warn"><div class="t">Слабые скобки</div><p>«(сцена как из антиутопии)», «(и вот почему это происходит на самом деле)» - пустые слова, тянуть открыть нечему. Такую скобку лучше заменить на «5 признаков, проверь себя»</p></div>
+</section>
+
+<section id="melochi">
+  <h2><span class="n">7</span>Мелочи, которые решают</h2>
+<ul><li><b>Маленькие цифры: 3, 5, «одно».</b> Пять установок прочитать легко, тридцать пугают. «Одно движение может сорвать тромб» - узнать всего одно, а на кону здоровье</li><li><b>Язык кухни.</b> Пишите так, как люди говорят друг с другом: «мужчина» → «мужик», «удивятся» → «офигеют», «сболтнул», «проболтался». Нейросеть сама так не пишет, дописывайте руками</li><li><b>Узкая аудитория.</b> «Эти 5 привычек заставляют мужчину отдаляться» набрал 18 тыс., а мог быть миллионником. «5 привычек ЖЕНЩИНЫ» точнее бьёт в того, кто читает</li><li><b>Стоп-слова.</b> Если маскируете слово, которое режет Instagram, - только его и одним способом на весь текст. Звёздочка в одном слове и большая буква посреди другого («пл*тит», «дохОда») - мозг каждый раз спотыкается, читать тяжело</li><li><b>Без длинного тире.</b> Длинное тире - нейросетевое клише, сразу видно, что писала нейронка, и ценность текста падает. Меняйте на короткое</li></ul>
+</section>
+
+<section id="video">
+  <h2><span class="n">8</span>Как заголовок выглядит на видео</h2>
+<ul><li><b>Не пёстрый, как попугай.</b> Стандартные чёрно-белые, иногда можно добавить один цвет. Яркие фиолетовые и прочее не надо. Самое главное - понятный и читабельный</li><li><b>Шрифт без засечек.</b> Красный текст с обводкой на пёстром фоне не читается, такой рилс листают</li><li><b>Видео про то же, что заголовок.</b> Заголовок про капельницу - на видео девушка под капельницей (33 млн). Про родителей и детей - в кадре ребёнок. Когда видео совпадает с заголовком, описание читают чаще</li><li><b>Лицо ближе.</b> Когда вы далеко или спиной, эмоций не видно</li><li><b>Пробуйте разное.</b> Если у вас везде чёрная рамка, попробуйте белую, меняйте стиль</li></ul>
+<p>В <a href="https://ivan-loginov.ru/n-1007f1c43286/#rilsovaya">Рилсовой</a> рамки сразу показывают, где заголовок не перекроют ник, подпись и кнопки Instagram</p>
+</section>
+
+<section id="proverka">
+  <h2><span class="n">9</span>Проверка перед выкладкой</h2>
+<p>Агент даёт пять заголовков. Прогоните каждый по семи вопросам, и выберите тот, где на все ответ «да»</p>
+<ol class="steps"><li><b>Понятно с первого прочтения</b> и сразу складывается в картинку?</li><li><b>Ответ спрятан?</b> Пролистать, уже узнав разгадку, нельзя</li><li><b>Один смысл</b>, а не два законченных утверждения?</li><li><b>Читатель узнаёт себя?</b> Есть его боль или выгода, свой шкурный интерес</li><li><b>Есть конфликт?</b> Привычное против реальности, враг - привычка или подход</li><li><b>Есть конкретный крючок?</b> Цифра, срок, персонаж из этой темы или деталь</li><li><b>Звучит по-человечески?</b> Язык кухни, без длинного тире и нейрослов</li></ol>
+<h3>Если заголовок не проходит</h3>
+<p>Скопируйте нужную фразу и отправьте агенту в тот же чат:</p>
+<div class="copy short"><pre id="c1">В заголовке уже всё рассказано. Где интрига, где хук, зачем мне читать текст? Перепиши</pre><button type="button" data-copy="c1">Скопировать</button></div>
+<div class="copy short"><pre id="c2">Перепиши заголовок проще: чтобы он был понятен с первого прочтения и сразу складывался в картинку. Пиши так, как люди говорят на кухне</pre><button type="button" data-copy="c2">Скопировать</button></div>
+<div class="copy short"><pre id="c3">Сделай скобку в конце сильнее: она не выдаёт ответ, а добивает интригу. Дай 5 вариантов</pre><button type="button" data-copy="c3">Скопировать</button></div>
+<h3>Тренажёр: найдите ошибку</h3>
+<p>Подумайте сами, потом нажмите и сверьтесь</p>
+<details><summary>«Психолог из ВЕНЫ заметил: сильных женщин пытаются задеть чаще остальных (и вот почему это происходит на самом деле):» - что не так?</summary><div class="in"><p>Общие слова: нет проблемы, нет конфликта, читатель не видит себя. Скобка пустая, «Вена» доверия не добавляет</p></div></details>
+<details><summary>«Хочешь вырастить ребёнка без тревожности и агрессии? Заведи ему ЖИВОТНОЕ (один пушистый друг заменяет 10 книг по воспитанию)» - что не так?</summary><div class="in"><p>Ответ прямо в заголовке: заведи животное. Всё понятно, открывать описание незачем</p></div></details>
+<details><summary>«Бариста из Новосибирска обмолвился: &quot;Если бы я остался без денег, друзей и формы - я бы выжил только с этими тремя шагами&quot; (окружение, стабильный доход, мечта):» - что не так?</summary><div class="in"><p>Две ошибки. Бариста не тот человек, которому верят про выживание с нуля, лучше предприниматель. А скобка выдала все три шага</p></div></details>
+<details><summary>«Следователь по делам пропавших рассказала, что 90% исчезновений связаны не с побегами, а с одной бытовой привычкой (и она есть почти у каждого):» - что не так?</summary><div class="in"><p>Почти хорошо, но размыто: пропавших кого - взрослых или детей? Сузьте аудиторию, а скобку усильте: «5 признаков, проверь себя»</p></div></details>
+<details><summary>«ВРАЧ из аэропорта признался: после ПЕРЕЛЁТА одно ДВИЖЕНИЕ может сорвать ТРОМБ (и его делают почти все):» - что не так?</summary><div class="in"><p>Тут ошибки нет, это сильный заголовок. Врач из темы, узнать надо всего одно движение, на кону здоровье, а скобка говорит: возможно, и ты его делаешь</p></div></details>
+<a class="btn" href="https://chatgpt.com/g/g-6adba27803f4819182a4dca5b94a5e23-virusnye-zagolovki-i-opisaniia-reels-versiia-1">Открыть агента для заголовков →</a>
+<p>Как с ним работать, на <a href="https://ivan-loginov.ru/n-b89d43addfe8/">странице агента</a></p>
+</section>
+
+<section id="formuly">
+  <h2><span class="n">10</span>23 формулы виральности</h2>
+<p>Агент пишет каждый из пяти заголовков по своей формуле. Формула - это угол, с которого вы заходите в тему. На зуме агент взял косметологию и выдал «Косметологи видят по шее, кто врёт про уход 35+»: тема привычная, а угол неожиданный. Вот все 23 угла, из которых агент собирает заголовки:</p>
+<ol class="steps"><li><b>Биологический ультиматум</b> - гормоны управляют тобой</li><li><b>Теневой авторитет</b> - врачи, спецслужбы, миллиардеры знают правду</li><li><b>Инверсия реальности</b> - полезное вредно, опасное спасает</li><li><b>Социальный рентген</b> - таксисты видят всё</li><li><b>Системный взлом</b> - как обойти банки и систему</li><li><b>Родовой сценарий</b> - бабушкины методы</li><li><b>Скрытая цена комфорта</b> - удобство убивает</li><li><b>Детектор лжи</b> - микрожесты</li><li><b>Элитарный код</b> - привычки богатых</li><li><b>Парадокс риска</b> - скорость спасает</li><li><b>Мировой инсайт</b> - Япония, Китай, Европа</li><li><b>Абсурдный ритуал</b> - картошка под подушкой</li><li><b>Ловушка ожиданий</b> - дети не подарок</li><li><b>Ошибка поколения</b> - мы первые, кто...</li><li><b>Бизнес-парадокс</b> - убытки приносят прибыль</li><li><b>Язык власти</b> - фразы, ломающие оппонента</li><li><b>Скрытый сигнал тела</b> - симптомы до диагноза</li><li><b>Цифровой наркотик</b> - влияние экранов</li><li><b>Сексуальный магнетизм</b> - холод и дистанция</li><li><b>Финансовый цинизм</b> - мелкие траты</li><li><b>Квантовый переход</b> - смена личности</li><li><b>Эмоциональная кастрация</b> - мужчины без отцов</li><li><b>Диагноз по деталям</b> - о чём говорят вещи</li></ol>
+</section>
+
+<p class="sign">Пишите заголовки, проверяйте по семи вопросам и присылайте в чат, что залетело<br><b>Иван Логинов</b> · Взрывные алгоритмы</p>
+</div>
+
+<script>
+(function () {
+  var KEY = "zagolovki-4potok-2410";
+  var state = {};
+  try { state = JSON.parse(localStorage.getItem(KEY) || "{}") || {}; } catch (e) { state = {}; }
+  var boxes = Array.prototype.slice.call(document.querySelectorAll(".check input"));
+  function paint() {
+    var done = boxes.filter(function (b) { return b.checked; }).length;
+    if (!boxes.length) return;
+    document.getElementById("pr-b").style.width = (done / boxes.length * 100) + "%";
+    document.getElementById("pr-t").textContent = done === 0 ? "Отмечайте галочками, что сделали"
+      : done === boxes.length ? "Всё сделано, вы огонь 🔥" : "Сделано " + done + " из " + boxes.length;
+  }
+  boxes.forEach(function (b) {
+    b.checked = !!state[b.dataset.k];
+    b.addEventListener("change", function () {
+      state[b.dataset.k] = b.checked;
+      try { localStorage.setItem(KEY, JSON.stringify(state)); } catch (e) {}
+      paint();
+    });
+  });
+  paint();
+
+  var d = new Date();
+  var today = d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0") + "-" + String(d.getDate()).padStart(2, "0");
+  document.querySelectorAll(".ladder tbody tr").forEach(function (tr) {
+    if (tr.dataset.d === today) tr.classList.add("today");
+    else if (tr.dataset.d < today) tr.classList.add("past");
+  });
+
+  function fallbackCopy(text) {
+    var ta = document.createElement("textarea");
+    ta.value = text; ta.setAttribute("readonly", ""); ta.style.position = "fixed"; ta.style.opacity = "0";
+    document.body.appendChild(ta); ta.select();
+    try { document.execCommand("copy"); } catch (e) {}
+    document.body.removeChild(ta);
+  }
+  document.querySelectorAll("[data-copy]").forEach(function (btn) {
+    btn.addEventListener("click", function () {
+      var text = document.getElementById(btn.dataset.copy).textContent;
+      var ok = function () {
+        btn.textContent = "Скопировано ✓"; btn.classList.add("ok");
+        setTimeout(function () { btn.textContent = "Скопировать"; btn.classList.remove("ok"); }, 1800);
+      };
+      if (navigator.clipboard && window.isSecureContext) {
+        navigator.clipboard.writeText(text).then(ok, function () { fallbackCopy(text); ok(); });
+      } else { fallbackCopy(text); ok(); }
+    });
+  });
+})();
+</script>
+</body>
+</html>
