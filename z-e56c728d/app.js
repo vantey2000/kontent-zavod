@@ -1891,8 +1891,11 @@ function uqBox(key) {
 // генерация = собранное видео или уникализация одного окошка; повтор того же текста или ролика бесплатен (номер g)
 // счёт живёт на сервере по аккаунту Telegram: перезаход, другой браузер и очистка телефона его не обнуляют
 // на этом компьютере (127.0.0.1) вход не нужен, чтобы проверки редактора и уникализатора шли без сервера; acc=1 в адресе включает его
+// тестовые дни (Иван 24.10 23:35): вход, счёт и оплата выключены, Рилсовая открыта всем без входа.
+// Вернуть монетизацию: ACC_OPEN = false здесь и ACCESS_MODE = "strict" в uniq-api/wrangler.toml (acc=1 в адресе включает вход и сейчас, для проверок)
+const ACC_OPEN = true;
 const ACC = { tk: '', me: null, dv: '', vf: '', wait: null, n: '', url: '', poll: 0,
-  on: !(/^(127\.0\.0\.1|localhost)$/.test(location.hostname) && !/[?&]acc=1\b/.test(location.search)) };
+  on: /[?&]acc=1\b/.test(location.search) || (!ACC_OPEN && !/^(127\.0\.0\.1|localhost)$/.test(location.hostname)) };
 try {
   ACC.tk = localStorage.getItem('rs-tk') || '';
   ACC.dv = localStorage.getItem('rs-dv') || '';
@@ -1908,7 +1911,7 @@ function accHash(s) {
 }
 const accNorm = (t) => String(t || '').trim().replace(/\s+/g, ' ');
 function accGid(text) { return 'u' + accHash(accNorm(text)); }
-const accTk = () => (ACC.tk ? { tk: ACC.tk } : {});
+const accTk = () => (ACC.on && ACC.tk ? { tk: ACC.tk } : {});
 
 async function accPost(path, obj) {
   try {
