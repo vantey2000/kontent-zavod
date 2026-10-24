@@ -1470,7 +1470,8 @@ const UNIQ = (() => {
   return { words, matched, pct, chunks, locate, guard, spread, pool, pick, build, voiceOk, splice, dashes, unwrap, trimTags };
 })();
 
-// экран уникализатора: ссылка → текст донора → плашка N% → результат с подсветкой (воркер uniq-api, см. его шапку)
+// экран уникализатора: ссылка → текст донора → в каждом окошке (заголовок, текст) плашка N% → результат с подсветкой
+// на месте поля, полоса процента поверх окошка, пока работает нейросеть (воркер uniq-api, см. его шапку)
 // подмена воркера только для тестов на этом компьютере: чужой адрес из ссылки не принимается
 const UQ_API = (/^http:\/\/127\.0\.0\.1:\d+$/.exec(new URLSearchParams(location.search).get('uniqapi') || '') || ['https://uniq-api.aivan-loginov.workers.dev'])[0];
 const UQ_PCTS = [5, 10, 15, 20, 30];
@@ -1485,9 +1486,8 @@ const UQ_ERR = {
 };
 const UQ_VOICES = [['o', 'Как в оригинале'], ['m', 'От мужчины'], ['f', 'От женщины'], ['n', 'Со стороны']];
 const UQ_VOICE_NAME = { m: 'от мужского лица', f: 'от женского лица', n: 'со стороны' };
-const UQ = { pct: 15, voice: 'o', dash: true, v: 0, F: {}, busy: false };
+const UQ = { voice: 'o', dash: true, B: {} };          // B.title, B.text = окошки (uqBox)
 try {
-  const p = +localStorage.getItem('uq-pct'); if (UQ_PCTS.includes(p)) UQ.pct = p;
   const w = localStorage.getItem('uq-voice'); if (UQ_VOICES.some(([id]) => id === w)) UQ.voice = w;
   if (localStorage.getItem('uq-dash') === '0') UQ.dash = false;
 } catch (e) {}
@@ -1519,17 +1519,158 @@ async function uqMap(items, n, fn) {
 }
 
 const uqSt = (id, text, cls) => { const el = $(id); el.textContent = text; el.className = 'hint' + (cls ? ' ' + cls : ''); };
+const uqBoxSt = (B, text, cls) => { B.st.textContent = text; B.st.className = 'hint uqst' + (cls ? ' ' + cls : ''); };
 const uqDraft = () => { try { localStorage.setItem('uq-draft', JSON.stringify({ url: $('uqUrl').value, title: $('uqTitle').value, text: $('uqText').value })); } catch (e) {} };
 
-function uqClear() { UQ.F = {}; $('uqOutTitle').hidden = true; $('uqOutText').hidden = true; $('uqNote').hidden = true; }
+// полоса процента: у этапа своя доля полосы, внутри неё доля растёт по времени (оценка по длине кусков) и по готовым кускам
+const uqEta = (t) => 1500 + 18 * t.length;           // мс на запрос, замер 24.10: заголовок 1,5 с, абзац 270 знаков 6,4 с
+function uqStage(B, label, lo, hi, texts) {
+  const eta = texts.map(uqEta), sum = eta.reduce((a, b) => a + b, 0) || 1;
+  B.P = { label, lo, hi, t0: Date.now(), E: Math.max(sum / 4, ...eta, 1), sum, done: 0 };
+}
+function uqShow(B) {
+  const P = B.P;
+  if (P) {
+    const f = Math.min(0.97, Math.max(P.done / P.sum, 1 - Math.exp(-(Date.now() - P.t0) / P.E)));
+    B.shown = Math.max(B.shown, Math.round(P.lo + (P.hi - P.lo) * f));
+  }
+  B.load.querySelector('b').textContent = B.shown + '%';
+  B.load.querySelector('i').style.width = B.shown + '%';
+  B.load.querySelector('span').textContent = P ? P.label + '…' : 'Уникализирую…';
+}
+function uqBusy(B, on) {
+  B.busy = on; B.area.readOnly = on; B.again.disabled = on;
+  clearInterval(B.timer); clearTimeout(B.hide);
+  if (on) { B.shown = 0; B.P = null; B.load.hidden = false; uqShow(B); B.timer = setInterval(() => uqShow(B), 150); }
+  else B.load.hidden = true;
+}
+
+// правки текста окошка: куски параллельно, найденные места в тексте; повторный вызов с другим v добирает правки
+async function uqEdits(B, text, v, label, lo, hi) {
+  const ch = UNIQ.chunks(text);
+  uqStage(B, label, lo, hi, ch.map((c) => c.text));
+  const got = await uqMap(ch, 4, (c) => uqCall('/uniq', { text: c.text, v }).then((r) => { B.P.done += uqEta(c.text); return r; }));
+  return ch.flatMap((c, i) => UNIQ.locate(text, c, got[i].edits));
+}
+const uqMax = (F) => UNIQ.build(F.src, F.pool, new Set(F.pool.map((_, i) => i))).pct;
+// плашка считается от оригинала: то, что уже изменил перевод в другое лицо, из цели правок вычитается
+const uqTarget = (B, F) => Math.max(0, B.pct - F.basePct);
+
+// весь текст в нужное лицо по кускам; негодный перевод куска (потерял число, переписал больше половины) = оригинал куска
+async function uqVoice(B, text, who) {
+  const ch = UNIQ.chunks(text);
+  uqStage(B, 'Перевожу ' + UQ_VOICE_NAME[who], 0, 35, ch.map((c) => c.text));
+  const outs = await uqMap(ch, 4, (c) => uqCall('/voice', { text: c.text, voice: who }).then((r) => { B.P.done += uqEta(c.text); return r.text; }));
+  return UNIQ.splice(text, ch, outs);
+}
+
+// длинному тексту правок одного варианта может не хватить на плашку: второй заход моделью с другим v
+async function uqTopUp(B, F, lo, stale) {
+  if (F.topped || UNIQ.words(F.src).length < 60 || uqMax(F) >= uqTarget(B, F) + 0.5) return;
+  F.topped = true;
+  try {
+    const more = (await uqEdits(B, F.src, F.v + 25, 'Добираю правки', lo, 99)).filter((e) => !F.located.some((o) => e.s < o.e && o.s < e.e));
+    if (stale()) return;
+    F.located = F.located.concat(more).sort((a, b) => a.s - b.s);
+    F.pool = UNIQ.pool(F.src, F.located); F.off = new Set();
+  } catch (e) { F.err = uqMsg(e); }
+}
+const uqShort = (B, F) => !F.topped && UNIQ.words(F.src).length >= 60 && uqMax(F) < uqTarget(B, F) + 0.5;
+
+// одна обработка окошка за раз; «Очистить» во время работы отменяет её результат (номер gen), нажатие голоса, тире
+// или «Другой вариант» во время работы выполняется сразу после
+async function uqWork(B, job) {
+  const gen = ++B.gen, stale = () => gen !== B.gen;
+  uqBusy(B, true); uqBoxSt(B, '');
+  let err = '';
+  try { await job(stale); } catch (e) { err = uqMsg(e); }
+  if (stale()) return;
+  uqBusy(B, false);
+  if (!err) { B.load.hidden = false; B.P = null; B.shown = 100; uqShow(B); B.load.querySelector('span').textContent = 'Готово'; B.hide = setTimeout(() => { B.load.hidden = true; }, 350); }
+  uqRender(B);
+  if (err) uqBoxSt(B, err, 'err');
+  const p = B.pending; B.pending = null;
+  if (p) uqRun(B, p === 'next');
+  else if (B.F && uqShort(B, B.F)) uqWork(B, (s) => uqTopUp(B, B.F, 0, s));   // плашку подняли во время обработки
+}
+
+function uqRun(B, nextVariant) {
+  if (B.busy) { B.pending = nextVariant || B.pending === 'next' ? 'next' : 'same'; uqBoxSt(B, 'Пересоберу сразу после текущей обработки…'); return; }
+  const raw = B.area.value.trim();
+  if (!raw) return uqBoxSt(B, B.key === 'title' ? 'Сначала впиши заголовок или забери его по ссылке' : 'Сначала вставь текст или забери его по ссылке', 'err');
+  if (nextVariant) B.v = (B.v + 1) % 25;
+  return uqWork(B, async (stale) => {
+    const orig = UQ.dash ? UNIQ.dashes(raw) : raw;   // тире меняются до правок: доля слов от них не растёт
+    const voice = UQ.voice, src = voice !== 'o' ? await uqVoice(B, orig, voice) : orig;
+    if (stale()) return;
+    const located = await uqEdits(B, src, B.v, 'Подбираю правки', voice !== 'o' ? 35 : 0, 88);
+    if (stale()) return;
+    const F = { raw, orig, src, basePct: UNIQ.pct(orig, src), voice, located, pool: UNIQ.pool(src, located), off: new Set(), v: B.v };
+    await uqTopUp(B, F, 88, stale);
+    if (!stale()) B.F = F;
+  });
+}
+
+// плашка: первый раз запускает уникализацию окошка, дальше переключает готовые правки мгновенно
+function uqPick(B, p) {
+  B.pct = p; press(B.pcts, 'data-pct', String(p));
+  if (B.busy) return;                                // во время обработки результат соберётся сразу под новую плашку
+  if (!B.F) return uqRun(B, false);
+  uqRender(B);
+  if (uqShort(B, B.F)) uqWork(B, (s) => uqTopUp(B, B.F, 0, s));
+}
+
+const uqFmt = (x) => x.toFixed(1).replace('.', ',');
+function uqRender(B) {
+  const F = B.F;
+  B.area.hidden = !!F; B.res.hidden = !F; B.again.hidden = !F;
+  if (!F) return;
+  F.res = UNIQ.build(F.src, F.pool, UNIQ.pick(F.src, F.pool, uqTarget(B, F)), F.off);
+  F.res.pct = UNIQ.pct(F.orig, F.res.text);
+  const el = B.res; el.textContent = '';
+  for (const p of F.res.parts) {
+    if (p.i === undefined) { el.append(p.text); continue; }
+    const m = document.createElement('mark');
+    m.textContent = p.text; m.className = p.changed ? '' : 'back'; m.tabIndex = 0; m.setAttribute('role', 'button');
+    m.title = p.changed ? 'Было: ' + p.orig + '. Нажми, чтобы вернуть' : 'Нажми, чтобы снова изменить';
+    const flip = () => { if (F.off.has(p.i)) F.off.delete(p.i); else F.off.add(p.i); uqRender(B); };
+    m.addEventListener('click', flip);
+    m.addEventListener('keydown', (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); flip(); } });
+    el.append(m);
+  }
+  const long = UNIQ.words(F.src).length >= 60;       // в коротком заголовке каждое слово = большой шаг доли, подсказка там шум
+  const say = [`Изменено ${uqFmt(F.res.pct)}% слов`];
+  if (F.voice !== 'o') say.push(F.basePct > 0.05 ? `Из них ${uqFmt(F.basePct)}% - перевод ${UQ_VOICE_NAME[F.voice]}, он не подсвечен` : 'Рассказчика «я» в тексте нет, лицо менять не пришлось');
+  if (!F.pool.length) say.push('Правок для этого текста не нашлось, нажми «Другой вариант»');
+  else if (long && F.res.pct + 2 < B.pct) say.push('Больше правок в этом варианте нет, нажми «Другой вариант»');
+  if (F.res.parts.some((p) => p.i !== undefined)) say.push('Подсвечено изменённое: нажми на кусок, чтобы вернуть оригинал');
+  if (F.err) say.push(F.err);
+  uqBoxSt(B, say.join('. '));
+}
+
+// окошко снова пустое поле без результата: новый текст по ссылке, скрин, «Очистить»
+function uqReset(B) {
+  B.gen++; B.pending = null; uqBusy(B, false); B.F = null; B.pct = 0;
+  press(B.pcts, 'data-pct', ''); uqRender(B); uqBoxSt(B, B.hint0);
+}
+
+async function uqCopy(B, btn) {
+  const t = B.F && B.F.res ? B.F.res.text : B.area.value.trim();
+  if (!t) return uqBoxSt(B, 'Копировать пока нечего', 'err');
+  // буфер обмена бывает недоступен или висит (встроенные браузеры): через секунду запасной способ
+  const ok = await Promise.race([navigator.clipboard ? navigator.clipboard.writeText(t).then(() => true, () => false) : false, new Promise((r) => setTimeout(() => r(false), 1000))]);
+  if (!ok) { const a = document.createElement('textarea'); a.value = t; document.body.appendChild(a); a.select(); document.execCommand('copy'); a.remove(); }
+  btn.textContent = 'Скопировано'; clearTimeout(btn.back); btn.back = setTimeout(() => { btn.textContent = 'Скопировать'; }, 1500);
+}
 
 async function uqFetch() {
   const url = $('uqUrl').value.trim();
   if (!url) return uqSt('uqFetchSt', 'Вставь ссылку на рилс или карусель', 'err');
-  $('uqFetch').disabled = true; uqClear();
+  $('uqFetch').disabled = true;
   try {
     uqSt('uqFetchSt', 'Забираю пост…');
     const p = await uqCall('/fetch', { url });
+    uqReset(UQ.B.title); uqReset(UQ.B.text);
     if (p.kind === 'reel') {
       $('uqTitleBox').hidden = false; $('uqTextLabel').textContent = 'Текст под рилсом';
       $('uqText').value = UNIQ.trimTags(p.caption); $('uqTitle').value = '';
@@ -1556,112 +1697,17 @@ async function uqFetch() {
 async function uqShot() {
   const f = $('uqShot').files[0]; $('uqShot').value = '';
   if (!f) return;
-  uqSt('uqFetchSt', 'Читаю заголовок со скрина…');
+  const B = UQ.B.title;
+  uqBoxSt(B, 'Читаю заголовок со скрина…');
   try {
     const img = await createImageBitmap(f);
     const k = Math.min(1, 1280 / Math.max(img.width, img.height));
     const c = document.createElement('canvas'); c.width = Math.round(img.width * k); c.height = Math.round(img.height * k);
     c.getContext('2d').drawImage(img, 0, 0, c.width, c.height);
     const o = await uqCall('/ocr', { img: c.toDataURL('image/jpeg', 0.85), mode: 'title' });
-    $('uqTitle').value = o.text; uqDraft();
-    uqSt('uqFetchSt', o.text ? 'Заголовок со скрина прочитан' : 'На скрине заголовок не нашёлся', o.text ? 'good' : 'err');
-  } catch (e) { uqSt('uqFetchSt', uqMsg(e), 'err'); }
-}
-
-// правки поля: куски параллельно, найденные места в тексте; повторный вызов с другим v добирает правки
-async function uqEdits(text, v) {
-  const ch = UNIQ.chunks(text);
-  const got = await uqMap(ch, 4, (c) => uqCall('/uniq', { text: c.text, v }));
-  return ch.flatMap((c, i) => UNIQ.locate(text, c, got[i].edits));
-}
-const uqMax = (F) => UNIQ.build(F.src, F.pool, new Set(F.pool.map((_, i) => i))).pct;
-// плашка считается от оригинала: то, что уже изменил перевод в другое лицо, из цели правок вычитается
-const uqTarget = (F) => Math.max(0, UQ.pct - F.basePct);
-
-// весь текст в нужное лицо по кускам; негодный перевод куска (потерял число, переписал больше половины) = оригинал куска
-async function uqVoice(text, who) {
-  const ch = UNIQ.chunks(text);
-  const outs = await uqMap(ch, 4, (c) => uqCall('/voice', { text: c.text, voice: who }).then((r) => r.text));
-  return UNIQ.splice(text, ch, outs);
-}
-
-async function uqTopUp(key) {
-  const F = UQ.F[key];
-  if (!F || F.topped || UNIQ.words(F.src).length < 60 || uqMax(F) >= uqTarget(F) + 0.5) return;
-  F.topped = true;
-  uqSt('uqSt', 'Добираю правки для большей доли…');
-  try {
-    const more = (await uqEdits(F.src, F.v + 25)).filter((e) => !F.located.some((o) => e.s < o.e && o.s < e.e));
-    F.located = F.located.concat(more).sort((a, b) => a.s - b.s);
-    F.pool = UNIQ.pool(F.src, F.located); F.off = new Set();
-    uqSt('uqSt', '');
-  } catch (e) { uqSt('uqSt', uqMsg(e), 'err'); }
-}
-
-// одна обработка за раз; нажатие во время неё (голос, тире, «Другой вариант») выполняется сразу после
-function uqLock(on) { UQ.busy = on; $('uqGo').disabled = on; $('uqAgain').disabled = on; }
-function uqNext() {
-  const p = UQ.pending; UQ.pending = null;
-  if (p) uqRun(p === 'next');
-}
-
-async function uqRun(nextVariant) {
-  if (UQ.busy) { UQ.pending = nextVariant || UQ.pending === 'next' ? 'next' : 'same'; uqSt('uqSt', 'Пересоберу сразу после текущей обработки…'); return; }
-  const fields = [['title', $('uqTitleBox').hidden ? '' : $('uqTitle').value.trim()], ['text', $('uqText').value.trim()]].filter(([, t]) => t);
-  if (!fields.length) return uqSt('uqSt', 'Вставь текст или забери его по ссылке', 'err');
-  if (nextVariant) UQ.v = (UQ.v + 1) % 25;
-  uqLock(true); uqClear();
-  uqSt('uqSt', 'Нейросеть подбирает правки, обычно 10-30 секунд…');
-  try {
-    for (const [key, raw] of fields) {
-      const orig = UQ.dash ? UNIQ.dashes(raw) : raw;   // тире меняются до правок: доля слов от них не растёт
-      let src = orig;
-      if (UQ.voice !== 'o') { uqSt('uqSt', `Перевожу текст ${UQ_VOICE_NAME[UQ.voice]}…`); src = await uqVoice(orig, UQ.voice); }
-      uqSt('uqSt', 'Нейросеть подбирает правки, обычно 10-30 секунд…');
-      const located = await uqEdits(src, UQ.v);
-      UQ.F[key] = { orig, src, basePct: UNIQ.pct(orig, src), voice: UQ.voice, located, pool: UNIQ.pool(src, located), off: new Set(), v: UQ.v };
-      await uqTopUp(key);
-    }
-    uqSt('uqSt', ''); uqRender();
-  } catch (e) { uqSt('uqSt', uqMsg(e), 'err'); }
-  uqLock(false); uqNext();
-}
-
-function uqRender() {
-  for (const [key, box, pctEl, out] of [['title', 'uqResTitle', 'uqPctTitle', 'uqOutTitle'], ['text', 'uqResText', 'uqPctText', 'uqOutText']]) {
-    const F = UQ.F[key];
-    $(out).hidden = !F;
-    if (!F) continue;
-    F.res = UNIQ.build(F.src, F.pool, UNIQ.pick(F.src, F.pool, uqTarget(F)), F.off);
-    F.res.pct = UNIQ.pct(F.orig, F.res.text);
-    const el = $(box); el.textContent = '';
-    for (const p of F.res.parts) {
-      if (p.i === undefined) { el.append(p.text); continue; }
-      const m = document.createElement('mark');
-      m.textContent = p.text; m.className = p.changed ? '' : 'back'; m.tabIndex = 0; m.setAttribute('role', 'button');
-      m.title = p.changed ? 'Было: ' + p.orig + '. Нажми, чтобы вернуть' : 'Нажми, чтобы снова изменить';
-      const flip = () => { if (F.off.has(p.i)) F.off.delete(p.i); else F.off.add(p.i); uqRender(); };
-      m.addEventListener('click', flip);
-      m.addEventListener('keydown', (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); flip(); } });
-      el.append(m);
-    }
-    const long = UNIQ.words(F.src).length >= 60;     // в коротком заголовке каждое слово = большой шаг доли, подсказка там шум
-    const short = !F.pool.length ? ' Правок для этого текста не нашлось, нажми «Другой вариант»'
-      : long && F.res.pct + 2 < UQ.pct ? ' Больше правок в этом варианте нет, нажми «Другой вариант»' : '';
-    const fmt = (x) => x.toFixed(1).replace('.', ',');
-    const voiced = F.voice !== 'o' ? (F.basePct > 0.05 ? ` Из них ${fmt(F.basePct)}% - перевод ${UQ_VOICE_NAME[F.voice]}, он не подсвечен.` : ' Рассказчика «я» в тексте нет, лицо менять не пришлось.') : '';
-    $(pctEl).textContent = `Изменено ${fmt(F.res.pct)}% слов.${voiced}${short}`;
-  }
-  $('uqOutTextH').textContent = $('uqTextLabel').textContent;
-  $('uqNote').hidden = !Object.keys(UQ.F).length;
-}
-
-async function uqCopy(key, btn) {
-  const t = UQ.F[key] && UQ.F[key].res ? UQ.F[key].res.text : '';
-  // буфер обмена бывает недоступен или висит (встроенные браузеры): через секунду запасной способ
-  const ok = await Promise.race([navigator.clipboard ? navigator.clipboard.writeText(t).then(() => true, () => false) : false, new Promise((r) => setTimeout(() => r(false), 1000))]);
-  if (!ok) { const a = document.createElement('textarea'); a.value = t; document.body.appendChild(a); a.select(); document.execCommand('copy'); a.remove(); }
-  const was = btn.textContent; btn.textContent = 'Скопировано'; setTimeout(() => { btn.textContent = was; }, 1500);
+    if (o.text) { uqReset(B); $('uqTitle').value = o.text; uqDraft(); }
+    uqBoxSt(B, o.text ? 'Заголовок со скрина прочитан. Нажми процент, чтобы уникализировать' : 'На скрине заголовок не нашёлся', o.text ? 'good' : 'err');
+  } catch (e) { uqBoxSt(B, uqMsg(e), 'err'); }
 }
 
 function uqMode(on) {
@@ -1670,20 +1716,28 @@ function uqMode(on) {
   window.scrollTo(0, 0);
 }
 
-(function buildUniq() {
-  try { const d = JSON.parse(localStorage.getItem('uq-draft') || 'null'); if (d) { $('uqUrl').value = d.url || ''; $('uqTitle').value = d.title || ''; $('uqText').value = d.text || ''; } } catch (e) {}
-  const box = $('uqPcts');
+// окошко: поле, полоса, результат, свои плашки и кнопки (разметка в index-body, data-box)
+function uqBox(key) {
+  const root = document.querySelector(`[data-box="${key}"]`), q = (s) => root.querySelector(s);
+  const B = { key, area: q('textarea'), res: q('.res'), load: q('.uqload'), st: q('.uqst'), pcts: q('.pcts'), again: q('.uqagain'),
+    pct: 0, v: 0, F: null, busy: false, pending: null, gen: 0, shown: 0 };
+  B.hint0 = B.st.textContent;
   UQ_PCTS.forEach((p) => {
     const b = document.createElement('button');
-    b.type = 'button'; b.className = 'chip'; b.textContent = p + '%'; b.setAttribute('data-pct', String(p));
-    b.addEventListener('click', async () => {
-      UQ.pct = p; press(box, 'data-pct', String(p)); try { localStorage.setItem('uq-pct', String(p)); } catch (e) {}
-      uqRender();
-      if (!UQ.busy && Object.keys(UQ.F).length) { uqLock(true); for (const k of Object.keys(UQ.F)) await uqTopUp(k); uqLock(false); uqRender(); uqNext(); }
-    });
-    box.appendChild(b);
+    b.type = 'button'; b.className = 'chip'; b.textContent = p + '%'; b.setAttribute('data-pct', String(p)); b.setAttribute('aria-pressed', 'false');
+    b.addEventListener('click', () => uqPick(B, p));
+    B.pcts.appendChild(b);
   });
-  press(box, 'data-pct', String(UQ.pct));
+  q('.uqcopy').addEventListener('click', (e) => uqCopy(B, e.currentTarget));
+  q('.uqclear').addEventListener('click', () => { B.area.value = ''; uqReset(B); uqDraft(); });
+  B.again.addEventListener('click', () => uqRun(B, true));
+  return B;
+}
+
+(function buildUniq() {
+  try { const d = JSON.parse(localStorage.getItem('uq-draft') || 'null'); if (d) { $('uqUrl').value = d.url || ''; $('uqTitle').value = d.title || ''; $('uqText').value = d.text || ''; } } catch (e) {}
+  UQ.B.title = uqBox('title'); UQ.B.text = uqBox('text');
+  const rerun = () => { for (const B of Object.values(UQ.B)) if (B.F || B.busy) uqRun(B, false); };   // лицо и тире меняют весь текст
   const vbox = $('uqVoices');
   UQ_VOICES.forEach(([id, name]) => {
     const b = document.createElement('button');
@@ -1691,7 +1745,7 @@ function uqMode(on) {
     b.addEventListener('click', () => {
       if (UQ.voice === id) return;
       UQ.voice = id; press(vbox, 'data-voice', id); try { localStorage.setItem('uq-voice', id); } catch (e) {}
-      if (Object.keys(UQ.F).length || UQ.busy) uqRun(false);   // лицо меняет весь текст: результат пересобирается, во время обработки - после неё
+      rerun();
     });
     vbox.appendChild(b);
   });
@@ -1699,20 +1753,16 @@ function uqMode(on) {
   $('uqDash').setAttribute('aria-pressed', String(UQ.dash));
   $('uqDash').addEventListener('click', () => {
     UQ.dash = !UQ.dash; $('uqDash').setAttribute('aria-pressed', String(UQ.dash)); try { localStorage.setItem('uq-dash', UQ.dash ? '1' : '0'); } catch (e) {}
-    if (Object.keys(UQ.F).length || UQ.busy) uqRun(false);
+    rerun();
   });
   $('uqOpen').addEventListener('click', () => uqMode(!document.querySelector('.app').classList.contains('uqmode')));
   $('uqFetch').addEventListener('click', uqFetch);
   $('uqUrl').addEventListener('keydown', (e) => { if (e.key === 'Enter') uqFetch(); });
   $('uqShot').addEventListener('change', uqShot);
   ['uqUrl', 'uqTitle', 'uqText'].forEach((id) => $(id).addEventListener('input', uqDraft));
-  $('uqGo').addEventListener('click', () => uqRun(false));
-  $('uqAgain').addEventListener('click', () => uqRun(true));
-  $('uqCopyTitle').addEventListener('click', (e) => uqCopy('title', e.currentTarget));
-  $('uqCopyText').addEventListener('click', (e) => uqCopy('text', e.currentTarget));
   $('uqToVideo').addEventListener('click', () => {
-    const t = UQ.F.title && UQ.F.title.res ? UQ.F.title.res.text : '';
-    if (!t) return;
+    const B = UQ.B.title, t = B.F && B.F.res ? B.F.res.text : B.area.value.trim();
+    if (!t) return uqBoxSt(B, 'Сначала впиши заголовок или забери его по ссылке', 'err');
     S.text = t.split('\n').map((s) => s.trim()).filter(Boolean).slice(0, 5).join('\n');
     $('txt').value = S.text; persist(); rebuild(0); hideDone();
     uqMode(false);                                    // строку статуса редактора каждый кадр пишут рамки: подтверждение = заголовок в превью

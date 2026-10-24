@@ -85,11 +85,17 @@ input[type=url] { border-radius: 12px; border: 1px solid var(--line); background
 .voices { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 6px; }
 @media (min-width: 520px) { .voices { grid-template-columns: repeat(4, minmax(0, 1fr)); } }
 .voices .chip { padding: 9px 4px; text-align: center; }
-.uqh { margin: 0; font-size: 13px; letter-spacing: .05em; text-transform: uppercase; color: var(--muted); }
-.res { white-space: pre-wrap; overflow-wrap: anywhere; background: #0f0a0c; border: 1px solid var(--line); border-radius: 12px; padding: 12px; line-height: 1.55; font-size: 16px; }
+.res { white-space: pre-wrap; overflow-wrap: anywhere; background: #0f0a0c; border: 1px solid var(--line); border-radius: 12px; padding: 10px; line-height: 1.55; font-size: 16px; min-height: 110px; }
 .res mark { color: inherit; background: rgba(255, 214, 0, .2); border-bottom: 2px solid var(--yellow); border-radius: 3px; cursor: pointer; }
 .res mark.back { background: none; border-bottom: 1px dashed var(--muted); }
-.uqnote { text-align: center; }
+.uqwin { position: relative; min-width: 0; }
+.uqwin textarea { display: block; }
+.uqload { position: absolute; inset: 0; display: grid; place-content: center; justify-items: center; gap: 8px; padding: 10px; border-radius: 12px; background: rgba(15, 10, 12, .92); text-align: center; }
+.uqload b { font: 900 30px/1 Rubik, "Golos Text", sans-serif; color: var(--yellow); font-variant-numeric: tabular-nums; }
+.uqload .bar { width: min(260px, 64vw); }
+.uqload .bar i { background: var(--yellow); }
+.uqload span { font-size: 13px; color: var(--fg); }
+.uqagain[hidden] + #uqToVideo, .done > .uqagain:last-child { grid-column: 1 / -1; }
 </style>
 </head>
 <body>
@@ -113,48 +119,49 @@ input[type=url] { border-radius: 12px; border: 1px solid var(--line); background
       <p class="hint" id="uqFetchSt" role="status">Или вставь свой текст в поля ниже</p>
     </div>
 
-    <div class="uqp" id="uqTitleBox">
+    <div class="uqp">
+      <div class="row">От чьего лица</div>
+      <div class="voices" id="uqVoices" role="group" aria-label="От чьего лица"></div>
+      <div class="toggles" style="justify-content:flex-start"><button class="chip" id="uqDash" type="button" aria-pressed="true">Длинное тире «—» → короткое «-»</button></div>
+    </div>
+
+    <!-- окошко = поле, плашки и результат на месте поля: нажатие плашки сразу уникализирует (13-uniq-ui.js) -->
+    <div class="uqp" id="uqTitleBox" data-box="title">
       <label class="row" for="uqTitle">Заголовок с видео</label>
-      <textarea id="uqTitle" rows="3" placeholder="Появится здесь после ссылки на рилс, можно вписать самому"></textarea>
+      <div class="uqwin">
+        <textarea id="uqTitle" rows="3" placeholder="Появится здесь после ссылки на рилс, можно вписать самому"></textarea>
+        <div class="res" hidden></div>
+        <div class="uqload" hidden><b>0%</b><div class="bar"><i></i></div><span></span></div>
+      </div>
+      <div class="row">Насколько изменить заголовок</div>
+      <div class="pcts" role="group" aria-label="Насколько изменить заголовок"></div>
+      <p class="hint uqst" role="status">Нажми процент: заголовок уникализируется прямо здесь</p>
+      <div class="done">
+        <button class="btn primary uqcopy" type="button">Скопировать</button>
+        <button class="btn uqclear" type="button">Очистить</button>
+        <button class="btn uqagain" type="button" hidden>Другой вариант</button>
+        <button class="btn" id="uqToVideo" type="button">В заголовок ролика</button>
+      </div>
       <label class="btn small" for="uqShot">Загрузить скрин кадра с заголовком</label>
       <input id="uqShot" type="file" accept="image/*" hidden>
     </div>
 
-    <div class="uqp">
+    <div class="uqp" id="uqTextBox" data-box="text">
       <label class="row" for="uqText" id="uqTextLabel">Текст</label>
-      <textarea id="uqText" rows="8" placeholder="Текст под рилсом, текст со слайдов или свой"></textarea>
-    </div>
-
-    <div class="uqp uqgo">
-      <div class="row">От чьего лица</div>
-      <div class="voices" id="uqVoices" role="group" aria-label="От чьего лица"></div>
-      <div class="row">Насколько изменить</div>
-      <div class="pcts" id="uqPcts" role="group" aria-label="Насколько изменить"></div>
-      <div class="toggles" style="justify-content:flex-start"><button class="chip" id="uqDash" type="button" aria-pressed="true">Длинное тире «—» → короткое «-»</button></div>
-      <button class="btn primary" id="uqGo" type="button">Уникализировать</button>
-      <p class="hint" id="uqSt" role="status"></p>
-    </div>
-
-    <div class="uqp" id="uqOutTitle" hidden>
-      <h3 class="uqh">Заголовок</h3>
-      <div class="res" id="uqResTitle"></div>
-      <p class="hint" id="uqPctTitle"></p>
+      <div class="uqwin">
+        <textarea id="uqText" rows="8" placeholder="Текст под рилсом, текст со слайдов или свой"></textarea>
+        <div class="res" hidden></div>
+        <div class="uqload" hidden><b>0%</b><div class="bar"><i></i></div><span></span></div>
+      </div>
+      <div class="row">Насколько изменить текст</div>
+      <div class="pcts" role="group" aria-label="Насколько изменить текст"></div>
+      <p class="hint uqst" role="status">Нажми процент: текст уникализируется прямо здесь</p>
       <div class="done">
-        <button class="btn" id="uqCopyTitle" type="button">Копировать</button>
-        <button class="btn primary" id="uqToVideo" type="button">В заголовок ролика</button>
+        <button class="btn primary uqcopy" type="button">Скопировать</button>
+        <button class="btn uqclear" type="button">Очистить</button>
+        <button class="btn uqagain" type="button" hidden>Другой вариант</button>
       </div>
     </div>
-
-    <div class="uqp" id="uqOutText" hidden>
-      <h3 class="uqh" id="uqOutTextH">Текст</h3>
-      <div class="res" id="uqResText"></div>
-      <p class="hint" id="uqPctText"></p>
-      <div class="done">
-        <button class="btn primary" id="uqCopyText" type="button">Копировать</button>
-        <button class="btn" id="uqAgain" type="button">Другой вариант</button>
-      </div>
-    </div>
-    <p class="hint uqnote" id="uqNote" hidden>Подсвечено то, что изменилось. Нажми на кусок, чтобы вернуть оригинал</p>
   </section>
 
   <div class="stagecol">
