@@ -993,8 +993,7 @@ function loop() {
   else if (atlasWarn) setStatus('В «Бархате» нет знаков: ' + atlasWarn + '. Они пропущены', 'bad');
   else if (!S.zones || !chk) setStatus('Двигай заголовок пальцем, двумя пальцами меняй размер');
   else if (chk.bad.length) setStatus('Заголовок заходит под ' + chk.bad.map(z => z.name).join(', '), 'bad');
-  else if (!chk.inAd) setStatus('В рилсе всё видно. Для рекламы держи заголовок внутри пунктира', 'good');
-  else setStatus('Заголовок в безопасной зоне', 'good');
+  else setStatus('В рилсе всё видно', 'good');
 }
 
 // вкладки, ленты выбора и перетаскивание заголовка
