@@ -60,6 +60,9 @@ input[type=range] { width: 100%; accent-color: var(--accent); }
 .pal[aria-pressed="true"] { border-color: var(--accent); }
 .custom { display: flex; gap: 12px; flex-wrap: wrap; align-items: center; font-size: 13px; color: var(--muted); }
 .custom input[type=color] { width: 44px; height: 32px; border: 0; background: none; padding: 0; }
+.halo { display: grid; gap: 6px; border-bottom: 1px solid var(--line); padding-bottom: 10px; }
+.halo .row { display: flex; justify-content: space-between; color: var(--fg); font-size: 14px; }
+.halo .row b { color: var(--yellow); font-variant-numeric: tabular-nums; }
 .anims { display: grid; grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); gap: 6px; }
 .out { display: grid; gap: 6px; position: sticky; bottom: calc(8px + env(safe-area-inset-bottom, 0px)); z-index: 5; background: var(--panel); border: 1px solid var(--line); border-radius: 16px; padding: 10px; box-shadow: 0 -10px 30px rgba(0,0,0,.45); }
 @media (min-width: 900px) { .out { grid-column: 2; position: static; box-shadow: none; } }
@@ -185,10 +188,18 @@ input[type=url] { border-radius: 12px; border: 1px solid var(--line); background
       <button role="tab" aria-selected="false" data-tab="time" type="button">Время</button>
     </div>
 
-    <div class="tab" data-pane="look"><div class="grid" id="looks"></div></div>
+    <div class="tab" data-pane="look">
+      <div class="halo" id="haloBox" hidden>
+        <label class="row" for="halo"><span>Тень вокруг букв</span><b id="haloV"></b></label>
+        <input id="halo" type="range" min="0" max="100" value="85" step="1">
+        <p class="hint">0 - без тени. Больше - плотнее тёмная кайма вокруг букв, текст читается на любом видео. Под тёмный текст тень сама становится светлой</p>
+      </div>
+      <div class="grid" id="looks"></div>
+    </div>
 
     <div class="tab" data-pane="text" hidden>
       <label class="row" for="txt">Каждая строка поля = строка заголовка</label>
+      <p class="hint" id="txtHint" hidden>Слово в *звёздочках* выделится вторым цветом, например: Мужчины *влюбляются* СИЛЬНЕЕ</p>
       <textarea id="txt" rows="4">САМЫЙ ТОПОВЫЙ
 ДОМАШНИЙ
 ДЕВАЙС
@@ -205,8 +216,8 @@ input[type=url] { border-radius: 12px; border: 1px solid var(--line); background
     <div class="tab" data-pane="color" hidden>
       <div class="pals" id="pals"></div>
       <div class="custom">
-        <label>Светлые строки <input type="color" id="cL" value="#f29bbb"></label>
-        <label>Тёмные строки <input type="color" id="cD" value="#8a0f33"></label>
+        <label><span id="cLn">Светлые строки</span> <input type="color" id="cL" value="#f29bbb"></label>
+        <label><span id="cDn">Тёмные строки</span> <input type="color" id="cD" value="#8a0f33"></label>
       </div>
     </div>
 

@@ -476,12 +476,54 @@ const ENGINE = (() => {
     return m;
   }
 
+  // «Оригинал»: плоские буквы, выделенные знаки (o.hl, '1' = выделено) цветом o.hlc и ореол вокруг букв силой o.halo 0..100.
+  // Ореол как в «Карусельной»: до 50 мягкая тень, выше - широкое облако и плотная кайма от обводки. Тени рисуются от текста
+  // за краем холста (сдвиг тени возвращает их на место), поэтому сначала все тени строки, потом буквы поверх
+  function origLine(o) {
+    const s = o.size, k = s / 70, pad = Math.ceil(s * 0.7);
+    const c = document.createElement('canvas'), x = c.getContext('2d');
+    const font = `${o.weight || 400} ${s}px "${o.font}", sans-serif`;
+    x.font = font;
+    const chars = [...o.text], hl = o.hl || '';
+    const runs = [];
+    chars.forEach((ch, i) => {
+      const on = hl[i] === '1', r = runs[runs.length - 1];
+      if (r && r.on === on) r.t += ch; else runs.push({ t: ch, on });
+    });
+    runs.forEach(r => { r.w = x.measureText(r.t).width; });
+    const tw = runs.reduce((a, r) => a + r.w, 0);
+    c.width = Math.ceil(tw + pad * 2); c.height = Math.ceil(s * 1.25 + pad * 2);
+    x.font = font; x.textBaseline = 'alphabetic'; x.lineJoin = 'round';
+    const by = pad + s * 0.95;
+    const h = Math.max(0, Math.min(100, o.halo == null ? 85 : +o.halo)), t = (h - 50) / 50;
+    const [r0, g0, b0] = hex(o.color || '#ffffff');
+    const rgb = (0.2126 * r0 + 0.7152 * g0 + 0.0722 * b0) / 255 > 0.5 ? '0,0,0' : '255,255,255';
+    const passes = [];
+    if (t > 0) {
+      passes.push({ a: 0.85 * t, blur: (10 + 16 * t) * k, line: s * 0.1 * t, dy: 0 });
+      passes.push({ a: Math.min(1, 1.1 * t), blur: (3 + 5 * t) * k, line: s * 0.17 * t, dy: 0 });
+    }
+    if (h > 0) passes.push({ a: Math.min(1, 0.012 * h), blur: (4 + 0.24 * h) * k, line: 0, dy: 2 * k });
+    const off = c.width + 500;
+    x.fillStyle = '#000'; x.strokeStyle = '#000';
+    for (const p of passes) {
+      x.shadowColor = `rgba(${rgb},${p.a.toFixed(3)})`; x.shadowBlur = p.blur; x.shadowOffsetX = off; x.shadowOffsetY = p.dy;
+      x.lineWidth = p.line;
+      let cx = pad;
+      runs.forEach(r => { x.fillText(r.t, cx - off, by); if (p.line > 0) x.strokeText(r.t, cx - off, by); cx += r.w; });
+    }
+    x.shadowColor = 'transparent'; x.shadowBlur = 0; x.shadowOffsetX = 0; x.shadowOffsetY = 0;
+    let cx = pad;
+    runs.forEach(r => { x.fillStyle = r.on ? (o.hlc || o.color) : o.color; x.fillText(r.t, cx, by); cx += r.w; });
+    return { c, x, w: c.width, h: c.height, pad };
+  }
+
   const PUFFY = new Set(['velvet', 'gloss', 'chrome']);
-  const draw1 = (o) => o.style === 'atlas' ? atlasLine(o) : o.style === 'velvet' ? velvetLine(o) : PUFFY.has(o.style) ? puffy(o) : flat(o);
+  const draw1 = (o) => o.style === 'orig' ? origLine(o) : o.style === 'atlas' ? atlasLine(o) : o.style === 'velvet' ? velvetLine(o) : PUFFY.has(o.style) ? puffy(o) : flat(o);
   // готовые строки запоминаются: при наборе текста пересчитывается только изменённая строка
   const cache = new Map();
   function line(o) {
-    const key = [o.style, o.set, ATLAS.meta ? 1 : 0, o.text, o.font, o.weight, o.size, o.color, o.sheen, o.edge, o.tracking, o.fatten, o.round, o.squeeze, o.puff, o.overlap, o.vcolor].join('|');
+    const key = [o.style, o.set, ATLAS.meta ? 1 : 0, o.text, o.font, o.weight, o.size, o.color, o.sheen, o.edge, o.tracking, o.fatten, o.round, o.squeeze, o.puff, o.overlap, o.vcolor, o.hl, o.hlc, o.halo].join('|');
     if (cache.has(key)) { const m = cache.get(key); cache.delete(key); cache.set(key, m); return m; }
     const m = draw1(o);
     cache.set(key, m);
@@ -502,6 +544,12 @@ const ENGINE = (() => {
 
   // раскладка заголовка: картинки строк и их места относительно центра блока
   function layout(t) {
+    // «Оригинал»: строки одного кегля - если хоть одна шире кадра, ужимаются все в одной пропорции
+    if (t.uniform && !t.fitted) {
+      const base = { font: t.font, weight: t.weight, style: t.style, tracking: t.tracking };
+      const k = Math.min(1, ...t.lines.map(l => { const m = line(Object.assign({}, base, l)); return (t.maxW || 960) / Math.max(1, m.w - m.pad * 2); }));
+      return layout(Object.assign({}, t, { fitted: true, lines: k < 1 ? t.lines.map(l => Object.assign({}, l, { size: Math.floor(l.size * k) })) : t.lines }));
+    }
     const parts = [];
     let y = 0, base = null, prevDesc = 0;
     t.lines.forEach(l => {
@@ -609,7 +657,7 @@ const ENGINE = (() => {
 
 // шрифты с кириллицей (проверены по каталогу Google Fonts 22.10.2026) и самый жирный вес каждого
 const FONT_GROUPS = [
-  ['Пухлые и жирные', [['Rubik', 900], ['Nunito', 1000], ['M PLUS Rounded 1c', 900], ['Unbounded', 900], ['Dela Gothic One', 400], ['Rubik Mono One', 400], ['Oi', 400], ['Climate Crisis', 400], ['Russo One', 400], ['Days One', 400], ['Seymour One', 400]]],
+  ['Пухлые и жирные', [['Montserrat', 800], ['Rubik', 900],['Nunito', 1000], ['M PLUS Rounded 1c', 900], ['Unbounded', 900], ['Dela Gothic One', 400], ['Rubik Mono One', 400], ['Oi', 400], ['Climate Crisis', 400], ['Russo One', 400], ['Days One', 400], ['Seymour One', 400]]],
   ['Игривые', [['Rubik Bubbles', 400], ['Comfortaa', 700], ['Balsamiq Sans', 700], ['Shantell Sans', 800], ['Kablammo', 400], ['Train One', 400], ['Rampart One', 400], ['Rubik Doodle Shadow', 400], ['Rubik Puddles', 400]]],
   ['Рукописные', [['Lobster', 400], ['Pacifico', 400], ['Caveat', 700], ['Marck Script', 400], ['Bad Script', 400], ['Great Vibes', 400], ['Amatic SC', 700], ['Comforter Brush', 400]]],
   ['Ретро и пиксель', [['Press Start 2P', 400], ['Pixelify Sans', 700], ['Tektur', 800], ['Handjet', 700], ['Rubik 80s Fade', 400], ['Stalinist One', 400], ['Rubik Iso', 400]]],
@@ -630,11 +678,15 @@ const PALETTES = [
   { id: 'choco', name: 'Шоколад', l: '#f3d2b3', d: '#5b2a12', h: '#e8a77a' },
   { id: 'neon', name: 'Неон', l: '#ff4fd8', d: '#38f3ff', h: '#ff4fd8' },
   { id: 'red', name: 'Красный', l: '#ffffff', d: '#e3122d', h: '#ff4d6a' },
-  { id: 'bw', name: 'Чёрно-белый', l: '#ffffff', d: '#141414', h: '#ffffff' }
+  { id: 'bw', name: 'Чёрно-белый', l: '#ffffff', d: '#141414', h: '#ffffff' },
+  // «Оригинал»: белый текст и жёлтое выделение, цвет снят со скрина рилса Ивана 24.10.2026
+  { id: 'orig', name: 'Белый и жёлтый', l: '#ffffff', d: '#eace4a', h: '#eace4a' }
 ];
 
 // готовые оформления: материал + шрифт + размеры строк + какая строка светлая, какая тёмная
 const STYLES = [
+  // «Оригинал» (24.10.2026): плоские белые буквы с ореолом вокруг (сила - ползунок «Тень вокруг букв»), *слово* - вторым цветом
+  { id: 'original', name: 'Оригинал', style: 'orig', font: 'Montserrat', weight: 800, tracking: 0, leading: 1.17, shadow: false, halo: 85, sizes: [76], roles: 'l', pal: 'orig' },
   { id: 'barhat', name: 'Бархат', style: 'atlas', font: 'Rubik', weight: 700, overlap: 0.11, tracking: -0.035, fatten: 0.1, round: 0.025, squeeze: 0.78, puff: 0.2, leading: 0.64, sizes: [150, 236, 236, 184], roles: 'lddl', pal: 'pink' },
   { id: 'sharik', name: 'Шарик', style: 'gloss', font: 'Nunito', tracking: -0.03, fatten: 0.06, puff: 0.14, leading: 0.86, sizes: [112, 176, 176, 140], roles: 'lddl', pal: 'lilac' },
   { id: 'zefir', name: 'Зефир', style: 'velvet', font: 'M PLUS Rounded 1c', tracking: -0.04, fatten: 0.075, round: 0.03, squeeze: 0.88, puff: 0.2, leading: 0.84, sizes: [112, 170, 170, 136], roles: 'lddl', pal: 'mint' },
@@ -655,6 +707,23 @@ function shadeHex(hex, k) {
   return '#' + [f(r), f(g), f(b)].map(v => v.toString(16).padStart(2, '0')).join('');
 }
 
+// *слово* = выделение: работает только при парных звёздочках во всём заголовке
+const starPaired = (arr) => (arr.join('').match(/\*/g) || []).length % 2 === 0;
+// в остальных оформлениях парные звёздочки просто убираются
+const unstar = (arr) => (starPaired(arr) ? arr.map(s => s.replace(/\*/g, '')) : arr);
+// строки -> текст без звёздочек и маска выделения по знакам ('1' = выделено)
+function starMarks(arr) {
+  const paired = starPaired(arr); let on = false;
+  return arr.map(s => {
+    let t = '', m = '';
+    for (const ch of s) {
+      if (paired && ch === '*') { on = !on; continue; }
+      t += ch; m += on ? '1' : '0';
+    }
+    return { text: t, hl: m };
+  });
+}
+
 // собрать заголовок: оформление + текст + выбор шрифта и цвета
 function buildTitle(st, text, o) {
   const p = Object.assign({}, pal(o.pal || st.pal));
@@ -664,6 +733,13 @@ function buildTitle(st, text, o) {
   // бархат на выбранном шрифте: плюшевые буквы этого шрифта, если набор уже нарисован
   const velvetish = st.style === 'atlas' || st.style === 'velvet';
   const fset = velvetish && (o.font || st.style === 'velvet') ? ENGINE.fontSet(font) : null;
+  if (st.style === 'orig') {
+    // все строки одним цветом и одним кеглем, выделение - вторым цветом палитры
+    const halo = o.halo == null ? st.halo : o.halo;
+    const lines = starMarks(text).map(m => ({ text: m.text, hl: m.hl, size: st.sizes[0], color: p.l, hlc: p.d, halo }));
+    return { font, weight: (!o.font && st.weight) || FONT_W[font] || 400, style: 'orig', tracking: st.tracking, leading: st.leading, shadow: false, uniform: true, lines, maxW: 800, maxH: 940 };
+  }
+  text = unstar(text);
   const lines = text.map((s, i) => {
     const role = st.roles[i % st.roles.length];
     const color = role === 'l' ? p.l : p.d;
@@ -921,7 +997,7 @@ const FONTS = (() => {
 
 // состояние экрана, превью и общий рисовальщик кадра (превью и экспорт рисуют одно и то же)
 const $ = (id) => document.getElementById(id);
-const DEF = { look: 'barhat', font: null, pal: null, cL: null, cD: null, anim: 'pop', text: 'САМЫЙ ТОПОВЫЙ\nДОМАШНИЙ\nДЕВАЙС\nДЛЯ ЛИЦА', scale: 1, cx: 540, cy: 1180, tIn: 0, tOut: null, zones: true, grid: false };
+const DEF = { look: 'barhat', font: null, pal: null, cL: null, cD: null, anim: 'pop', halo: 85, text: 'САМЫЙ ТОПОВЫЙ\nДОМАШНИЙ\nДЕВАЙС\nДЛЯ ЛИЦА', scale: 1, cx: 540, cy: 1180, tIn: 0, tOut: null, zones: true, grid: false };
 let S = Object.assign({}, DEF);
 try { const saved = JSON.parse(localStorage.getItem('zag-state') || 'null'); if (saved) S = Object.assign(S, saved, { tIn: 0, tOut: null }); } catch (e) {}
 const persist = () => { try { localStorage.setItem('zag-state', JSON.stringify(S)); } catch (e) {} };
@@ -962,10 +1038,11 @@ function rebuild(delay) {
   rebuildTimer = setTimeout(async () => {
     const n = ++rebuildN, st = look(), font = S.font || st.font;
     const fset = (st.style === 'atlas' || st.style === 'velvet') && (S.font || st.style === 'velvet') ? ENGINE.fontSet(font) : null;
-    if ((st.style === 'atlas' && !S.font) || fset) { await ENGINE.atlasLoad(lines().join('').toUpperCase(), fset ? ['light', fset] : ['light', 'dark']); atlasWarn = ENGINE.atlasMissing(lines().join(''), fset); }
+    const plain = unstar(lines()).join('');   // *выделение* звёздочками: в бархате звёздочек нет и не должно быть
+    if ((st.style === 'atlas' && !S.font) || fset) { await ENGINE.atlasLoad(plain.toUpperCase(), fset ? ['light', fset] : ['light', 'dark']); atlasWarn = ENGINE.atlasMissing(plain, fset); }
     else { atlasWarn = ''; await FONTS.loadFont(font, (!S.font && st.weight) || FONT_W[font]); }
     if (n !== rebuildN) return;
-    const opts = { font: S.font, pal: S.pal, colorL: S.cL, colorD: S.cD };
+    const opts = { font: S.font, pal: S.pal, colorL: S.cL, colorD: S.cD, halo: S.halo };
     L = lines().length ? ENGINE.layout(buildTitle(st, lines(), opts)) : null;
     hideDone();
   }, delay == null ? 120 : delay);
@@ -1023,7 +1100,7 @@ async function buildLooks() {
     b.addEventListener('click', () => {
       S.look = st.id; S.font = null; S.pal = null; S.cL = null; S.cD = null;
       press(box, 'data-look', st.id); press($('fonts'), 'data-font', '');
-      press($('pals'), 'data-pal', st.pal); syncColors(); persist(); rebuild(0); restartAnim();
+      press($('pals'), 'data-pal', st.pal); syncColors(); syncLook(); persist(); rebuild(0); restartAnim();
     });
   });
   press(box, 'data-look', S.look);
@@ -1068,6 +1145,21 @@ function buildFonts() {
 function syncColors() {
   const p = pal(S.pal || look().pal);
   $('cL').value = S.cL || p.l; $('cD').value = S.cD || p.d;
+}
+
+// «Оригинал»: свой ползунок тени и свои подписи цветов. Элементов может не быть у страницы из старого кэша
+function syncLook() {
+  const orig = look().style === 'orig', set = (id, f) => { const e = $(id); if (e) f(e); };
+  set('haloBox', e => { e.hidden = !orig; });
+  set('txtHint', e => { e.hidden = !orig; });
+  set('cLn', e => { e.textContent = orig ? 'Текст' : 'Светлые строки'; });
+  set('cDn', e => { e.textContent = orig ? 'Выделение *звёздочками*' : 'Тёмные строки'; });
+}
+function buildHalo() {
+  const r = $('halo'); if (!r) return;
+  const sync = () => { r.value = S.halo; $('haloV').textContent = S.halo ? S.halo + '%' : 'нет'; };
+  r.addEventListener('input', () => { S.halo = +r.value; sync(); persist(); rebuild(40); });
+  sync(); syncLook();
 }
 
 function buildColors() {
@@ -1229,7 +1321,7 @@ function save() {
 }
 
 (async function init() {
-  buildTabs(); buildText(); buildColors(); buildAnims(); buildTime(); buildDrag(); buildFile(); buildFonts();
+  buildTabs(); buildText(); buildColors(); buildHalo(); buildAnims(); buildTime(); buildDrag(); buildFile(); buildFonts();
   $('make').addEventListener('click', make); $('share').addEventListener('click', share); $('save').addEventListener('click', save);
   // шрифт догрузился позже сборки заголовка: перерисовать
   if (document.fonts && document.fonts.addEventListener) document.fonts.addEventListener('loadingdone', (e) => {
