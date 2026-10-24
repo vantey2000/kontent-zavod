@@ -1194,6 +1194,7 @@ function showErr(t) { const e = $('outErr'); e.textContent = t; e.hidden = !t; }
 async function make() {
   if (!hasVideo) return showErr('Сначала загрузи своё видео кнопкой «Загрузить видео» сверху');
   if (!L) return showErr('Напиши текст заголовка во вкладке «Текст»');
+  if (typeof accVideo === 'function' && !(await accVideo())) return;   // доступ: вход, 3 бесплатные, подписка (14-access.js)
   showErr(''); exporting = true; $('make').disabled = true; $('bar').hidden = false;
   const t0 = performance.now();
   try {
@@ -1481,6 +1482,8 @@ const UQ_ERR = {
   url: 'Это не ссылка на пост Instagram. Нужна ссылка вида instagram.com/reel/… или /p/…',
   image: 'Картинку не получилось прочитать',
   network: 'Нет связи с сервером. Проверь интернет и попробуй ещё раз',
+  auth: 'Нужен вход через Telegram: 3 генерации бесплатно. Нажми процент ещё раз',
+  pay: 'Бесплатные генерации кончились. Подписка - кнопка вверху страницы',
 };
 const UQ_VOICES = [['o', 'Как в оригинале'], ['m', 'От мужчины'], ['f', 'От женщины'], ['n', 'Со стороны']];
 const UQ_VOICE_NAME = { m: 'от мужского лица', f: 'от женского лица', n: 'со стороны' };
@@ -1491,12 +1494,21 @@ try {
 } catch (e) {}
 
 // запрос к воркеру: обрыв сети или занятая модель = ещё одна попытка через 1,5 с
-async function uqCall(path, obj, retry = 1) {
+// доступ (14-access.js): без входа сначала лист входа, токен уходит полем tk в теле, 401/402 открывают вход или оплату
+async function uqCall(path, obj, retry = 1, acc = 1) {
+  const A = typeof accNeed === 'function';
+  if (A && ACC.on && !ACC.tk && !(await accNeed('login'))) throw new Error('auth');
   let r, j;
   try {
-    r = await fetch(UQ_API + path, { method: 'POST', headers: { 'Content-Type': 'text/plain' }, body: JSON.stringify(obj) });
+    r = await fetch(UQ_API + path, { method: 'POST', headers: { 'Content-Type': 'text/plain' }, body: JSON.stringify(A ? Object.assign({}, obj, accTk()) : obj) });
     j = await r.json();
   } catch (e) { j = { ok: false, error: 'network' }; }
+  if (A && j.me) accSetMe(j.me);
+  if (A && !j.ok && (j.error === 'auth' || j.error === 'pay')) {
+    if (j.error === 'auth') { ACC.tk = ''; accSave(); accChip(); }
+    if (acc && (await accNeed(j.error === 'auth' ? 'login' : 'pay'))) return uqCall(path, obj, retry, acc - 1);
+    throw new Error(j.error);
+  }
   if (!j.ok && retry && ['network', 'busy', 'server'].includes(j.error)) {
     await new Promise((ok) => setTimeout(ok, 1500));
     return uqCall(path, obj, retry - 1);
@@ -1783,3 +1795,262 @@ function uqBox(key) {
     uqMode(false);                                    // строку статуса редактора каждый кадр пишут рамки: подтверждение = заголовок в превью
   });
 })();
+// доступ (24.10.2026): вход через Telegram-бота, 3 бесплатные генерации, подписка 2 000 ₽ (воркер uniq-api: api.js, acc.js)
+// генерация = собранное видео или уникализация одного окошка; повтор того же текста или ролика бесплатен (номер g)
+// счёт живёт на сервере по аккаунту Telegram: перезаход, другой браузер и очистка телефона его не обнуляют
+// на этом компьютере (127.0.0.1) вход не нужен, чтобы проверки редактора и уникализатора шли без сервера; acc=1 в адресе включает его
+const ACC = { tk: '', me: null, dv: '', vf: '', wait: null, n: '', url: '', poll: 0,
+  on: !(/^(127\.0\.0\.1|localhost)$/.test(location.hostname) && !/[?&]acc=1\b/.test(location.search)) };
+try {
+  ACC.tk = localStorage.getItem('rs-tk') || '';
+  ACC.dv = localStorage.getItem('rs-dv') || '';
+  if (!ACC.dv) { ACC.dv = 'd' + Array.from(crypto.getRandomValues(new Uint8Array(15)), (b) => b.toString(36).padStart(2, '0')).join('').slice(0, 24); localStorage.setItem('rs-dv', ACC.dv); }
+} catch (e) {}
+const accSave = () => { try { if (ACC.tk) localStorage.setItem('rs-tk', ACC.tk); else localStorage.removeItem('rs-tk'); } catch (e) {} };
+
+// номер генерации: 16 знаков хэша (два FNV-1a), текст без пробелов по краям и с одним пробелом между словами
+function accHash(s) {
+  let a = 0x811c9dc5, b = 0x01000193 ^ 0x5bd1e995;
+  for (let i = 0; i < s.length; i++) { const c = s.charCodeAt(i); a = Math.imul(a ^ c, 0x01000193); b = Math.imul(b ^ c, 0x5bd1e995) ^ (b >>> 13); }
+  return (a >>> 0).toString(16).padStart(8, '0') + (b >>> 0).toString(16).padStart(8, '0');
+}
+const accNorm = (t) => String(t || '').trim().replace(/\s+/g, ' ');
+function accGid(text) { return 'u' + accHash(accNorm(text)); }
+const accTk = () => (ACC.tk ? { tk: ACC.tk } : {});
+
+async function accPost(path, obj) {
+  try {
+    const r = await fetch(UQ_API + path, { method: 'POST', headers: { 'Content-Type': 'text/plain' }, body: JSON.stringify(Object.assign({}, obj, accTk())) });
+    const j = await r.json().catch(() => ({ ok: false, error: 'server' }));
+    if (j.me) accSetMe(j.me);
+    if (r.status === 401 && ACC.tk) { ACC.tk = ''; ACC.me = null; accSave(); accChip(); }
+    return { st: r.status, j };
+  } catch (e) { return { st: 0, j: { ok: false, error: 'network' } }; }
+}
+function accSetMe(me) { ACC.me = me; accChip(); }
+
+// ждать, пока человек сможет делать генерации: вход, если его нет, оплата, если бесплатные кончились.
+// Один общий ответ на все запросы разом (уникализатор шлёт до 4 кусков параллельно)
+function accNeed(why) {
+  if (!ACC.on) return Promise.resolve(true);
+  if (ACC.wait) return ACC.wait.p;
+  let done;
+  const p = new Promise((ok) => { done = ok; });
+  ACC.wait = { p, done: (v) => { ACC.wait = null; done(v); } };
+  accOpen(why || (ACC.tk ? 'pay' : 'login'));
+  return p;
+}
+const accCan = () => !!(ACC.me && (ACC.me.paid || ACC.me.trial.left > 0));
+
+// перед сборкой видео: true = собирать. Тот же ролик с тем же заголовком повторно бесплатен (другой шрифт, цвет)
+async function accVideo() {
+  if (!ACC.on) return true;
+  if (!ACC.tk && !(await accNeed('login'))) return false;
+  const g = 'v' + accHash(ACC.vf + '|' + accNorm($('txt').value));
+  for (let i = 0; i < 2; i++) {
+    const r = await accPost('/gen', { g, kind: 'v' });
+    if (r.j.ok) return true;
+    if (r.st === 401 || r.st === 402) { if (!(await accNeed(r.st === 401 ? 'login' : 'pay'))) return false; continue; }
+    showErr(r.st === 0 ? 'Нет связи с сервером. Проверь интернет и нажми ещё раз' : 'Сервер не ответил. Нажми «Собрать видео» ещё раз');
+    return false;
+  }
+  return false;
+}
+
+// вход: номер входа берётся заранее, чтобы кнопка была обычной ссылкой на бота (айфон и Instagram не режут переход)
+async function accStart() {
+  ACC.n = ''; ACC.url = '';
+  const r = await accPost('/auth/start', { dv: ACC.dv });
+  if (!r.j.ok) return false;
+  ACC.n = r.j.n; ACC.url = r.j.url;
+  return true;
+}
+async function accPollOnce(n) {
+  const r = await accPost('/auth/poll', { n: n || ACC.n, dv: ACC.dv });
+  if (r.j.ok && r.j.tk) { ACC.tk = r.j.tk; accSave(); accSetMe(r.j.me); return 'in'; }
+  return r.st === 404 ? 'expired' : 'wait';
+}
+function accPollStart() {
+  clearInterval(ACC.poll);
+  const t0 = Date.now();
+  const tick = async () => {
+    if (document.hidden || !ACC.n) return;
+    const s = await accPollOnce();
+    if (s === 'in') { clearInterval(ACC.poll); accLogged(); }
+    else if (s === 'expired' || Date.now() - t0 > 3600e3) { clearInterval(ACC.poll); ACC.n = ''; ACC.url = ''; if (ACC.sheetMode) accOpen('login'); }
+  };
+  ACC.poll = setInterval(tick, 2000);
+  ACC.tick = tick;
+}
+document.addEventListener('visibilitychange', () => { if (!document.hidden && ACC.tick && ACC.n && !ACC.tk) ACC.tick(); });
+
+// после входа: есть бесплатные или подписка - продолжаем, кончились - лист оплаты
+function accLogged() {
+  ACC.n = ''; ACC.url = '';
+  if (accCan()) { accOpen('hello'); setTimeout(() => { if (ACC.sheetMode === 'hello') accClose(true); }, 1400); }
+  else accOpen('pay');
+}
+
+// вход ссылкой из бота (#vhod=номер, другой браузер или закрытая вкладка) и возврат с кассы (#oplacheno)
+async function accBoot() {
+  if (!ACC.on) return;
+  const h = location.hash;
+  const vhod = /^#vhod=([A-Za-z0-9_-]{16,64})$/.exec(h);
+  if (vhod || h === '#oplacheno') { try { history.replaceState(null, '', location.pathname + location.search); } catch (e) {} }
+  if (vhod && !ACC.tk) { if ((await accPollOnce(vhod[1])) === 'in') { accOpen('hello'); setTimeout(() => accClose(true), 1600); } return; }
+  if (!ACC.tk) { accChip(); if (h === '#oplacheno') accOpen('login', 'Оплата прошла? Войди через тот же Telegram, с которого платил, и доступ откроется'); return; }
+  const r = await accPost('/me', {});
+  if (r.j.tk) { ACC.tk = r.j.tk; accSave(); }
+  if (h === '#oplacheno') accWaitPaid();
+}
+// касса шлёт уведомление через несколько секунд после возврата: опрос /me до 2 минут
+async function accWaitPaid() {
+  accOpen('check');
+  for (let i = 0; i < 40; i++) {
+    if (ACC.me && ACC.me.paid) { accOpen('paid'); return; }
+    await new Promise((ok) => setTimeout(ok, 3000));
+    await accPost('/me', {});
+  }
+  accOpen('pay', 'Оплата ещё не дошла. Если деньги списались, нажми «Я уже оплатил» и введи почту с формы оплаты');
+}
+
+// какой файл видео выбран: для номера генерации видео. Ловим на погружении: обработчик редактора сразу очищает поле файла
+document.addEventListener('change', (e) => {
+  const f = e.target && e.target.id === 'file' && e.target.files && e.target.files[0];
+  if (f) ACC.vf = [f.name, f.size, f.lastModified].join('|');
+}, true);
+// доступ, экран: кнопка-счётчик в шапке и лист входа / оплаты / подписки (логика в 14-access.js)
+const ACC_PRICE = '2 000 ₽';
+const accDate = (ms) => new Date(ms).toLocaleDateString('ru-RU', { day: 'numeric', month: 'long', year: 'numeric' });
+const accEsc = (s) => String(s || '').replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+
+(function accMount() {
+  const st = document.createElement('style');
+  st.textContent = `
+#accBtn { flex: none; white-space: nowrap; }
+#accBtn.pay { background: var(--yellow); color: #1a1400; border-color: var(--yellow); }
+@media (max-width: 520px) { header h1 { flex: 1 1 0; } }
+.accback { position: fixed; inset: 0; z-index: 50; background: rgba(0,0,0,.6); display: grid; align-items: end; justify-items: center; padding: 12px; padding-bottom: calc(12px + env(safe-area-inset-bottom, 0px)); }
+@media (min-width: 640px) { .accback { align-items: center; } }
+.accsheet { width: 100%; max-width: 440px; background: var(--panel); border: 1px solid var(--line); border-radius: 18px; padding: 18px 16px 14px; display: grid; gap: 12px; max-height: calc(100dvh - 24px); overflow-y: auto; }
+.accsheet h2 { margin: 0; font-size: 20px; line-height: 1.25; }
+.accsheet p { margin: 0; color: var(--fg); line-height: 1.45; }
+.accsheet .hint { color: var(--muted); }
+.accsheet .btn { width: 100%; text-align: center; text-decoration: none; display: block; font-size: 16px; padding: 13px 14px; }
+.accsheet .btn.tg { background: #2aabee; border-color: #2aabee; color: #fff; }
+.accsheet .lnk { background: none; border: 0; color: var(--muted); text-decoration: underline; padding: 6px; cursor: pointer; font-size: 14px; justify-self: center; }
+.accsheet input[type=email] { width: 100%; border-radius: 12px; border: 1px solid var(--line); background: #0f0a0c; padding: 12px; font-size: 16px; }
+.accsheet .accst { min-height: 18px; font-size: 13px; color: var(--muted); text-align: center; }
+.accsheet .accst.bad { color: var(--warn); }
+.accsheet .accst:empty { display: none; }
+.accdots::after { content: '…'; animation: accdots 1.2s steps(4) infinite; display: inline-block; width: 1em; overflow: hidden; vertical-align: bottom; }
+@keyframes accdots { from { width: 0; } to { width: 1em; } }
+@media (prefers-reduced-motion: reduce) { .accdots::after { animation: none; } }`;
+  document.head.appendChild(st);
+  const b = document.createElement('button');
+  b.className = 'chip'; b.id = 'accBtn'; b.type = 'button';
+  b.addEventListener('click', () => accOpen(!ACC.tk ? 'login' : ACC.me && ACC.me.paid ? 'sub' : ACC.me && ACC.me.trial.left > 0 ? 'trial' : 'pay'));
+  const h1 = document.querySelector('header h1');
+  h1.insertAdjacentElement('afterend', b);
+  const back = document.createElement('div');
+  back.className = 'accback'; back.id = 'acc'; back.hidden = true;
+  back.innerHTML = '<div class="accsheet" role="dialog" aria-modal="true" aria-labelledby="accT"></div>';
+  back.addEventListener('click', (e) => { if (e.target === back) accClose(); });
+  document.body.appendChild(back);
+  document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && !back.hidden) accClose(); });
+})();
+
+function accChip() {
+  const b = $('accBtn'); if (!b) return;
+  b.hidden = !ACC.on;
+  const me = ACC.me;
+  b.classList.toggle('pay', !!(ACC.tk && me && !me.paid && me.trial.left <= 0));
+  b.textContent = !ACC.tk ? '3 генерации бесплатно' : !me ? 'Аккаунт' : me.paid ? 'Подписка' : me.trial.left > 0 ? `Бесплатно: ${me.trial.left} из ${me.trial.limit}` : 'Оформить подписку';
+}
+
+// лист: mode = login | wait | hello | trial | pay | check | paid | sub | cancel
+function accOpen(mode, note) {
+  const back = $('acc'), box = back.querySelector('.accsheet');
+  ACC.sheetMode = mode;
+  const me = ACC.me || { trial: { left: 3, limit: 3 } };
+  const left = `${me.trial.left} из ${me.trial.limit}`;
+  const what = '<p class="hint">Генерация = собранное видео или уникализация одного окошка. Другой процент, другой вариант и пересборка того же ролика с тем же заголовком бесплатно</p>';
+  const payBtns = `<button class="btn primary" type="button" data-a="pay">Оформить за ${ACC_PRICE} в месяц</button>
+    <button class="lnk" type="button" data-a="claim">Я уже оплатил</button>`;
+  const until = me.forever ? 'навсегда' : me.until ? 'до ' + accDate(me.until) : '';
+  const html = {
+    login: `<h2 id="accT">3 генерации бесплатно</h2>
+      <p>${accEsc(note) || 'Войди через Telegram, чтобы бесплатные генерации сохранились за тобой. Одно нажатие, без пароля и почты'}</p>
+      <a class="btn tg" data-a="tg" href="${accEsc(ACC.url) || '#'}" target="_blank" rel="noopener">${ACC.url ? 'Войти через Telegram' : 'Готовлю вход…'}</a>${what}`,
+    wait: `<h2 id="accT">Подтверди вход в Telegram</h2>
+      <p>В Telegram нажми «Запустить» в боте Рилсовой и вернись сюда: вход завершится сам</p>
+      <p class="accst"><span class="accdots">Жду подтверждения</span></p>
+      <a class="btn" data-a="tg" href="${accEsc(ACC.url)}" target="_blank" rel="noopener">Открыть Telegram ещё раз</a>`,
+    hello: `<h2 id="accT">Ты вошёл${me.name ? ', ' + accEsc(me.name.split(' ')[0]) : ''} ✅</h2>
+      <p>${me.paid ? 'Подписка ' + until + ': генерации без ограничений' : 'Бесплатных генераций: ' + left}</p>`,
+    trial: `<h2 id="accT">Бесплатно осталось ${left}</h2>${what}
+      <p>Дальше подписка ${ACC_PRICE} в месяц: видео и уникализация без ограничений, отменить можно здесь в один клик</p>${payBtns}`,
+    pay: `<h2 id="accT">${me.trial.left > 0 ? 'Подписка Рилсовой' : 'Бесплатные генерации кончились'}</h2>
+      <p>${accEsc(note) || `Подписка ${ACC_PRICE} в месяц: видео и уникализация без ограничений. Продлевается сама, отменить можно здесь в один клик`}</p>${payBtns}`,
+    check: `<h2 id="accT">Проверяю оплату</h2><p class="accst"><span class="accdots">Касса присылает подтверждение за несколько секунд</span></p>`,
+    paid: `<h2 id="accT">Оплата прошла ✅</h2><p>Рилсовая открыта без ограничений ${until}. Подписка продлевается сама</p>`,
+    sub: `<h2 id="accT">${me.forever ? 'Доступ навсегда' : 'Подписка ' + until}</h2>
+      <p>${me.gift ? 'Подарок от Ивана: генерации без ограничений' : me.stopped ? 'Продление отключено: после этой даты списаний не будет' : me.renews ? 'Продлевается сама' + (me.next ? ', следующее списание ' + accDate(Date.parse(me.next)) : '') : 'Генерации без ограничений'}</p>
+      ${me.renews ? '<button class="btn" type="button" data-a="cancel">Отменить подписку</button>' : ''}`,
+    cancel: `<h2 id="accT">Отключить продление?</h2><p>Доступ останется ${until}, дальше списаний не будет</p>
+      <button class="btn" type="button" data-a="cancel-yes">Отключить продление</button>`,
+  }[mode];
+  const out = ACC.tk && ['trial', 'pay', 'sub'].includes(mode) ? '<button class="lnk" type="button" data-a="out">Выйти из аккаунта</button>' : '';
+  box.innerHTML = html + '<p class="accst" id="accSt" role="status"></p><button class="btn" type="button" data-a="close">'
+    + (['hello', 'paid', 'sub', 'check'].includes(mode) ? 'Закрыть' : 'Не сейчас') + '</button>' + out;
+  back.hidden = false;
+  box.querySelectorAll('[data-a]').forEach((el) => el.addEventListener('click', (e) => accAct(el.dataset.a, e, el)));
+  if (mode === 'login' && !ACC.url) accStart().then((ok) => { if (ACC.sheetMode !== 'login') return; if (ok) accOpen('login', note); else accSt('Не получилось связаться с сервером. Проверь интернет и открой ещё раз', true); });
+  const first = box.querySelector('.btn'); if (first) first.focus({ preventScroll: true });
+}
+const accSt = (t, bad) => { const el = $('accSt'); if (el) { el.textContent = t; el.className = 'accst' + (bad ? ' bad' : ''); } };
+
+function accClose(ok) {
+  $('acc').hidden = true; ACC.sheetMode = '';   // опрос входа идёт дальше: нажал «Запустить» позже - вход всё равно завершится
+  if (ACC.wait) ACC.wait.done(ok === undefined ? !!ACC.tk && accCan() : !!ok);
+}
+
+async function accAct(a, e, el) {
+  if (a === 'close') return accClose();
+  if (a === 'tg') { if (!ACC.url) { e.preventDefault(); return; } setTimeout(() => accOpen('wait'), 300); accPollStart(); return; }
+  if (a === 'pay') {
+    el.disabled = true; accSt('Открываю кассу…');
+    const r = await accPost('/paylink', {});
+    if (r.j.ok) { location.href = r.j.url; return; }
+    el.disabled = false;
+    if (r.j.error === 'already') return accOpen('sub');
+    return accSt(r.st === 401 ? 'Вход устарел: закрой и войди ещё раз' : 'Касса сейчас не отвечает. Попробуй через минуту', true);
+  }
+  if (a === 'claim') {
+    el.outerHTML = '<input type="email" id="accMail" placeholder="почта, которую вводил при оплате" autocomplete="email"><button class="btn" type="button" data-a="claim-go">Проверить оплату</button>';
+    const go = $('acc').querySelector('[data-a="claim-go"]');
+    go.addEventListener('click', (ev) => accAct('claim-go', ev, go));
+    return $('accMail').focus();
+  }
+  if (a === 'claim-go') {
+    const email = $('accMail').value.trim();
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(email)) return accSt('Это не похоже на почту', true);
+    el.disabled = true; accSt('Ищу оплату…');
+    const r = await accPost('/claim', { email });
+    el.disabled = false;
+    if (r.j.ok) return accOpen('paid');
+    return accSt({ nopay: 'Оплаты с этой почты не нашлось. Проверь почту из письма кассы или напиши ' + 'в поддержку t.me/loginoff_ai', taken: 'Эта оплата уже привязана к другому аккаунту Telegram. Напиши в поддержку t.me/loginoff_ai', rate: 'Слишком много попыток, попробуй завтра' }[r.j.error] || 'Сервер не ответил, попробуй ещё раз', true);
+  }
+  if (a === 'cancel') return accOpen('cancel');
+  if (a === 'cancel-yes') {
+    el.disabled = true; accSt('Отключаю продление…');
+    const r = await accPost('/cancel', {});
+    if (r.j.ok) return accOpen('sub');
+    el.disabled = false;
+    return accSt('Касса не приняла отмену. Напиши в поддержку t.me/loginoff_ai, отключим вручную', true);
+  }
+  if (a === 'out') { ACC.tk = ''; ACC.me = null; accSave(); accChip(); return accClose(false); }
+}
+
+accChip();
+accBoot();
