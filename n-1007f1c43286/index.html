@@ -1,0 +1,294 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="robots" content="noindex, nofollow">
+<meta name="theme-color" content="#faf7f2">
+<title>Зум 24 октября: что делаем</title>
+<style>
+  :root {
+    --bg: #faf7f2; --card: #ffffff; --ink: #1d1b19; --muted: #6b655d; --line: #ebe4d9;
+    --accent: #c2410c; --accent-soft: #fff1e8; --calm: #0f5c4d; --calm-soft: #e8f4ef;
+    --warn: #9f1239; --warn-soft: #fdecef; --chip: #f3efe8; --shadow: 0 1px 2px rgba(60,40,20,.06), 0 6px 24px rgba(60,40,20,.06);
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #141312; --card: #1d1b19; --ink: #f2eee8; --muted: #a59d92; --line: #2e2a26;
+      --accent: #fb923c; --accent-soft: #2a1c12; --calm: #5fd0b0; --calm-soft: #12241f;
+      --warn: #fb7185; --warn-soft: #2a1418; --chip: #26231f; --shadow: none;
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg: #141312; --card: #1d1b19; --ink: #f2eee8; --muted: #a59d92; --line: #2e2a26;
+    --accent: #fb923c; --accent-soft: #2a1c12; --calm: #5fd0b0; --calm-soft: #12241f;
+    --warn: #fb7185; --warn-soft: #2a1418; --chip: #26231f; --shadow: none;
+  }
+  * { box-sizing: border-box; }
+  html { -webkit-text-size-adjust: 100%; scroll-behavior: smooth; }
+  body { margin: 0; background: var(--bg); color: var(--ink);
+    font: 17px/1.55 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif; }
+  .wrap { max-width: 640px; margin: 0 auto; padding: 20px 16px 56px; }
+  a { color: var(--calm); text-underline-offset: 3px; }
+  b, strong { font-weight: 650; }
+
+  .hero { padding: 18px 0 8px; }
+  .kicker { font-size: 13px; letter-spacing: 1.4px; text-transform: uppercase; color: var(--muted); margin-bottom: 10px; }
+  h1 { font-family: Georgia, "Noto Serif", "Times New Roman", serif; font-weight: 700; font-size: 34px; line-height: 1.12;
+    letter-spacing: -0.4px; margin: 0 0 14px; }
+  h1 em { font-style: normal; color: var(--accent); }
+  .lead { font-size: 18px; margin: 0 0 18px; }
+
+  .stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin: 0 0 22px; }
+  .stat { background: var(--card); border: 1px solid var(--line); border-radius: 14px; padding: 12px 10px; box-shadow: var(--shadow); }
+  .stat .v { font-family: Georgia, "Noto Serif", serif; font-weight: 700; font-size: 22px; line-height: 1.1; color: var(--accent); white-space: nowrap; }
+  .stat .l { font-size: 12.5px; line-height: 1.3; color: var(--muted); margin-top: 4px; }
+
+  .toc { display: flex; gap: 8px; overflow-x: auto; padding: 2px 0 12px; margin: 0 0 8px; scrollbar-width: none; }
+  .toc::-webkit-scrollbar { display: none; }
+  .toc a { flex: 0 0 auto; text-decoration: none; color: var(--ink); background: var(--chip); border-radius: 999px;
+    padding: 7px 13px; font-size: 14px; }
+
+  section { background: var(--card); border: 1px solid var(--line); border-radius: 18px; padding: 20px 18px 8px;
+    margin: 0 0 16px; box-shadow: var(--shadow); scroll-margin-top: 12px; }
+  h2 { font-size: 22px; line-height: 1.2; margin: 0 0 12px; letter-spacing: -0.2px; display: flex; gap: 10px; align-items: baseline; }
+  h2 .n { flex: 0 0 auto; display: inline-flex; align-items: center; justify-content: center; width: 30px; height: 30px;
+    border-radius: 50%; background: var(--accent); color: #fff; font-size: 15px; font-weight: 700; transform: translateY(-2px); }
+  h3 { font-size: 17px; margin: 18px 0 8px; }
+  p { margin: 0 0 12px; }
+  ul, ol { margin: 0 0 12px; padding-left: 22px; }
+  li { margin: 0 0 8px; }
+  li::marker { color: var(--accent); font-weight: 700; }
+
+  .steps { list-style: none; padding: 0; counter-reset: s; }
+  .steps > li { counter-increment: s; position: relative; padding-left: 36px; margin-bottom: 12px; }
+  .steps > li::before { content: counter(s); position: absolute; left: 0; top: 1px; width: 24px; height: 24px; border-radius: 50%;
+    background: var(--accent-soft); color: var(--accent); font-size: 13px; font-weight: 700; text-align: center; line-height: 24px; }
+
+  .check { display: flex; gap: 12px; align-items: flex-start; padding: 12px 0; border-bottom: 1px solid var(--line); cursor: pointer; }
+  .check:last-child { border-bottom: 0; }
+  .check input { appearance: none; -webkit-appearance: none; flex: 0 0 auto; width: 26px; height: 26px; margin: 0;
+    border: 2px solid var(--accent); border-radius: 8px; display: grid; place-content: center; cursor: pointer; background: var(--card); }
+  .check input::after { content: ""; width: 12px; height: 7px; border: solid #fff; border-width: 0 0 3px 3px; transform: rotate(-45deg) translate(1px, -1px); opacity: 0; }
+  .check input:checked { background: var(--accent); }
+  .check input:checked::after { opacity: 1; }
+  .check .tx { flex: 1; }
+  .check .tx b { display: block; }
+  .check .tx span { display: block; font-size: 15px; color: var(--muted); }
+  .check input:checked + .tx b { text-decoration: line-through; text-decoration-color: var(--accent); color: var(--muted); }
+  .progress { font-size: 14px; color: var(--muted); margin: 4px 0 14px; }
+  .bar { height: 6px; background: var(--chip); border-radius: 99px; overflow: hidden; margin-top: 6px; }
+  .bar i { display: block; height: 100%; width: 0; background: var(--accent); border-radius: 99px; transition: width .3s; }
+
+  .box { border-radius: 14px; padding: 14px 15px; margin: 0 0 14px; font-size: 16px; }
+  .box .t { font-weight: 700; margin-bottom: 5px; }
+  .box p:last-child, .box ul:last-child { margin-bottom: 0; }
+  .box.accent { background: var(--accent-soft); } .box.accent .t { color: var(--accent); }
+  .box.calm { background: var(--calm-soft); } .box.calm .t { color: var(--calm); }
+  .box.warn { background: var(--warn-soft); } .box.warn .t { color: var(--warn); }
+
+  .ladder { width: 100%; border-collapse: collapse; margin: 4px 0 14px; font-size: 16px; }
+  .ladder th, .ladder td { padding: 9px 4px; border-bottom: 1px solid var(--line); text-align: center; }
+  .ladder th { font-size: 11px; text-transform: uppercase; letter-spacing: .2px; color: var(--muted); font-weight: 600; }
+  .ladder td:first-child, .ladder th:first-child { text-align: left; }
+  .ladder td.d { white-space: nowrap; }
+  .ladder td.d small { color: var(--muted); font-size: 13px; }
+  .ladder tr.today td { background: var(--accent-soft); font-weight: 700; }
+  .ladder tr.today td.d::after { content: "сегодня"; display: table; margin-top: 3px; font-size: 11px; font-weight: 700;
+    color: #fff; background: var(--accent); border-radius: 99px; padding: 1px 7px; }
+  .ladder tr.past td { color: var(--muted); }
+
+  .btn { display: inline-flex; align-items: center; gap: 8px; text-decoration: none; background: var(--accent); color: #fff;
+    border: 0; border-radius: 12px; padding: 12px 16px; font: inherit; font-weight: 650; font-size: 16px; cursor: pointer; margin: 2px 0 14px; }
+  .btn.ghost { background: var(--chip); color: var(--ink); }
+
+  .copy { position: relative; background: var(--chip); border-radius: 12px; margin: 0 0 14px; }
+  .copy pre { margin: 0; padding: 13px 14px 50px; white-space: pre-wrap; word-break: break-word;
+    font: 14.5px/1.5 ui-monospace, "SF Mono", Menlo, Consolas, monospace; color: var(--ink); max-height: 340px; overflow: auto; }
+  .copy.short pre { padding-bottom: 50px; max-height: none; }
+  .copy button { position: absolute; right: 8px; bottom: 8px; border: 0; border-radius: 9px; padding: 7px 12px;
+    background: var(--accent); color: #fff; font: 600 14px/1.2 -apple-system, Roboto, sans-serif; cursor: pointer; }
+  .copy button.ok { background: var(--calm); }
+
+  details { border: 1px solid var(--line); border-radius: 14px; margin: 0 0 14px; }
+  details > summary { cursor: pointer; padding: 13px 15px; font-weight: 650; list-style: none; display: flex; justify-content: space-between; gap: 10px; }
+  details > summary::-webkit-details-marker { display: none; }
+  details > summary::after { content: "+"; color: var(--accent); font-size: 22px; line-height: 1; }
+  details[open] > summary::after { content: "−"; }
+  details > .in { padding: 0 15px 4px; }
+
+  .vid { display: flex; gap: 12px; align-items: flex-start; padding: 10px 0; border-bottom: 1px solid var(--line); }
+  .vid:last-child { border-bottom: 0; }
+  .vid .ic { flex: 0 0 auto; width: 38px; height: 38px; border-radius: 10px; background: var(--accent-soft); color: var(--accent);
+    display: grid; place-content: center; font-size: 15px; }
+  .vid .m { font-size: 14px; color: var(--muted); }
+
+  .sign { text-align: center; color: var(--muted); font-size: 14px; margin-top: 26px; }
+  .sign b { color: var(--ink); }
+  @media (max-width: 380px) { h1 { font-size: 29px; } .stat .v { font-size: 19px; } .ladder { font-size: 15px; } }
+</style>
+</head>
+<body>
+<div class="wrap">
+<header class="hero">
+  <div class="kicker">Взрывные алгоритмы · 4 поток · зум 24.10</div>
+  <h1>Что делаем <em>после зума 24 октября</em></h1>
+  <p class="lead">Выжимка нашего созвона: начинаем второй этап и добавляем свои темы с нуля, наращиваем рилсы в ленту и в пробный режим, подключаем ChatGPT и Рилсовую. Отмечайте галочками, что сделали</p>
+  <div class="stats"><div class="stat"><div class="v">10 + 10</div><div class="l">рилсов в день: лента и пробный режим</div></div><div class="stat"><div class="v">2 мин</div><div class="l">на рилс в Рилсовой вместо 10</div></div><div class="stat"><div class="v">1 месяц</div><div class="l">без пропусков и смены VPN</div></div></div>
+</header>
+
+<nav class="toc" aria-label="Разделы"><a href="#sejchas">Сделать</a><a href="#strategiya">Стратегия</a><a href="#svoi-temy">Свои темы</a><a href="#chatgpt">ChatGPT</a><a href="#rilsovaya">Рилсовая</a><a href="#usilenie">Усиление</a><a href="#raspakovka">Распаковка</a><a href="#lichno">Лично</a><a href="#zapis">Запись</a></nav>
+
+<section id="sejchas">
+  <h2><span class="n">1</span>Что сделать сейчас</h2>
+  <div class="progress"><span id="pr-t">Отмечайте галочками, что сделали</span><div class="bar"><i id="pr-b"></i></div></div>
+<label class="check"><input type="checkbox" data-k="t1"><span class="tx"><b>Купить ChatGPT Plus</b><span>как и где, в разделе <a href="#chatgpt">ChatGPT</a>. Нужен всем: тексты, распаковка, фото для каруселей</span></span></label><label class="check"><input type="checkbox" data-k="t2"><span class="tx"><b>Пройти распаковку в ChatGPT</b><span>даже если уже проходили в DeepSeek: ChatGPT распаковывает намного лучше. Промпты в разделе <a href="#raspakovka">Распаковка</a></span></span></label><label class="check"><input type="checkbox" data-k="t3"><span class="tx"><b>Заполнить шапку профиля из распаковки</b><span>без «учусь» и планов на будущее: пишем, кто вы уже сейчас</span></span></label><label class="check"><input type="checkbox" data-k="t4"><span class="tx"><b>Попробовать Рилсовую и написать мне, чего не хватает</b><span>шрифты, форматы, кнопки. Программа сырая, ваша обратная связь решает, какой она станет</span></span></label><label class="check"><input type="checkbox" data-k="t5"><span class="tx"><b>Каждый день 1-2 свои темы с нуля</b><span>кто уже разогнал аккаунт. Остальное пока залетевшие темы, как и раньше. Кто на самом старте, пока берёт только залетевшие</span></span></label><label class="check"><input type="checkbox" data-k="t6"><span class="tx"><b>Посмотреть запись зума</b><span>кто был не до конца, там показ обеих программ</span></span></label>
+</section>
+
+<section id="strategiya">
+  <h2><span class="n">2</span>Стратегия постинга</h2>
+<ol class="steps"><li><b>Основная лента: до 10 рилсов в день.</b> Растим лесенкой, +1 рилс в день от того, что выкладываете сейчас</li><li><b>Пробный режим: тоже до 10 в день, той же лесенкой.</b> Сначала 1, назавтра 2 и так далее</li><li><b>Не вывозите 10 + 10 - делайте 5 в ленту и 5 в пробник.</b> Пробник на новых аккаунтах работает так же сильно, как лента: мой ролик в ленте набрал 932 тыс., тот же ролик в пробном режиме 3 млн</li></ol>
+<h3>Что выкладывать в пробный режим</h3>
+<ol class="steps"><li>Только ваши самые залетевшие рилсы. В профиле включите сортировку «Самые просматриваемые» и берите сверху вниз</li><li>Меняйте видеоподложку, это главное. Текст можно оставить тот же, а можно уникализировать: так ещё безопаснее</li><li>Залетевших всего 5-6 - это нормально. Повторяйте их каждый день, каждый раз на новой подложке</li><li>Как выкладывать пробный, через бегунок или через папку «Черновики и пробные рилсы», без разницы</li></ol>
+<h3>Правила, которые нельзя нарушать</h3>
+<div class="box warn"><div class="t">Один VPN - одна страна</div><p>Сидите в Нидерландах - выкладывайте только из Нидерландов. Я вчера сам забыл переключить VPN с Америки и выложил рилс: хорошая тема набрала всего 15 тыс. Даже на раскачанном аккаунте смена страны режет охваты</p></div>
+<div class="box accent"><div class="t">Прогрев перед каждой публикацией</div><p>За 5 минут до выкладки зайдите в рилсы и полистайте ленту. Лайкаем и сохраняем только формат нейроописания, говорящие головы и мультики листаем мимо. Так алгоритм понимает, кому показывать ваши ролики. Залетевшие темы сразу сохраняйте: из сохранёнок потом переделываете</p></div>
+<div class="box calm"><div class="t">Первый месяц - долина смерти</div><p>Это испытательный срок аккаунта: Instagram присматривается и даёт охваты на полставки. Каждый день выкладка, прогрев и один VPN, без пропусков, иначе шаг вперёд и два назад. У меня за первый месяц было всего 8 подписчиков, прорвало на 33-й день</p></div>
+<div class="box calm"><div class="t">Музыку добавляем только внутри Instagram</div><p>Свою музыку в видео не вшиваем</p></div>
+<div class="box calm"><div class="t">Подложки не главное</div><p>90% успеха - заголовок и текст, подложка 10%. Я три месяца ехал на 10 одинаковых подложках по 10 рилсов в день. Подложки нужны, чтобы люди привыкали к вам: в кадре вы, лицо можно не показывать</p></div>
+</section>
+
+<section id="svoi-temy">
+  <h2><span class="n">3</span>Второй этап: свои темы с нуля</h2>
+<p>Первым этапом мы разгоняли аккаунты чужими залетевшими темами. Теперь добавляем свои, созданные с нуля под вашу нишу: из распаковки, из головы, из жизни. Наполовину берём то, что уже залетело у других, наполовину пишем своё</p>
+<p>Своя новая тема может собрать сливки, потому что такой ещё ни у кого не было. Каждая перевыложенная тема с каждым разом теряет новизну, а новая бьёт в боль, которую ещё никто не трогал. Ученица второго потока придумала сравнить эмпатов и нарциссов, и этот ролик набрал несколько миллионов</p>
+<div class="box accent"><div class="t">С чего начать</div><p>Начните с 1-2 своих тем в день. Смотрите, какие залетают, и множьте именно их. Дальше буду подсказывать на практике</p></div>
+<div class="box calm"><div class="t">Где искать тему в Telegram</div><p>В канале «ТОП-карусели» или в своей группе с текстами потяните экран вниз, сверху появится поиск. Пишете слово из темы, например «КГБ», и находите за секунду</p></div>
+<a class="btn ghost" href="https://t.me/+Z8WfRzumyfs5NjQ6">Канал «ТОП-карусели» →</a>
+</section>
+
+<section id="chatgpt">
+  <h2><span class="n">4</span>ChatGPT Plus</h2>
+<p>Нужен всем. В нём пишем тексты и заголовки, проходим распаковку, генерируем свои фото для каруселей. С банами у него проблем гораздо меньше, чем у Claude, а других нейросетей нам не нужно</p>
+<p>Бесплатная версия не подойдёт: упрётесь в лимиты. Plus стоит около 20 долларов в месяц, через продавца ниже это примерно 1 900-2 000 ₽ российской картой. Кто живёт не в России, может оплатить напрямую, 20 долларов или 20 евро</p>
+<h3>Как купить за 5 минут</h3>
+<ol class="steps"><li>Заведите обычный бесплатный аккаунт на chatgpt.com, если его ещё нет. Подписка встаёт именно на бесплатный аккаунт</li><li>Откройте страницу продавца по кнопке ниже, выберите тариф Plus и оплатите</li><li>Нажмите «Получить товар» и пройдите инструкцию бота продавца. Он попросит Session ID, это не логин и не пароль</li><li>Подписка включится примерно за минуту. Не получилось - пишите в чат продавцу, он отвечает быстро</li></ol>
+<a class="btn" href="https://plati.market/itm/auto-issue-24-7-chatgpt-6-astra-go-plus-pro-no-login-remove/5794510">Купить ChatGPT Plus →</a>
+<div class="box calm"><div class="t">Для текстов включайте режим «Работа»</div><p>В нём работает самая умная модель Astra: думает чуть дольше, зато тексты глубже. Лимит она тратит быстрее. Обязательно сравните с режимом «Чат» и решите, что вам больше нравится</p></div>
+<div class="box accent"><div class="t">Новый чат после 10 текстов</div><p>Каждое новое сообщение ChatGPT читает весь чат с самого начала и тратит на это лимит. Сделали в одном чате около 10 текстов - открывайте новый. Так лимит не кончится посреди работы</p></div>
+</section>
+
+<section id="rilsovaya">
+  <h2><span class="n">5</span>Рилсовая: рилс за 2 минуты</h2>
+<p>Моя новая программа. Раньше путь от чужого залетевшего рилса до своего занимал 10 минут: бот, нейросеть, CapCut, Instagram. Теперь всё в одном окне</p>
+<ol class="steps"><li>Вставляете ссылку на чужой рилс, программа сама вытаскивает заголовок и текст</li><li>Уникализируете текст одним нажатием на 5-30% и выбираете, от чьего лица он написан: женщина, мужчина, со стороны. Заголовок лучше оставить как в оригинале, уникализируем описание</li><li>Нажимаете «В заголовок ролика» и загружаете свою подложку. Заголовок ложится на видео нестандартными шрифтами: бархат, карамель, стикер, 3D-блок, неон, рукописный, можно добавить анимацию. В ленте такие выделяются. Рамка загорается красным, если заголовок вылез за видимую зону рилса</li><li>Жмёте «Собрать видео», потом «Поделиться» и выбираете Instagram: скачивать на телефон не нужно. Музыку добавляете уже в Instagram</li><li>Когда рилс выложился, жмёте «Редактировать» и вставляете уникализированный текст. Его можно скопировать кнопкой прямо в программе</li></ol>
+<div class="box calm"><div class="t">Рилс долго грузится</div><p>Это скорость VPN: при слабом рилс догружается в фоне 5-15 минут. Ждите, он выложится сам</p></div>
+<a class="btn" href="https://ivan-loginov.ru/z-e56c728d/">Открыть Рилсовую →</a>
+<div class="box calm"><div class="t">Пробные генерации бесплатно</div><p>Программа платная: к ней подключены две нейросети, и за каждую генерацию плачу я. Бесплатные пробные генерации есть, попробуйте. Пользоваться ей или нет, решаете сами</p></div>
+<div class="box accent"><div class="t">Нужна ваша обратная связь</div><p>Программа сырая, я собрал её сегодня утром и буду допиливать по вашей обратной связи ближайшие неделю-две. Пишите в чат, чего не хватает: каких шрифтов, форматов, кнопок. Увидели в ленте заголовок с прикольным шрифтом - присылайте скрин, добавлю</p></div>
+</section>
+
+<section id="usilenie">
+  <h2><span class="n">6</span>Усиливающий промпт</h2>
+<p>Когда ChatGPT написал описание, а вам не хватает жёсткости, отправьте в тот же чат этот промпт. Он сначала разберёт текст, потом перепишет: больше деталей, резче тон, без воды и очевидного</p>
+<div class="copy"><pre id="c1">Усиль это описание. Сначала коротко разбери его по пунктам ниже: где слабо, где вода, где очевидное. Потом дай новую версию, в которую внедрён КАЖДЫЙ пункт разбора, без ухудшений
+
+1. Больше мяса: детали, цифры, бытовые сцены, реплики живых людей. Ни одной общей фразы
+2. Каждый пункт - инсайт, которого нет в обычных постах на эту тему. Очевидное вроде «пей воду и больше гуляй» убери
+3. Тон резкий, одна позиция до конца. В каждом пункте провокация и полярность, чтобы хотелось спорить в комментариях. Убери смягчения: хотя, может, иногда, часто, попробуй
+4. Боль словами читателя, через риск и потерю: он узнаёт себя с первой строки
+5. У каждого пункта своя эмоция и своя форма: сцена, диалог, цифра, ощущение в теле. Одинаковых шаблонов нет
+6. Пункт заканчивается сценой, действием, цифрой или репликой, а не выводом и не обобщением. Пункт не начинается с вопроса
+7. Без оценок, читатель сам решит, что хорошо
+8. Простой разговорный язык, короткие предложения, без метафор и красивостей
+9. Финал: новая конкретная боль и вопрос, на который хочется ответить «а у меня не так»
+10. Формат прежний: заголовок, 5 пунктов цифровым списком, без жирного и эмодзи, первое предложение слитно с пунктом. Слова со странными буквами оставь как есть
+11. Длина не больше 1900 знаков с пробелами
+
+Ценность такая, чтобы текст хотелось сохранить и переслать другу
+
+Сначала разбор, потом улучшенный текст</pre><button type="button" data-copy="c1">Скопировать</button></div>
+<p>Если в новой версии он внедрил не всё, добейте вторым:</p>
+<div class="copy"><pre id="c2">Ты сделал разбор, но половину пунктов не внедрил. Мало деталей и конкретики, много воды и очевидного, пункты похожи друг на друга. Перепиши ещё раз: в каждом пункте новая деталь, цифра или реплика, каждый пункт переворачивает привычный взгляд, у каждого своя форма. Не больше 1900 знаков, формат прежний</pre><button type="button" data-copy="c2">Скопировать</button></div>
+<div class="box calm"><div class="t">Перед публикацией прочитайте сами</div><p>Нейросеть может ошибиться в факте, а отвечаете за пост вы</p></div>
+</section>
+
+<section id="raspakovka">
+  <h2><span class="n">7</span>Распаковка в ChatGPT</h2>
+<p>Это база, с неё всё начинается. Три промпта по очереди вытаскивают из вас, кто вы, кто ваша аудитория и какой у вас продукт. В конце вы получаете список тем для контента и текст для шапки профиля</p>
+<p>Гайд написан под Claude, но промпты работают в ChatGPT точно так же. Проходили в DeepSeek - пройдите заново в ChatGPT, он распаковывает намного лучше</p>
+<ol class="steps"><li>В ChatGPT слева создайте проект «Моя распаковка», чтобы все разговоры и итоги лежали вместе</li><li>Откройте гайд, скопируйте свой промпт кнопкой «Скопировать промпт» и вставьте в новый чат проекта</li><li>Отвечайте на вопросы по одному, как в живом разговоре. Итоговый документ сохраните</li><li>Промпт 1 или 2, смотря кто вы, потом промпт 3. Каждый промпт в новом чате</li><li>Из итога заполните шапку профиля</li></ol>
+<a class="btn" href="https://ivan-loginov.ru/guide-raspakovka-claude/">Промпты распаковки →</a>
+<div class="box accent"><div class="t">Шапка профиля</div><p>Пишем, кто вы уже сейчас: специалист, к которому идут за результатом. Никаких «учусь» и «в планах», к ученикам не обращаются. Коротко и понятно, с призывом написать в директ</p></div>
+</section>
+
+<section id="lichno">
+  <h2><span class="n">8</span>Лично каждой</h2>
+<div class="box calm"><div class="t">Татьяна Елисеенко</div><p>Всё идёт стабильно, скоро 1 500 подписчиков. Сейчас 6-7 рилсов в ленту и 1 пробный: наращивайте обе части лесенкой до 10. В пробный можно каждый день ставить одни и те же залетевшие темы, главное менять подложку. Текст на пробный накладывайте так же, как на обычный, и проверьте, не съедается ли конец. Подложки можно не делать каждый раз новые: 10 штук хватит на 3 месяца</p></div>
+<div class="box calm"><div class="t">Варвара</div><p>Ни один из трёх аккаунтов пока не вырвался вперёд, это нормально, вы только начали. Продолжайте по 3 рилса в день на каждый аккаунт. Как только где-то рилс залетит на 3-10 тыс., начнём разгонять этот аккаунт количеством. Перед каждой выкладкой 5 минут прогрева и всё время один VPN</p></div>
+<div class="box calm"><div class="t">Светлана</div><p>Вы на начальном этапе, и это нормально. Задача на ближайшие дни: купить ChatGPT Plus, пройти распаковку и заполнить из неё шапку профиля, поднять рилсы до 5 в день. Темы пока берите триггерные, которые уже залетели у других, свои из распаковки подключим позже. Каждый день прогрев ленты и один VPN. Первые дни будет медленно, к десятому дню рука набьётся</p></div>
+<div class="box calm"><div class="t">Керемет</div><p>Работаете с одним аккаунтом, остальные удалите с телефона. Пробник набрал 1 140, завтра выкладывайте 2 пробника и дальше +1 в день до 10, в ленту тоже до 10. В пробник берите свои самые просматриваемые рилсы, начиная с «Тебя унизили при всех», и меняйте подложку. Разнообразьте подложки: кафе с кофе, книга или ноутбук, прогулки, виды Сеула вечером. Заголовки не только в чёрной рамке, пробуйте белую, но без пёстрых цветов: главное, чтобы читалось. Одну тему в день пишите сами через ChatGPT. В шапке уберите «учусь»: «Косметолог, живу в Корее, пишите в директ» сработает лучше</p></div>
+</section>
+
+<section id="zapis">
+  <h2><span class="n">9</span>Запись зума</h2>
+<p>Запись лежит на платформе в «Групповых созвонах». Во второй половине показ Рилсовой и агента для текстов</p>
+<a class="btn" href="https://ivanloginov.getcourse.ru/teach/control/lesson/view/id/350516098">Смотреть запись →</a>
+</section>
+
+<p class="sign">Пробуйте, делайте и пишите в чат, что получилось<br><b>Иван Логинов</b> · Взрывные алгоритмы</p>
+</div>
+
+<script>
+(function () {
+  var KEY = "zum-4potok-2410";
+  var state = {};
+  try { state = JSON.parse(localStorage.getItem(KEY) || "{}") || {}; } catch (e) { state = {}; }
+  var boxes = Array.prototype.slice.call(document.querySelectorAll(".check input"));
+  function paint() {
+    var done = boxes.filter(function (b) { return b.checked; }).length;
+    if (!boxes.length) return;
+    document.getElementById("pr-b").style.width = (done / boxes.length * 100) + "%";
+    document.getElementById("pr-t").textContent = done === 0 ? "Отмечайте галочками, что сделали"
+      : done === boxes.length ? "Всё сделано, вы огонь 🔥" : "Сделано " + done + " из " + boxes.length;
+  }
+  boxes.forEach(function (b) {
+    b.checked = !!state[b.dataset.k];
+    b.addEventListener("change", function () {
+      state[b.dataset.k] = b.checked;
+      try { localStorage.setItem(KEY, JSON.stringify(state)); } catch (e) {}
+      paint();
+    });
+  });
+  paint();
+
+  var d = new Date();
+  var today = d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0") + "-" + String(d.getDate()).padStart(2, "0");
+  document.querySelectorAll(".ladder tbody tr").forEach(function (tr) {
+    if (tr.dataset.d === today) tr.classList.add("today");
+    else if (tr.dataset.d < today) tr.classList.add("past");
+  });
+
+  function fallbackCopy(text) {
+    var ta = document.createElement("textarea");
+    ta.value = text; ta.setAttribute("readonly", ""); ta.style.position = "fixed"; ta.style.opacity = "0";
+    document.body.appendChild(ta); ta.select();
+    try { document.execCommand("copy"); } catch (e) {}
+    document.body.removeChild(ta);
+  }
+  document.querySelectorAll("[data-copy]").forEach(function (btn) {
+    btn.addEventListener("click", function () {
+      var text = document.getElementById(btn.dataset.copy).textContent;
+      var ok = function () {
+        btn.textContent = "Скопировано ✓"; btn.classList.add("ok");
+        setTimeout(function () { btn.textContent = "Скопировать"; btn.classList.remove("ok"); }, 1800);
+      };
+      if (navigator.clipboard && window.isSecureContext) {
+        navigator.clipboard.writeText(text).then(ok, function () { fallbackCopy(text); ok(); });
+      } else { fallbackCopy(text); ok(); }
+    });
+  });
+})();
+</script>
+</body>
+</html>
