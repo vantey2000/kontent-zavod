@@ -1,0 +1,477 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#0b1538">
+<title>Твой 2027 по дате рождения</title>
+<meta name="description" content="Введи дату рождения и узнай, что 2027 год готовит именно тебе: знак, животное года, число года, любовь, деньги и лучшие месяцы">
+<meta property="og:title" content="Что 2027 год готовит именно тебе">
+<meta property="og:description" content="Бесплатно: главное про твой 2027 по дате рождения. Год Огненной Козы начнётся 6 февраля">
+<link rel="preload" href="fonts/jost-var-cyrillic.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="preload" href="fonts/cormorant-500-cyrillic.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="modulepreload" href="main.js">
+<style>
+@font-face{font-family:'Cormorant Garamond';font-style:italic;font-weight:500;font-display:swap;src:url(fonts/cormorant-i500-cyrillic.woff2) format('woff2');unicode-range:U+0301, U+0400-045F, U+0490-0491, U+04B0-04B1, U+2116}
+@font-face{font-family:'Cormorant Garamond';font-style:italic;font-weight:500;font-display:swap;src:url(fonts/cormorant-i500-latin.woff2) format('woff2');unicode-range:U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD}
+@font-face{font-family:'Cormorant Garamond';font-style:normal;font-weight:500;font-display:swap;src:url(fonts/cormorant-500-cyrillic.woff2) format('woff2');unicode-range:U+0301, U+0400-045F, U+0490-0491, U+04B0-04B1, U+2116}
+@font-face{font-family:'Cormorant Garamond';font-style:normal;font-weight:500;font-display:swap;src:url(fonts/cormorant-500-latin.woff2) format('woff2');unicode-range:U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD}
+@font-face{font-family:'Cormorant Garamond';font-style:normal;font-weight:600;font-display:swap;src:url(fonts/cormorant-500-cyrillic.woff2) format('woff2');unicode-range:U+0301, U+0400-045F, U+0490-0491, U+04B0-04B1, U+2116}
+@font-face{font-family:'Cormorant Garamond';font-style:normal;font-weight:600;font-display:swap;src:url(fonts/cormorant-500-latin.woff2) format('woff2');unicode-range:U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD}
+@font-face{font-family:'Jost';font-style:normal;font-weight:400;font-display:swap;src:url(fonts/jost-var-cyrillic.woff2) format('woff2');unicode-range:U+0301, U+0400-045F, U+0490-0491, U+04B0-04B1, U+2116}
+@font-face{font-family:'Jost';font-style:normal;font-weight:400;font-display:swap;src:url(fonts/jost-var-latin.woff2) format('woff2');unicode-range:U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD}
+@font-face{font-family:'Jost';font-style:normal;font-weight:500;font-display:swap;src:url(fonts/jost-var-cyrillic.woff2) format('woff2');unicode-range:U+0301, U+0400-045F, U+0490-0491, U+04B0-04B1, U+2116}
+@font-face{font-family:'Jost';font-style:normal;font-weight:500;font-display:swap;src:url(fonts/jost-var-latin.woff2) format('woff2');unicode-range:U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD}
+@font-face{font-family:'Jost';font-style:normal;font-weight:600;font-display:swap;src:url(fonts/jost-var-cyrillic.woff2) format('woff2');unicode-range:U+0301, U+0400-045F, U+0490-0491, U+04B0-04B1, U+2116}
+@font-face{font-family:'Jost';font-style:normal;font-weight:600;font-display:swap;src:url(fonts/jost-var-latin.woff2) format('woff2');unicode-range:U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD}
+:root{
+  --night:#050817;
+  --navy:#0b1538;
+  --deep:#13215a;
+  --gold:#d9b56c;
+  --gold-hi:#f3dca0;
+  --gold-lo:#a8823c;
+  --line:rgba(217,181,108,.42);
+  --text:#f1ead9;
+  --muted:#aab2d0;
+  --field:rgba(9,16,46,.72);
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html{-webkit-text-size-adjust:100%}
+body{
+  background:var(--night);
+  color:var(--text);
+  font-family:'Jost',system-ui,sans-serif;
+  -webkit-font-smoothing:antialiased;
+  overflow-x:hidden;
+}
+
+/* ---------- фон: небо ---------- */
+.hero{
+  position:relative;
+  min-height:100svh;
+  overflow:hidden;
+  isolation:isolate;
+  background:
+    radial-gradient(110% 55% at 50% 0%, #1d2f78 0%, rgba(19,33,90,.55) 38%, transparent 72%),
+    radial-gradient(70% 40% at 100% 100%, rgba(92,58,128,.30), transparent 70%),
+    linear-gradient(180deg, #0b1538 0%, #080e2b 55%, #050817 100%);
+}
+.hero::after{ /* мягкая плёнка-зерно */
+  content:"";position:absolute;inset:0;z-index:-1;pointer-events:none;opacity:.22;mix-blend-mode:soft-light;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+}
+.stars{position:absolute;inset:0;width:100%;height:100%;z-index:-2}
+.stars circle{fill:#fff6e0;animation:twinkle 6s ease-in-out infinite}
+@keyframes twinkle{50%{opacity:.15}}
+
+.wheel{
+  position:absolute;z-index:-1;
+  width:560px;height:560px;
+  left:50%;top:-388px;
+  transform:translateX(-50%);
+}
+.wheel svg{width:100%;height:100%;animation:spin 420s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+.wheel .w1{fill:none;stroke:var(--gold);stroke-opacity:.5;stroke-width:1}
+.wheel .w2{fill:none;stroke:var(--gold);stroke-opacity:.7;stroke-width:1}
+.wheel .w3{fill:none;stroke:var(--gold);stroke-opacity:.28;stroke-width:.7}
+.wheel .w4{fill:none;stroke:var(--gold);stroke-opacity:.3;stroke-width:.7;stroke-dasharray:2 7}
+.wheel .tk{stroke:var(--gold);stroke-opacity:.6;stroke-width:.8}
+.wheel .sec{stroke:var(--gold);stroke-opacity:.16;stroke-width:.7}
+.wheel .st{fill:var(--gold-hi);opacity:.85}
+.wheel .pl{fill:var(--gold-hi)}
+
+.constellation{
+  position:absolute;z-index:-1;
+  width:214px;right:14px;top:22px;
+  opacity:.9;
+}
+.constellation .ln{fill:none;stroke:var(--gold);stroke-width:.9;stroke-opacity:.75;stroke-dasharray:400;stroke-dashoffset:400;animation:draw 2.6s .4s ease-out forwards}
+.constellation .sr{fill:var(--gold-hi)}
+.constellation .glow{fill:var(--gold-hi);opacity:.18}
+@keyframes draw{to{stroke-dashoffset:0}}
+
+/* ---------- содержимое ---------- */
+.wrap{
+  position:relative;
+  max-width:460px;
+  margin:0 auto;
+  padding:156px 20px 28px;
+  text-align:center;
+}
+.eyebrow{
+  display:flex;flex-direction:column;align-items:center;gap:10px;
+  font-size:12px;font-weight:500;letter-spacing:.16em;text-transform:uppercase;
+  color:var(--gold);line-height:1.6;
+  max-width:300px;margin:0 auto;
+}
+.eyebrow .orn{display:flex;align-items:center;gap:10px}
+.eyebrow .orn i{display:block;width:34px;height:1px;background:linear-gradient(90deg,transparent,var(--gold))}
+.eyebrow .orn i:last-child{transform:scaleX(-1)}
+.eyebrow .orn svg{width:12px;height:12px;fill:var(--gold-hi)}
+
+h1{
+  margin-top:18px;
+  font-family:'Cormorant Garamond',Georgia,serif;
+  font-weight:500;
+  font-size:47px;
+  line-height:1.0;
+  letter-spacing:-.01em;
+  color:var(--text);
+}
+h1 em{
+  display:block;
+  font-style:italic;font-weight:500;
+  background:linear-gradient(100deg,var(--gold-lo) 0%,var(--gold-hi) 45%,var(--gold) 70%,var(--gold-lo) 100%);
+  -webkit-background-clip:text;background-clip:text;color:transparent;
+  padding:0 .06em .04em;
+}
+.lead{
+  text-wrap:pretty;
+  margin:16px auto 0;
+  max-width:350px;
+  font-size:16.5px;line-height:1.5;color:var(--muted);
+}
+
+.form{margin-top:26px}
+.fields{display:grid;grid-template-columns:.92fr 1.5fr 1.05fr;gap:8px}
+.field{position:relative;display:block}
+.field input,.field select{
+  width:100%;height:60px;
+  border-radius:14px;
+  border:1px solid var(--line);
+  background:var(--field);
+  color:var(--text);
+  font:500 18px/1 'Jost',sans-serif;
+  text-align:center;
+  outline:none;
+  -webkit-appearance:none;appearance:none;
+  transition:border-color .2s,box-shadow .2s,background .2s;
+}
+.field select{padding:0 26px 0 12px;text-align-last:center;cursor:pointer}
+.field select:invalid{color:#8f97b8}
+.field select option{color:#0b1538}
+.field input::placeholder{color:#8f97b8;opacity:1}
+.field input:focus,.field select:focus{border-color:var(--gold);box-shadow:0 0 0 3px rgba(217,181,108,.18);background:rgba(15,25,66,.9)}
+.field .chev{position:absolute;right:10px;top:50%;width:12px;height:12px;margin-top:-6px;pointer-events:none;stroke:var(--gold);fill:none;stroke-width:1.6}
+
+.cta{
+  position:relative;overflow:hidden;
+  margin-top:10px;
+  width:100%;height:62px;
+  border:0;border-radius:14px;cursor:pointer;
+  display:flex;align-items:center;justify-content:center;gap:12px;
+  font:600 18px/1 'Jost',sans-serif;letter-spacing:.02em;
+  color:#0b1538;
+  background:linear-gradient(180deg,#f3dca0 0%,#d9b56c 55%,#b8913f 100%);
+  box-shadow:0 10px 30px -10px rgba(217,181,108,.55),inset 0 1px 0 rgba(255,255,255,.5);
+  transition:transform .15s,box-shadow .2s;
+}
+.cta svg{width:18px;height:18px;fill:#0b1538}
+.cta::after{
+  content:"";position:absolute;top:0;bottom:0;width:40%;left:-60%;
+  background:linear-gradient(100deg,transparent,rgba(255,255,255,.45),transparent);
+  animation:shine 4.5s 1.4s ease-in-out infinite;
+}
+@keyframes shine{0%{left:-60%}35%,100%{left:130%}}
+.cta:active{transform:scale(.985)}
+.note{
+  margin-top:13px;
+  font-size:13.5px;line-height:1.45;color:var(--muted);
+}
+.note b{font-weight:500;color:var(--gold)}
+.nw{white-space:nowrap}
+
+.sr-only{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+
+/* появление */
+.rise{opacity:0;transform:translateY(12px);animation:rise .8s cubic-bezier(.2,.7,.2,1) forwards}
+.d1{animation-delay:.05s}.d2{animation-delay:.15s}.d3{animation-delay:.28s}.d4{animation-delay:.4s}
+@keyframes rise{to{opacity:1;transform:none}}
+
+/* ---------- компьютер ---------- */
+@media (min-width:960px){
+  .hero{display:flex;align-items:center;min-height:100vh}
+  .wheel{width:860px;height:860px;left:auto;right:-250px;top:50%;transform:translateY(-50%)}
+  .constellation{width:420px;right:60px;top:50%;margin-top:-170px}
+  .wrap{
+    max-width:none;width:100%;
+    margin:0;
+    padding:56px 0 56px max(96px,calc((100vw - 1180px)/2));
+    text-align:left;
+  }
+  .inner{max-width:600px}
+  .eyebrow{max-width:none;align-items:flex-start;font-size:13px}
+  .eyebrow .orn i:first-child{display:none}
+  h1{font-size:78px;line-height:.98;margin-top:22px}
+  h1 em{padding-left:0}
+  .lead{margin:22px 0 0;max-width:540px;font-size:19px}
+  .form{margin-top:34px;max-width:520px}
+  .fields{gap:10px}
+  .field input,.field select{height:64px;font-size:19px}
+  .cta{height:64px;font-size:19px;margin-top:12px}
+  .note{text-align:left;font-size:14.5px}
+}
+@media (prefers-reduced-motion:reduce){
+  *,*::before,*::after{animation:none!important}
+  .rise{opacity:1;transform:none}
+  .constellation .ln{stroke-dashoffset:0}
+}
+/* ---------- ошибка формы ---------- */
+.err{margin-top:10px;font-size:14.5px;line-height:1.4;color:#f3b9a0}
+
+/* ---------- результат: бесплатная часть и полный разбор ---------- */
+.res{position:relative;background:linear-gradient(180deg,#050817 0%,#0a1236 40%,#070c26 100%);border-top:1px solid rgba(217,181,108,.18)}
+.res-in{max-width:640px;margin:0 auto;padding:44px 20px 56px}
+.res .eyebrow{max-width:none}
+.r-title{margin-top:14px;text-align:center;font-family:'Cormorant Garamond',Georgia,serif;font-weight:500;font-size:52px;line-height:1;color:var(--text)}
+.r-sub{margin-top:10px;text-align:center;font-size:16px;color:var(--gold);letter-spacing:.02em}
+.cusp{margin:22px 0 0;padding:16px 16px 14px;border:1px solid var(--line);border-radius:16px;background:rgba(9,16,46,.6);font-size:15px;line-height:1.5;color:var(--muted)}
+.cusp-btns{display:flex;gap:8px;margin-top:12px}
+.cusp-btns button{flex:1;height:46px;border-radius:12px;border:1px solid var(--line);background:transparent;color:var(--text);font:500 16px/1 'Jost',sans-serif;cursor:pointer}
+.cusp-btns button[aria-pressed="true"]{background:rgba(217,181,108,.16);border-color:var(--gold);color:var(--gold-hi)}
+
+.md{margin-top:26px;font-size:17px;line-height:1.62;color:#e6dfcd}
+.md p{margin:0 0 16px}
+.md strong{color:var(--gold-hi);font-weight:600}
+.md h3{margin:38px 0 14px;font-family:'Cormorant Garamond',Georgia,serif;font-weight:600;font-size:31px;line-height:1.1;color:var(--text);text-wrap:balance}
+.md h3:first-child{margin-top:8px}
+.md ul,.md ol{margin:0 0 16px;padding-left:22px}
+.md li{margin:0 0 8px}
+.md li::marker{color:var(--gold)}
+
+.best{margin:6px 0 0;padding:16px 18px;border-left:2px solid var(--gold);background:rgba(217,181,108,.07);border-radius:0 14px 14px 0;font-size:17px;line-height:1.5}
+.best b{color:var(--gold-hi);font-weight:600}
+
+.lock{margin-top:28px;padding:22px 18px 20px;border:1px solid var(--line);border-radius:20px;background:radial-gradient(120% 80% at 50% 0%,rgba(29,47,120,.55),rgba(9,16,46,.7))}
+.lock-h{font-family:'Cormorant Garamond',Georgia,serif;font-size:28px;line-height:1.1;color:var(--text);text-align:center}
+.lock ul{list-style:none;margin:16px 0 18px;display:grid;gap:9px}
+.lock li{position:relative;padding-left:26px;font-size:16px;line-height:1.45;color:#dcd5c3}
+.lock li::before{content:"";position:absolute;left:2px;top:5px;width:12px;height:12px;background:var(--gold);
+  -webkit-mask:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 12'%3E%3Cpath d='M6 0Q6 6 12 6Q6 6 6 12Q6 6 0 6Q6 6 6 0Z'/%3E%3C/svg%3E") center/contain no-repeat;
+  mask:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 12'%3E%3Cpath d='M6 0Q6 6 12 6Q6 6 6 12Q6 6 0 6Q6 6 6 0Z'/%3E%3C/svg%3E") center/contain no-repeat}
+.lock .note{text-align:center}
+.cta[disabled]{opacity:.7;cursor:progress}
+.cta[disabled]::after{display:none}
+
+.linkbtn{display:block;margin:26px auto 0;background:none;border:0;color:var(--muted);font:500 15px/1.4 'Jost',sans-serif;text-decoration:underline;text-underline-offset:3px;cursor:pointer}
+.wait{margin-top:24px;text-align:center;font-size:17px;line-height:1.5;color:var(--muted)}
+.save{margin-top:30px;padding:16px 18px;border:1px dashed var(--line);border-radius:14px;font-size:15px;line-height:1.5;color:var(--muted)}
+.foot{padding:28px 20px 40px;text-align:center;font-size:13px;line-height:1.7;color:#7f88aa;background:#050817}
+.foot a{color:#aab2d0}
+@media (min-width:960px){
+  .res-in{padding:64px 20px 72px}
+  .r-title{font-size:68px}
+  .md{font-size:18px}
+}
+</style>
+</head>
+<body>
+<main class="hero">
+  <svg class="stars" aria-hidden="true">
+<circle cx="1.4%" cy="32.2%" r="0.8" opacity="0.66" style="animation-delay:-4.8s"/>
+<circle cx="34.2%" cy="6.7%" r="1.5" opacity="0.79" style="animation-delay:-3.9s"/>
+<circle cx="84.2%" cy="94.2%" r="0.8" opacity="0.55" style="animation-delay:-1.0s"/>
+<circle cx="88.2%" cy="86.0%" r="0.5" opacity="0.46" style="animation-delay:-1.5s"/>
+<circle cx="9.8%" cy="98.5%" r="1.5" opacity="0.52" style="animation-delay:-3.4s"/>
+<circle cx="50.3%" cy="6.8%" r="0.6" opacity="0.39" style="animation-delay:-0.7s"/>
+<circle cx="58.5%" cy="12.1%" r="0.6" opacity="0.47" style="animation-delay:-0.1s"/>
+<circle cx="2.8%" cy="62.8%" r="1.2" opacity="0.49" style="animation-delay:-1.7s"/>
+<circle cx="97.1%" cy="66.6%" r="1.0" opacity="0.35" style="animation-delay:-2.2s"/>
+<circle cx="44.4%" cy="97.2%" r="0.7" opacity="0.71" style="animation-delay:-2.6s"/>
+<circle cx="65.3%" cy="86.7%" r="1.2" opacity="0.38" style="animation-delay:-0.8s"/>
+<circle cx="41.2%" cy="1.5%" r="0.5" opacity="0.74" style="animation-delay:-0.8s"/>
+<circle cx="53.1%" cy="12.5%" r="0.5" opacity="0.61" style="animation-delay:-2.5s"/>
+<circle cx="99.8%" cy="33.2%" r="0.8" opacity="0.5" style="animation-delay:-5.2s"/>
+<circle cx="57.2%" cy="92.9%" r="1.0" opacity="0.46" style="animation-delay:-1.0s"/>
+<circle cx="33.4%" cy="10.1%" r="0.8" opacity="0.62" style="animation-delay:-4.7s"/>
+<circle cx="38.8%" cy="93.6%" r="1.0" opacity="0.67" style="animation-delay:-5.7s"/>
+<circle cx="18.8%" cy="96.9%" r="0.6" opacity="0.71" style="animation-delay:-3.4s"/>
+<circle cx="6.8%" cy="96.9%" r="1.0" opacity="0.69" style="animation-delay:-4.8s"/>
+<circle cx="69.8%" cy="88.6%" r="1.2" opacity="0.35" style="animation-delay:-3.5s"/>
+<circle cx="63.3%" cy="89.6%" r="0.5" opacity="0.27" style="animation-delay:-5.1s"/>
+<circle cx="96.5%" cy="18.3%" r="0.7" opacity="0.75" style="animation-delay:-4.3s"/>
+<circle cx="36.8%" cy="6.9%" r="0.7" opacity="0.55" style="animation-delay:-5.7s"/>
+<circle cx="3.3%" cy="89.4%" r="0.6" opacity="0.52" style="animation-delay:-3.0s"/>
+<circle cx="3.8%" cy="91.1%" r="0.8" opacity="0.78" style="animation-delay:-0.5s"/>
+<circle cx="93.3%" cy="87.7%" r="0.7" opacity="0.45" style="animation-delay:-2.3s"/>
+<circle cx="92.6%" cy="84.6%" r="1.2" opacity="0.42" style="animation-delay:-5.3s"/>
+<circle cx="57.5%" cy="97.9%" r="1.0" opacity="0.65" style="animation-delay:-5.4s"/>
+<circle cx="9.8%" cy="9.9%" r="1.0" opacity="0.34" style="animation-delay:-3.1s"/>
+<circle cx="36.6%" cy="2.6%" r="1.0" opacity="0.9" style="animation-delay:-0.0s"/>
+<circle cx="97.8%" cy="89.1%" r="1.0" opacity="0.58" style="animation-delay:-2.9s"/>
+<circle cx="43.3%" cy="94.5%" r="0.5" opacity="0.55" style="animation-delay:-3.1s"/>
+<circle cx="96.4%" cy="19.2%" r="1.0" opacity="0.79" style="animation-delay:-2.4s"/>
+<circle cx="1.6%" cy="4.0%" r="0.6" opacity="0.66" style="animation-delay:-3.1s"/>
+<circle cx="99.0%" cy="98.0%" r="0.6" opacity="0.41" style="animation-delay:-0.3s"/>
+<circle cx="49.0%" cy="10.4%" r="1.2" opacity="0.64" style="animation-delay:-0.1s"/>
+<circle cx="19.8%" cy="3.0%" r="0.5" opacity="0.84" style="animation-delay:-5.2s"/>
+<circle cx="76.0%" cy="86.7%" r="0.6" opacity="0.4" style="animation-delay:-1.7s"/>
+<circle cx="98.3%" cy="90.5%" r="0.8" opacity="0.49" style="animation-delay:-2.4s"/>
+<circle cx="28.5%" cy="100.0%" r="0.8" opacity="0.64" style="animation-delay:-4.0s"/>
+<circle cx="73.0%" cy="96.5%" r="1.2" opacity="0.47" style="animation-delay:-2.3s"/>
+<circle cx="99.6%" cy="94.0%" r="0.8" opacity="0.34" style="animation-delay:-4.0s"/>
+<circle cx="20.5%" cy="4.3%" r="1.2" opacity="0.76" style="animation-delay:-5.9s"/>
+<circle cx="37.3%" cy="12.1%" r="0.8" opacity="0.3" style="animation-delay:-5.7s"/>
+<circle cx="81.5%" cy="14.0%" r="0.8" opacity="0.5" style="animation-delay:-1.4s"/>
+<circle cx="80.7%" cy="99.2%" r="0.8" opacity="0.72" style="animation-delay:-3.4s"/>
+<circle cx="96.8%" cy="32.4%" r="0.5" opacity="0.29" style="animation-delay:-3.8s"/>
+<circle cx="97.8%" cy="98.1%" r="1.2" opacity="0.63" style="animation-delay:-4.2s"/>
+<circle cx="97.7%" cy="82.0%" r="0.7" opacity="0.3" style="animation-delay:-2.0s"/>
+<circle cx="98.7%" cy="82.3%" r="0.7" opacity="0.81" style="animation-delay:-3.9s"/>
+<circle cx="25.6%" cy="3.1%" r="0.6" opacity="0.79" style="animation-delay:-3.7s"/>
+<circle cx="94.7%" cy="92.0%" r="0.6" opacity="0.59" style="animation-delay:-4.8s"/>
+<circle cx="79.4%" cy="14.1%" r="0.7" opacity="0.58" style="animation-delay:-1.4s"/>
+<circle cx="31.2%" cy="99.6%" r="0.7" opacity="0.7" style="animation-delay:-2.8s"/>
+<circle cx="51.8%" cy="1.6%" r="1.0" opacity="0.56" style="animation-delay:-3.3s"/>
+<circle cx="26.5%" cy="4.3%" r="1.0" opacity="0.58" style="animation-delay:-4.7s"/>
+<circle cx="1.0%" cy="65.4%" r="0.7" opacity="0.87" style="animation-delay:-1.1s"/>
+<circle cx="41.3%" cy="3.4%" r="0.6" opacity="0.79" style="animation-delay:-3.9s"/>
+<circle cx="70.2%" cy="7.3%" r="0.7" opacity="0.54" style="animation-delay:-2.4s"/>
+<circle cx="66.3%" cy="98.7%" r="1.5" opacity="0.85" style="animation-delay:-3.2s"/>
+  </svg>
+
+  <div class="wheel" aria-hidden="true">
+    <svg viewBox="0 0 600 600">
+<circle cx="300" cy="300" r="296" class="w1"/>
+<circle cx="300" cy="300" r="258" class="w2"/>
+<circle cx="300" cy="300" r="250" class="w3"/>
+<circle cx="300" cy="300" r="200" class="w4"/>
+<circle cx="300" cy="300" r="150" class="w3"/>
+<circle cx="300" cy="300" r="62" class="w3"/>
+<path d="M550.0 300.0L596.0 300.0 M557.0 322.5L563.0 323.0 M554.1 344.8L565.9 346.9 M549.2 366.8L555.0 368.3 M542.4 388.2L553.7 392.3 M533.8 409.0L539.3 411.6 M516.5 425.0L556.3 448.0 M511.3 448.0L516.3 451.4 M497.6 465.8L506.8 473.6 M482.4 482.4L486.7 486.7 M465.8 497.6L473.6 506.8 M448.0 511.3L451.4 516.3 M425.0 516.5L448.0 556.3 M409.0 533.8L411.6 539.3 M388.2 542.4L392.3 553.7 M366.8 549.2L368.3 555.0 M344.8 554.1L346.9 565.9 M322.5 557.0L323.0 563.0 M300.0 550.0L300.0 596.0 M277.5 557.0L277.0 563.0 M255.2 554.1L253.1 565.9 M233.2 549.2L231.7 555.0 M211.8 542.4L207.7 553.7 M191.0 533.8L188.4 539.3 M175.0 516.5L152.0 556.3 M152.0 511.3L148.6 516.3 M134.2 497.6L126.4 506.8 M117.6 482.4L113.3 486.7 M102.4 465.8L93.2 473.6 M88.7 448.0L83.7 451.4 M83.5 425.0L43.7 448.0 M66.2 409.0L60.7 411.6 M57.6 388.2L46.3 392.3 M50.8 366.8L45.0 368.3 M45.9 344.8L34.1 346.9 M43.0 322.5L37.0 323.0 M50.0 300.0L4.0 300.0 M43.0 277.5L37.0 277.0 M45.9 255.2L34.1 253.1 M50.8 233.2L45.0 231.7 M57.6 211.8L46.3 207.7 M66.2 191.0L60.7 188.4 M83.5 175.0L43.7 152.0 M88.7 152.0L83.7 148.6 M102.4 134.2L93.2 126.4 M117.6 117.6L113.3 113.3 M134.2 102.4L126.4 93.2 M152.0 88.7L148.6 83.7 M175.0 83.5L152.0 43.7 M191.0 66.2L188.4 60.7 M211.8 57.6L207.7 46.3 M233.2 50.8L231.7 45.0 M255.2 45.9L253.1 34.1 M277.5 43.0L277.0 37.0 M300.0 50.0L300.0 4.0 M322.5 43.0L323.0 37.0 M344.8 45.9L346.9 34.1 M366.8 50.8L368.3 45.0 M388.2 57.6L392.3 46.3 M409.0 66.2L411.6 60.7 M425.0 83.5L448.0 43.7 M448.0 88.7L451.4 83.7 M465.8 102.4L473.6 93.2 M482.4 117.6L486.7 113.3 M497.6 134.2L506.8 126.4 M511.3 152.0L516.3 148.6 M516.5 175.0L556.3 152.0 M533.8 191.0L539.3 188.4 M542.4 211.8L553.7 207.7 M549.2 233.2L555.0 231.7 M554.1 255.2L565.9 253.1 M557.0 277.5L563.0 277.0" class="tk"/>
+<path d="M362.0 300.0L550.0 300.0 M353.7 331.0L516.5 425.0 M331.0 353.7L425.0 516.5 M300.0 362.0L300.0 550.0 M269.0 353.7L175.0 516.5 M246.3 331.0L83.5 425.0 M238.0 300.0L50.0 300.0 M246.3 269.0L83.5 175.0 M269.0 246.3L175.0 83.5 M300.0 238.0L300.0 50.0 M331.0 246.3L425.0 83.5 M353.7 269.0L516.5 175.0" class="sec"/>
+<path d="M567.6 366.7Q567.6 371.7 572.6 371.7Q567.6 371.7 567.6 376.7Q567.6 371.7 562.6 371.7Q567.6 371.7 567.6 366.7Z" class="st"/>
+<path d="M495.9 490.9Q495.9 495.9 500.9 495.9Q495.9 495.9 495.9 500.9Q495.9 495.9 490.9 495.9Q495.9 495.9 495.9 490.9Z" class="st"/>
+<path d="M371.7 562.6Q371.7 567.6 376.7 567.6Q371.7 567.6 371.7 572.6Q371.7 567.6 366.7 567.6Q371.7 567.6 371.7 562.6Z" class="st"/>
+<path d="M228.3 562.6Q228.3 567.6 233.3 567.6Q228.3 567.6 228.3 572.6Q228.3 567.6 223.3 567.6Q228.3 567.6 228.3 562.6Z" class="st"/>
+<path d="M104.1 490.9Q104.1 495.9 109.1 495.9Q104.1 495.9 104.1 500.9Q104.1 495.9 99.1 495.9Q104.1 495.9 104.1 490.9Z" class="st"/>
+<path d="M32.4 366.7Q32.4 371.7 37.4 371.7Q32.4 371.7 32.4 376.7Q32.4 371.7 27.4 371.7Q32.4 371.7 32.4 366.7Z" class="st"/>
+<path d="M32.4 223.3Q32.4 228.3 37.4 228.3Q32.4 228.3 32.4 233.3Q32.4 228.3 27.4 228.3Q32.4 228.3 32.4 223.3Z" class="st"/>
+<path d="M104.1 99.1Q104.1 104.1 109.1 104.1Q104.1 104.1 104.1 109.1Q104.1 104.1 99.1 104.1Q104.1 104.1 104.1 99.1Z" class="st"/>
+<path d="M228.3 27.4Q228.3 32.4 233.3 32.4Q228.3 32.4 228.3 37.4Q228.3 32.4 223.3 32.4Q228.3 32.4 228.3 27.4Z" class="st"/>
+<path d="M371.7 27.4Q371.7 32.4 376.7 32.4Q371.7 32.4 371.7 37.4Q371.7 32.4 366.7 32.4Q371.7 32.4 371.7 27.4Z" class="st"/>
+<path d="M495.9 99.1Q495.9 104.1 500.9 104.1Q495.9 104.1 495.9 109.1Q495.9 104.1 490.9 104.1Q495.9 104.1 495.9 99.1Z" class="st"/>
+<path d="M567.6 223.3Q567.6 228.3 572.6 228.3Q567.6 228.3 567.6 233.3Q567.6 228.3 562.6 228.3Q567.6 228.3 567.6 223.3Z" class="st"/>
+<circle cx="130.4" cy="194.0" r="4" class="pl"/>
+<circle cx="414.9" cy="396.4" r="3" class="pl"/>
+<circle cx="206.1" cy="476.6" r="2.5" class="pl"/>
+<circle cx="425.0" cy="83.5" r="3" class="pl"/>
+    </svg>
+  </div>
+
+  <!-- созвездие Козерога: «небесная коза» -->
+  <svg class="constellation" viewBox="0 0 300 200" aria-hidden="true">
+    <path class="ln" d="M36 58 L62 66 L110 74 L166 70 L262 52 L272 28 M262 52 L234 128 L214 160 L150 152 L96 118 L36 58"/>
+    <g>
+      <circle class="glow" cx="36" cy="58" r="9"/><circle class="sr" cx="36" cy="58" r="3"/>
+      <circle class="sr" cx="62" cy="66" r="2.2"/>
+      <circle class="sr" cx="110" cy="74" r="1.8"/>
+      <circle class="sr" cx="166" cy="70" r="2"/>
+      <circle class="glow" cx="262" cy="52" r="8"/><circle class="sr" cx="262" cy="52" r="2.8"/>
+      <circle class="glow" cx="272" cy="28" r="7"/><circle class="sr" cx="272" cy="28" r="2.6"/>
+      <circle class="sr" cx="234" cy="128" r="2"/>
+      <circle class="sr" cx="214" cy="160" r="2.4"/>
+      <circle class="sr" cx="150" cy="152" r="2"/>
+      <circle class="sr" cx="96" cy="118" r="1.7"/>
+    </g>
+  </svg>
+
+  <div class="wrap">
+    <div class="inner">
+      <p class="eyebrow rise d1">
+        <span class="orn"><i></i><svg viewBox="0 0 12 12"><path d="M6 0Q6 6 12 6Q6 6 6 12Q6 6 0 6Q6 6 6 0Z"/></svg><i></i></span>
+        <span>Год Красной Огненной Козы начнётся 6&nbsp;февраля 2027</span>
+      </p>
+
+      <h1 class="rise d2">Что 2027 год готовит <em>именно тебе</em></h1>
+
+      <p class="lead rise d3">Введи дату рождения - узнаешь свой знак, животное и число года и главное про любовь, деньги и лучшие месяцы</p>
+
+      <form class="form rise d4" id="form" novalidate>
+        <div class="fields">
+          <label class="field">
+            <span class="sr-only">День</span>
+            <input id="f-d" type="text" inputmode="numeric" maxlength="2" placeholder="День" autocomplete="bday-day">
+          </label>
+          <label class="field">
+            <span class="sr-only">Месяц</span>
+            <select id="f-m" required autocomplete="bday-month">
+              <option value="" disabled selected>Месяц</option>
+              <option value="1">января</option><option value="2">февраля</option><option value="3">марта</option>
+              <option value="4">апреля</option><option value="5">мая</option><option value="6">июня</option>
+              <option value="7">июля</option><option value="8">августа</option><option value="9">сентября</option>
+              <option value="10">октября</option><option value="11">ноября</option><option value="12">декабря</option>
+            </select>
+            <svg class="chev" viewBox="0 0 12 12"><path d="M2 4.5 6 8.5 10 4.5"/></svg>
+          </label>
+          <label class="field">
+            <span class="sr-only">Год</span>
+            <input id="f-y" type="text" inputmode="numeric" maxlength="4" placeholder="Год" autocomplete="bday-year">
+          </label>
+        </div>
+        <p class="err" id="f-err" role="alert" hidden></p>
+        <button class="cta" type="submit" id="f-go">
+          Узнать свой 2027
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 1.5Q12 12 22.5 12Q12 12 12 22.5Q12 12 1.5 12Q12 12 12 1.5Z"/></svg>
+        </button>
+        <p class="note"><span class="nw">Бесплатно и без регистрации ·</span> <span class="nw">полный разбор на год - <b>490 ₽</b></span></p>
+      </form>
+    </div>
+  </div>
+</main>
+<section class="res" id="result" hidden aria-live="polite">
+  <div class="res-in">
+    <p class="eyebrow"><span>Твой 2027</span></p>
+    <h2 class="r-title" id="r-title"></h2>
+    <p class="r-sub" id="r-sub"></p>
+    <div class="cusp" id="r-cusp" hidden>
+      <span id="r-cusp-text"></span>
+      <div class="cusp-btns" id="r-cusp-btns"></div>
+    </div>
+    <div class="md" id="r-free"></div>
+    <p class="best" id="r-best"></p>
+    <div class="lock" id="r-lock">
+      <p class="lock-h">В полном разборе</p>
+      <ul>
+        <li>любовь и отношения: когда знакомиться, когда говорить о главном, а когда промолчать</li>
+        <li>деньги и работа: когда просить больше, а когда не тратить</li>
+        <li>силы и отдых по месяцам</li>
+        <li>12 месяцев по отдельности, с пометками «лучший» и «осторожно»</li>
+        <li>твои даты силы и даты, когда лучше ничего не начинать</li>
+        <li id="r-lock-animal"></li>
+        <li>что сделать до 6 февраля, пока год Козы не начался</li>
+      </ul>
+      <button class="cta" type="button" id="pay">Открыть полный разбор - 490 ₽</button>
+      <p class="err" id="pay-err" role="alert" hidden></p>
+      <p class="note">Оплата разовая, без подписки. Разбор откроется сразу на этой странице, а личная ссылка на него придёт на почту</p>
+    </div>
+    <button class="linkbtn" type="button" id="again">Посмотреть другую дату</button>
+  </div>
+</section>
+
+<section class="res" id="full" hidden aria-live="polite">
+  <div class="res-in">
+    <p class="eyebrow"><span>Полный разбор</span></p>
+    <h2 class="r-title" id="full-title"></h2>
+    <p class="r-sub" id="full-sub"></p>
+    <div class="cusp" id="full-cusp" hidden>
+      <span id="full-cusp-text"></span>
+      <div class="cusp-btns" id="full-cusp-btns"></div>
+    </div>
+    <p class="wait" id="full-wait" hidden></p>
+    <div class="md" id="full-md"></div>
+    <p class="save" id="full-save" hidden>Личная ссылка на этот разбор пришла в письме от кассы. По ней разбор откроется на любом телефоне или компьютере, сохрани письмо до конца 2027 года</p>
+    <button class="linkbtn" type="button" id="full-again">Посмотреть разбор для другой даты</button>
+  </div>
+</section>
+
+<footer class="foot">
+  Индивидуальный предприниматель Логинов Иван Владимирович<br>
+  <a href="oferta.html">Оферта</a> · <a href="/privacy.html">Конфиденциальность</a> · <a href="https://t.me/loginoff_ai">Поддержка</a><br>
+  Разбор построен на астрономическом расчёте положения планет в 2027 году и классических трактовках астрологии. Носит развлекательный характер
+</footer>
+<script type="module" src="main.js"></script>
+</body>
+</html>
