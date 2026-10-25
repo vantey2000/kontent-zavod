@@ -1,0 +1,119 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="robots" content="noindex">
+<title>Анти-Кортизол · личный кабинет</title>
+<style>
+:root{--bg:#f6f1e7;--surface:#fffdf8;--ink:#1f2a24;--muted:#5b6660;--line:#e4dccb;--green:#2f6b4f;--green-soft:#e3efe7;--accent:#e0703f;
+  --serif:"Iowan Old Style","Palatino Linotype",Palatino,"Noto Serif",Georgia,serif;--sans:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;color-scheme:light}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:17px/1.65 var(--sans);-webkit-text-size-adjust:100%}
+.wrap{max-width:760px;margin:0 auto;padding:24px 16px 80px}
+h1,h2,h3{font-family:var(--serif);line-height:1.2;margin:0;text-wrap:balance}
+h1{font-size:30px}h2{font-size:24px;margin:28px 0 10px}h3{font-size:20px}
+p{margin:0 0 12px;text-wrap:pretty}
+a{color:var(--green)}
+.top{display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:18px}
+.tier{font-size:13px;font-weight:700;background:var(--green-soft);color:var(--green);padding:6px 12px;border-radius:999px;white-space:nowrap}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:18px;padding:18px;margin-top:12px}
+.day{display:flex;justify-content:space-between;align-items:center;gap:12px;width:100%;text-align:left;background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:14px 16px;margin-top:8px;font:inherit;color:inherit;cursor:pointer}
+.day[disabled]{cursor:default;opacity:.55}
+.day small{display:block;color:var(--muted);font-size:13px}
+.day .st{flex:none;font-size:13px;color:var(--muted)}
+.day.today{border-color:var(--accent);box-shadow:0 6px 18px rgba(224,112,63,.15)}
+.mod{margin:22px 0 4px;font-size:13px;font-weight:700;letter-spacing:.06em;color:#c85d2f;text-transform:uppercase}
+.lesson h2{font-size:22px}
+.lesson ul,.lesson ol{padding-left:22px}
+.lesson li{margin-bottom:6px}
+.back{display:inline-block;margin-bottom:14px;border:0;background:none;color:var(--green);font:600 16px var(--sans);cursor:pointer;padding:0}
+.plan{background:var(--green-soft);border-color:#c9dfd0}
+.msg{text-align:center;padding:60px 10px;color:var(--muted)}
+.note{font-size:14px;color:var(--muted)}
+</style>
+</head>
+<body>
+<div class="wrap" id="app"><p class="msg">Открываю кабинет…</p></div>
+<script>
+(function () {
+  var API = 'https://kortizol-api.aivan-loginov.workers.dev';
+  var app = document.getElementById('app');
+  var store = { get: function (k) { try { return localStorage.getItem(k); } catch (e) { return null; } },
+    set: function (k, v) { try { localStorage.setItem(k, v); } catch (e) {} } };
+  function esc(s) { return String(s).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); }
+  function inline(s) {
+    return esc(s).replace(/\*\*([^*]+)\*\*/g, '<b>$1</b>')
+      .replace(/\[([^\]]+)\]\((https:\/\/[^)\s]+)\)/g, '<a href="$2" target="_blank" rel="noopener">$1</a>');
+  }
+  function md(t) {
+    return t.split(/\n{2,}/).map(function (b) {
+      var lines = b.split('\n');
+      if (/^## /.test(b)) return '<h2>' + inline(b.slice(3)) + '</h2>';
+      if (lines.every(function (l) { return /^- /.test(l); })) return '<ul>' + lines.map(function (l) { return '<li>' + inline(l.slice(2)) + '</li>'; }).join('') + '</ul>';
+      if (lines.every(function (l) { return /^\d+\. /.test(l); })) return '<ol>' + lines.map(function (l) { return '<li>' + inline(l.replace(/^\d+\. /, '')) + '</li>'; }).join('') + '</ol>';
+      return '<p>' + lines.map(inline).join('<br>') + '</p>';
+    }).join('');
+  }
+  var m = /[?&]claim=([\w-]+)\.([\w-]+)/.exec(location.search);
+  if (m) { store.set('ak-order', m[1]); store.set('ak-k', m[2]); }
+  var order = store.get('ak-order'), k = store.get('ak-k');
+  if (!order || !k) {
+    app.innerHTML = '<p class="msg">Открой кабинет по личной ссылке из письма после оплаты.<br>Не нашла письмо? Напиши в <a href="https://t.me/loginoff_ai">поддержку</a></p>';
+    return;
+  }
+  var data = null, tries = 0;
+  function load() {
+    fetch(API + '/api/kabinet', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ order: order, k: k }) })
+      .then(function (r) { return r.json().then(function (b) { return { s: r.status, b: b }; }); })
+      .then(function (x) {
+        if (x.s === 202) {
+          app.innerHTML = '<p class="msg">Оплата обрабатывается, обычно это меньше минуты…</p>';
+          if (++tries < 60) setTimeout(load, 3000);
+          else app.innerHTML = '<p class="msg">Касса ещё не подтвердила оплату. Если деньги списались, напиши в <a href="https://t.me/loginoff_ai">поддержку</a>, откроем доступ вручную</p>';
+          return;
+        }
+        if (x.s !== 200) { app.innerHTML = '<p class="msg">' + esc(x.b.error || 'Не получилось открыть кабинет') + '<br><a href="https://t.me/loginoff_ai">Поддержка</a></p>'; return; }
+        data = x.b; if (m) history.replaceState(null, '', location.pathname); list();
+      })
+      .catch(function () { app.innerHTML = '<p class="msg">Нет связи. Обнови страницу через минуту</p>'; });
+  }
+  function opensOn(n) {
+    var d = new Date(data.paidAt + 3 * 3600e3); d.setUTCHours(0, 0, 0, 0); d = new Date(d.getTime() + (n - 1) * 86400e3);
+    return d.toLocaleDateString('ru-RU', { day: 'numeric', month: 'long', timeZone: 'UTC' });
+  }
+  function list() {
+    var day = Math.min(data.day, 21), h = '';
+    h += '<div class="top"><h1>Анти-Кортизол</h1><span class="tier">' + esc(data.tierName.split('· ')[1]) + '</span></div>';
+    h += '<p>Сегодня <b>день ' + day + ' из 21</b>. Новый урок открывается каждый день в полночь по Москве</p>';
+    if (data.quiz) h += '<div class="card plan"><h3>Твой личный план: ' + esc(data.quiz.title) + '</h3><p style="margin:8px 0 0">' + esc(data.quiz.plan) + '</p></div>';
+    var mod = '';
+    data.lessons.forEach(function (l) {
+      if (l.mod !== mod) { mod = l.mod; h += '<p class="mod">' + esc(mod) + '</p>'; }
+      var st = !l.open ? 'откроется ' + opensOn(l.n) : (l.md ? 'открыт' : 'готовится, появится сегодня');
+      h += '<button class="day' + (l.n === day ? ' today' : '') + '" data-n="' + l.n + '"' + (l.open && l.md ? '' : ' disabled') + '><span>День ' + l.n + '<small>' + esc(l.title) + '</small></span><span class="st">' + st + '</span></button>';
+    });
+    if (data.extras.length) {
+      h += '<p class="mod">Материалы тарифа</p>';
+      data.extras.forEach(function (x) {
+        h += '<button class="day" data-x="' + esc(x.id) + '"' + (x.open ? '' : ' disabled') + '><span>' + esc(x.title) + (x.open ? '' : '<small>' + esc(x.note) + '</small>') + '</span><span class="st">' + (x.open ? 'открыт' : '') + '</span></button>';
+      });
+    }
+    h += '<p class="note" style="margin-top:26px">Протокол не является медицинской услугой и не заменяет врача. Вопросы по доступу: <a href="https://t.me/loginoff_ai">@loginoff_ai</a></p>';
+    app.innerHTML = h; scrollTo(0, 0);
+    Array.prototype.forEach.call(app.querySelectorAll('[data-n]'), function (b) { b.onclick = function () { show(data.lessons[+b.getAttribute('data-n') - 1]); }; });
+    Array.prototype.forEach.call(app.querySelectorAll('[data-x]'), function (b) {
+      b.onclick = function () { show(data.extras.filter(function (x) { return x.id === b.getAttribute('data-x'); })[0]); };
+    });
+  }
+  function show(l) {
+    if (!l || !l.md) return;
+    app.innerHTML = '<button class="back" type="button">← Все уроки</button><article class="lesson card">' +
+      (l.n ? '<p class="note" style="margin:0">День ' + l.n + ' · ' + esc(l.mod) + '</p>' : '') + '<h1 style="margin:6px 0 16px">' + esc(l.title) + '</h1>' + md(l.md) + '</article>';
+    app.querySelector('.back').onclick = list; scrollTo(0, 0);
+  }
+  load();
+})();
+</script>
+</body>
+</html>
