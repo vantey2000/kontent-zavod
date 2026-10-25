@@ -15,6 +15,23 @@ const store = {
 
 let state = null; // {y, m, d, p, sign}
 
+/* ---------- учёт шагов для админки /2027/admin/ ---------- */
+// Каждый шаг уходит с телефона один раз (числа в админке = люди), фоновым сигналом: страница ответа не ждёт.
+// Площадка - метка после # (дверь ChatPlace ведёт на /2027/#ig), запоминается с первого захода.
+// Телефон, с которого открывали админку, не считается (g27.own ставит админка)
+const hashSrc = (/^#([a-z0-9-]{1,16})$/.exec(location.hash) || [])[1];
+if (hashSrc && !store.get('g27.src')) store.set('g27.src', hashSrc);
+
+function track(e, z) {
+  if (store.get('g27.own')) return;
+  const sent = store.get('g27.sent');
+  const list = Array.isArray(sent) ? sent : [];
+  if (list.includes(e)) return;
+  store.set('g27.sent', [...list, e]);
+  const s = store.get('g27.src') || hashSrc || 'direct';
+  try { navigator.sendBeacon(API + '/e', `e=${e}&s=${s}` + (z === undefined ? '' : `&z=${z}`)); } catch { /* учёт не важнее страницы */ }
+}
+
 /* ---------- форма ---------- */
 
 function formError(msg) {
@@ -92,6 +109,7 @@ function payError(msg) {
 
 async function pay() {
   const btn = $('pay');
+  track('pay');
   btn.disabled = true;
   btn.textContent = 'Открываю оплату…';
   payError('');
@@ -161,6 +179,7 @@ async function openFull(order, k, sign, { tries = 0, quiet = false } = {}) {
   cuspBlock('full', { sign: b.main, cusp: b.cusp }, b.sign, s => openFull(order, k, s));
   $('full-md').innerHTML = md(b.md);
   $('full-save').hidden = false;
+  track('full');
   if (quiet) $('full').scrollIntoView();
 }
 
@@ -173,6 +192,7 @@ $('form').addEventListener('submit', e => {
   state = s;
   store.set('g27.date', { y: s.y, m: s.m, d: s.d });
   showResult();
+  track('date', s.sign);
 });
 $('pay').addEventListener('click', pay);
 for (const id of ['again', 'full-again']) {
@@ -199,4 +219,9 @@ if (claim && /^g[\w-]{4,40}\.[\w-]{8,64}$/.test(claim)) {
 } else {
   const o = store.get('g27.order');
   if (o && o.order && o.k) openFull(o.order, o.k, undefined, { quiet: true });
+}
+// возврат с кассы по личной ссылке - не новый человек, «открыли» не считаем
+if (!claim) {
+  const opened = () => setTimeout(() => track('open'), 0);
+  if (document.readyState === 'complete') opened(); else addEventListener('load', opened, { once: true });
 }
