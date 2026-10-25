@@ -25,7 +25,7 @@ header h1 { font-size: 17px; margin: 0; font-weight: 700; }
 .btn:disabled { opacity: .5; cursor: default; }
 .stagecol { display: grid; gap: 8px; }
 .stage { position: relative; width: 100%; max-width: min(100%, calc(46vh * 9 / 16)); margin: 0 auto; aspect-ratio: 9 / 16; border-radius: 16px; overflow: hidden; background: #000; touch-action: none; }
-@media (min-width: 900px) { .stage { max-width: 100%; } }
+@media (min-width: 900px) { .stage { max-width: min(100%, calc((100vh - 250px) * 9 / 16)); } } /* под видео на экране помещаются ползунки размера и тени */
 .stage canvas { position: relative; z-index: 1; width: 100%; height: 100%; display: block; }
 .stage .vsrc { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; pointer-events: none; }
 .stage .vtap { position: absolute; z-index: 2; left: 50%; top: 50%; transform: translate(-50%, -50%); }
@@ -60,9 +60,9 @@ input[type=range] { width: 100%; accent-color: var(--accent); }
 .pal[aria-pressed="true"] { border-color: var(--accent); }
 .custom { display: flex; gap: 12px; flex-wrap: wrap; align-items: center; font-size: 13px; color: var(--muted); }
 .custom input[type=color] { width: 44px; height: 32px; border: 0; background: none; padding: 0; }
-.halo { display: grid; gap: 6px; border-bottom: 1px solid var(--line); padding-bottom: 10px; }
-.halo .row { display: flex; justify-content: space-between; color: var(--fg); font-size: 14px; }
-.halo .row b { color: var(--yellow); font-variant-numeric: tabular-nums; }
+.sliders { display: grid; gap: 2px; padding: 2px 4px; }
+.sliders .row { display: flex; justify-content: space-between; color: var(--fg); font-size: 14px; }
+.sliders .row b { color: var(--yellow); font-variant-numeric: tabular-nums; }
 .anims { display: grid; grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); gap: 6px; }
 .out { display: grid; gap: 6px; position: sticky; bottom: calc(8px + env(safe-area-inset-bottom, 0px)); z-index: 5; background: var(--panel); border: 1px solid var(--line); border-radius: 16px; padding: 10px; box-shadow: 0 -10px 30px rgba(0,0,0,.45); }
 @media (min-width: 900px) { .out { grid-column: 2; position: static; box-shadow: none; } }
@@ -169,6 +169,14 @@ input[type=url] { border-radius: 12px; border: 1px solid var(--line); background
 
   <div class="stagecol">
     <div class="stage" id="stage"><canvas id="cv" width="1080" height="1920" aria-label="Превью рилса с заголовком"></canvas><button class="btn primary vtap" id="vTap" type="button" hidden>Показать видео</button></div>
+    <!-- размер и тень прямо под видео, в любой вкладке и у любого оформления: двигаешь и сразу видишь заголовок -->
+    <div class="sliders" id="sliders">
+      <label class="row" for="size"><span>Размер заголовка</span><b id="sizeV"></b></label>
+      <input id="size" type="range" min="40" max="160" value="100">
+      <label class="row" for="halo"><span>Тень вокруг букв</span><b id="haloV"></b></label>
+      <input id="halo" type="range" min="0" max="100" value="50" step="1">
+      <p class="hint">Тень: 0 - нет, 50 - родная у оформления, 100 - плотная тёмная кайма</p>
+    </div>
     <div class="toggles">
       <button class="chip" id="tZones" type="button" aria-pressed="true">Рамки Instagram</button>
       <button class="chip" id="tGrid" type="button" aria-pressed="false">Сетка 3:4</button>
@@ -188,14 +196,7 @@ input[type=url] { border-radius: 12px; border: 1px solid var(--line); background
       <button role="tab" aria-selected="false" data-tab="time" type="button">Время</button>
     </div>
 
-    <div class="tab" data-pane="look">
-      <div class="halo" id="haloBox" hidden>
-        <label class="row" for="halo"><span>Тень вокруг букв</span><b id="haloV"></b></label>
-        <input id="halo" type="range" min="0" max="100" value="85" step="1">
-        <p class="hint">0 - без тени. Больше - плотнее тёмная кайма вокруг букв, текст читается на любом видео. Под тёмный текст тень сама становится светлой</p>
-      </div>
-      <div class="grid" id="looks"></div>
-    </div>
+    <div class="tab" data-pane="look"><div class="grid" id="looks"></div></div>
 
     <div class="tab" data-pane="text" hidden>
       <label class="row" for="txt">Каждая строка поля = строка заголовка</label>
@@ -204,8 +205,6 @@ input[type=url] { border-radius: 12px; border: 1px solid var(--line); background
 ДОМАШНИЙ
 ДЕВАЙС
 ДЛЯ ЛИЦА</textarea>
-      <label class="row" for="size">Размер заголовка <span id="sizeV"></span></label>
-      <input id="size" type="range" min="40" max="160" value="100">
     </div>
 
     <div class="tab" data-pane="font" hidden>

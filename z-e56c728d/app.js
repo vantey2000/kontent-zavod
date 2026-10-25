@@ -531,15 +531,32 @@ const ENGINE = (() => {
     return m;
   }
 
-  // тень запекается в картинку строки один раз, чтобы кадры рисовались быстро
-  function bake(m, o, shadow) {
-    if (!shadow) return { c: m.c, w: m.w, h: m.h, pad: m.pad };
-    const e = Math.ceil(o.size * 0.2);
+  // тень запекается в картинку строки один раз, чтобы кадры рисовались быстро.
+  // h - ползунок «Тень вокруг букв» 0..100: 50 = прежняя тень оформления, ниже слабее до нуля, выше вокруг силуэта букв
+  // добавляются широкое облако и плотная кайма (как у «Оригинала»): тень картинки строки, нарисованной кольцом сдвигов
+  function bake(m, o, h) {
+    if (!h) return { c: m.c, w: m.w, h: m.h, pad: m.pad };
+    if (m.baked && m.baked.h === h) return m.baked.b;
+    const s = o.size, k = s / 70, t = Math.max(0, (h - 50) / 50);
+    const e = Math.ceil(s * (0.2 + 0.45 * t));
     const c = document.createElement('canvas'); c.width = m.w + e * 2; c.height = m.h + e * 2;
     const x = c.getContext('2d');
-    x.shadowColor = 'rgba(25,0,10,.5)'; x.shadowBlur = o.size * 0.09; x.shadowOffsetY = o.size * 0.05;
+    if (t > 0) {
+      // кайма всегда тёмная, как прежняя тень: у многоцветных оформлений светлая под тёмными строками делала заголовок пёстрым
+      const rgb = '0,0,0', off = c.width + 500, N = 12;
+      for (const p of [{ a: 0.85 * t, blur: (10 + 16 * t) * k, r: s * 0.05 * t }, { a: Math.min(1, 1.1 * t), blur: (3 + 5 * t) * k, r: s * 0.085 * t }]) {
+        // N сдвигов складываются: прозрачность одного такая, чтобы в середине вышло ровно p.a
+        const a1 = p.a >= 1 ? 1 : 1 - Math.pow(1 - p.a, 1 / N);
+        x.shadowColor = `rgba(${rgb},${a1.toFixed(4)})`; x.shadowBlur = p.blur; x.shadowOffsetX = off; x.shadowOffsetY = 0;
+        for (let i = 0; i < N; i++) x.drawImage(m.c, e - off + p.r * Math.cos(i * Math.PI * 2 / N), e + p.r * Math.sin(i * Math.PI * 2 / N));
+      }
+      x.shadowOffsetX = 0;
+    }
+    x.shadowColor = h >= 50 ? 'rgba(25,0,10,.5)' : `rgba(25,0,10,${(0.5 * h / 50).toFixed(3)})`; x.shadowBlur = s * 0.09; x.shadowOffsetY = s * 0.05;
     x.drawImage(m.c, e, e);
-    return { c, w: c.width, h: c.height, pad: m.pad + e };
+    const b = { c, w: c.width, h: c.height, pad: m.pad + e };
+    m.baked = { h, b };
+    return b;
   }
 
   // раскладка заголовка: картинки строк и их места относительно центра блока
@@ -557,7 +574,8 @@ const ENGINE = (() => {
       let m = line(o);
       const maxW = (t.maxW || 960) - (o.heart ? o.size * 1.25 : 0), tw = m.w - m.pad * 2;
       if (tw > maxW) { o.size = Math.floor(o.size * maxW / tw); m = line(o); }
-      const b = bake(m, o, t.shadow !== false && o.style !== 'neon');
+      // у «Оригинала» ореол уже в самой строке; у остальных - по ползунку, без него прежняя тень оформления (50) или её отсутствие
+      const b = bake(m, o, o.style === 'orig' ? 0 : t.halo != null ? t.halo : t.shadow !== false && o.style !== 'neon' ? 50 : 0);
       const part = { c: b.c, x: -b.w / 2, y: y - b.pad, w: b.w, h: b.h, tw: m.w - m.pad * 2, size: o.size, top: y + (m.yoff || 0) };
       if (m.by != null) {
         // строки по самим буквам: следующая начинается ниже самой низкой точки предыдущей, с зазором
@@ -699,6 +717,9 @@ const STYLES = [
   { id: 'graffiti', name: 'Граффити', style: 'plain', font: 'Rubik Spray Paint', tracking: -0.02, leading: 0.95, sizes: [110, 165, 165, 130], roles: 'lddl', pal: 'red' }
 ];
 
+// тень вокруг букв по умолчанию: своя у оформления (у «Оригинала» 85), иначе 50 = прежняя тень, у неона и оформлений без тени 0
+const haloDef = (st) => (st.halo != null ? st.halo : st.shadow === false || st.style === 'neon' ? 0 : 50);
+
 function pal(id) { return PALETTES.find(p => p.id === id) || PALETTES[0]; }
 
 function shadeHex(hex, k) {
@@ -735,7 +756,7 @@ function buildTitle(st, text, o) {
   const fset = velvetish && (o.font || st.style === 'velvet') ? ENGINE.fontSet(font) : null;
   if (st.style === 'orig') {
     // все строки одним цветом и одним кеглем, выделение - вторым цветом палитры
-    const halo = o.halo == null ? st.halo : o.halo;
+    const halo = o.halo == null ? haloDef(st) : o.halo;
     const lines = starMarks(text).map(m => ({ text: m.text, hl: m.hl, size: st.sizes[0], color: p.l, hlc: p.d, halo }));
     return { font, weight: (!o.font && st.weight) || FONT_W[font] || 400, style: 'orig', tracking: st.tracking, leading: st.leading, shadow: false, uniform: true, lines, maxW: 800, maxH: 940 };
   }
@@ -749,7 +770,7 @@ function buildTitle(st, text, o) {
   });
   const weight = (!o.font && st.weight) || FONT_W[font] || 400;
   const style = fset ? 'atlas' : st.style === 'atlas' && o.font ? 'velvet' : st.style;
-  return { font, weight, style, tracking: st.tracking, fatten: st.fatten, round: st.round, squeeze: fset ? 1 : st.squeeze, puff: st.puff, leading: fset && st.style === 'velvet' ? 0.72 : st.leading, shadow: st.shadow, lines, maxW: 800, maxH: 940 };
+  return { font, weight, style, tracking: st.tracking, fatten: st.fatten, round: st.round, squeeze: fset ? 1 : st.squeeze, puff: st.puff, leading: fset && st.style === 'velvet' ? 0.72 : st.leading, shadow: st.shadow, halo: o.halo == null ? haloDef(st) : o.halo, lines, maxW: 800, maxH: 940 };
 }
 
 // безопасные рамки рилса 1080×1920. Верх и края по требованиям Meta (14% сверху, 6% с боков),
@@ -997,9 +1018,10 @@ const FONTS = (() => {
 
 // состояние экрана, превью и общий рисовальщик кадра (превью и экспорт рисуют одно и то же)
 const $ = (id) => document.getElementById(id);
-const DEF = { look: 'barhat', font: null, pal: null, cL: null, cD: null, anim: 'pop', halo: 85, text: 'САМЫЙ ТОПОВЫЙ\nДОМАШНИЙ\nДЕВАЙС\nДЛЯ ЛИЦА', scale: 1, cx: 540, cy: 1180, tIn: 0, tOut: null, zones: true, grid: false };
+const DEF = { look: 'barhat', font: null, pal: null, cL: null, cD: null, anim: 'pop', sh: null, text: 'САМЫЙ ТОПОВЫЙ\nДОМАШНИЙ\nДЕВАЙС\nДЛЯ ЛИЦА', scale: 1, cx: 540, cy: 1180, tIn: 0, tOut: null, zones: true, grid: false };
 let S = Object.assign({}, DEF);
 try { const saved = JSON.parse(localStorage.getItem('zag-state') || 'null'); if (saved) S = Object.assign(S, saved, { tIn: 0, tOut: null }); } catch (e) {}
+delete S.halo;   // ключ 24.10: 85 сохранялось всем подряд, а теперь тень есть у каждого оформления (S.sh, null = своя)
 const persist = () => { try { localStorage.setItem('zag-state', JSON.stringify(S)); } catch (e) {} };
 
 const cv = $('cv'), ctx = cv.getContext('2d');
@@ -1042,7 +1064,7 @@ function rebuild(delay) {
     if ((st.style === 'atlas' && !S.font) || fset) { await ENGINE.atlasLoad(plain.toUpperCase(), fset ? ['light', fset] : ['light', 'dark']); atlasWarn = ENGINE.atlasMissing(plain, fset); }
     else { atlasWarn = ''; await FONTS.loadFont(font, (!S.font && st.weight) || FONT_W[font]); }
     if (n !== rebuildN) return;
-    const opts = { font: S.font, pal: S.pal, colorL: S.cL, colorD: S.cD, halo: S.halo };
+    const opts = { font: S.font, pal: S.pal, colorL: S.cL, colorD: S.cD, halo: S.sh };
     L = lines().length ? ENGINE.layout(buildTitle(st, lines(), opts)) : null;
     hideDone();
   }, delay == null ? 120 : delay);
@@ -1098,9 +1120,9 @@ async function buildLooks() {
     const n = document.createElement('span'); n.textContent = st.name;
     b.append(c, n); box.appendChild(b);
     b.addEventListener('click', () => {
-      S.look = st.id; S.font = null; S.pal = null; S.cL = null; S.cD = null;
+      S.look = st.id; S.font = null; S.pal = null; S.cL = null; S.cD = null; S.sh = null;
       press(box, 'data-look', st.id); press($('fonts'), 'data-font', '');
-      press($('pals'), 'data-pal', st.pal); syncColors(); syncLook(); persist(); rebuild(0); restartAnim();
+      press($('pals'), 'data-pal', st.pal); syncColors(); syncLook(); syncHalo(); persist(); rebuild(0); restartAnim();
     });
   });
   press(box, 'data-look', S.look);
@@ -1147,19 +1169,23 @@ function syncColors() {
   $('cL').value = S.cL || p.l; $('cD').value = S.cD || p.d;
 }
 
-// «Оригинал»: свой ползунок тени и свои подписи цветов. Элементов может не быть у страницы из старого кэша
+// «Оригинал»: свои подписи цветов и подсказка про звёздочки. Элементов может не быть у страницы из старого кэша
 function syncLook() {
   const orig = look().style === 'orig', set = (id, f) => { const e = $(id); if (e) f(e); };
-  set('haloBox', e => { e.hidden = !orig; });
   set('txtHint', e => { e.hidden = !orig; });
   set('cLn', e => { e.textContent = orig ? 'Текст' : 'Светлые строки'; });
   set('cDn', e => { e.textContent = orig ? 'Выделение *звёздочками*' : 'Тёмные строки'; });
 }
+// ползунок «Тень вокруг букв» у всех оформлений: пока не трогали, стоит родная тень оформления
+function syncHalo() {
+  const r = $('halo'); if (!r) return;
+  const v = S.sh == null ? haloDef(look()) : S.sh;
+  r.value = v; $('haloV').textContent = v ? v + '%' : 'нет';
+}
 function buildHalo() {
   const r = $('halo'); if (!r) return;
-  const sync = () => { r.value = S.halo; $('haloV').textContent = S.halo ? S.halo + '%' : 'нет'; };
-  r.addEventListener('input', () => { S.halo = +r.value; sync(); persist(); rebuild(40); });
-  sync(); syncLook();
+  r.addEventListener('input', () => { S.sh = +r.value; syncHalo(); persist(); rebuild(40); });
+  syncHalo(); syncLook();
 }
 
 function buildColors() {
