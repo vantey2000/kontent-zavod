@@ -6,6 +6,13 @@ export const withSign = name => WITH[SIGNS.indexOf(name)] || name;   // «сты
 export const MONTHS = ['январь', 'февраль', 'март', 'апрель', 'май', 'июнь', 'июль', 'август', 'сентябрь', 'октябрь', 'ноябрь', 'декабрь'];
 export const SRC = { ig: 'Instagram', direct: 'без метки', other: 'другое', yt: 'YouTube', vk: 'VK', tg: 'Telegram' };
 export const VIA = { kassa: 'оплачено', gift: 'подарок', manual: 'открыт вручную' };
+// сеть по стране адреса (api/orders.js netZ): у шагов кроме даты z = сеть, у заказа net. -1 = шаг или заказ до учёта страны (26.10)
+export const NETS = [[0, 'из России'], [1, 'с VPN'], [2, 'из СНГ'], [-1, 'до учёта страны']];
+
+let regions = null;
+export function land(cc) {
+  try { regions = regions || new Intl.DisplayNames(['ru'], { type: 'region' }); return regions.of(cc) || cc; } catch { return cc; }
+}
 
 export const $ = id => document.getElementById(id);
 export const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));

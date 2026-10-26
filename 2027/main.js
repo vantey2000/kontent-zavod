@@ -90,6 +90,7 @@ function renderFree() {
   if (f) best.innerHTML = `Твой самый сильный месяц - <b>${f.best}</b>. Почему именно он и что успеть до него, в полном разборе`;
   $('r-lock-animal').textContent = `${animalTitle(c.animal, c.element)} в год Огненной Козы и что значит число ${p.personalYear}`;
   $('pay').disabled = !f;
+  vpnStep(null);
 }
 
 function showResult() {
@@ -107,6 +108,18 @@ function payError(msg) {
   e.hidden = !msg;
 }
 
+// Человек с VPN (сервер видит адрес не из России): касса через VPN не открывается, поэтому вместо белого экрана
+// кнопка оплаты меняется на просьбу выключить VPN и ссылку на тот же заказ. url = null возвращает обычную кнопку
+function vpnStep(url) {
+  $('vpn-step').hidden = !url;
+  $('pay').hidden = !!url;
+  $('vpn-note').hidden = !!url;
+  if (url) {
+    $('vpn-go').href = url;
+    $('vpn-step').scrollIntoView({ block: 'center', behavior: matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth' });
+  }
+}
+
 async function pay() {
   const btn = $('pay');
   track('pay');
@@ -119,6 +132,12 @@ async function pay() {
     const b = await r.json().catch(() => ({}));
     if (r.ok && b.url) {
       store.set('g27.order', { order: b.order, k: b.k, at: Date.now() });
+      if (b.vpn) {
+        btn.disabled = false;
+        btn.textContent = PRICE_LABEL;
+        vpnStep(b.url);
+        return;
+      }
       location.href = b.url;
       return;
     }
@@ -195,6 +214,7 @@ $('form').addEventListener('submit', e => {
   track('date', s.sign);
 });
 $('pay').addEventListener('click', pay);
+$('vpn-go').addEventListener('click', () => track('vpngo'));
 for (const id of ['again', 'full-again']) {
   $(id).addEventListener('click', () => {
     $('result').hidden = true;
