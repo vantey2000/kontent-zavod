@@ -13,6 +13,7 @@ function keysFromHash() {
 keysFromHash();
 store.set('g27.own', '1');   // телефон Ивана: страница гороскопа с него шаги в воронку не шлёт
 store.set('vsn.own', '1');   // и страница «Вы с ним» тоже
+store.set('nat.own', true);  // и натальная карта (её страница читает отметку через JSON.parse)
 
 const sum = (a, f) => a.reduce((s, x) => s + f(x), 0);
 /* цифры продукта: pays [{at, sum}] без своих оплат, facts [[подпись, число]], warn - о чём предупредить */
@@ -25,6 +26,9 @@ const LOAD = {
       warn: !j.sell ? 'оплата выключена' : !j.lastNotify ? 'касса ещё не присылала уведомлений' : '' };
   },
   async vsn(p) {   // «Вы с ним» (26.10): тот же ответ overview, что у гороскопа
+    return LOAD.g27(p);
+  },
+  async nat(p) {   // «Твоя натальная карта» (26.10): тот же ответ overview, что у гороскопа
     return LOAD.g27(p);
   },
   async kb(p) {

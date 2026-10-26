@@ -7,7 +7,8 @@ export const PRODUCTS = [
   { id: 'sk', tab: 'Скорочтение', name: 'Скорочтение', what: 'тренажёр, месяц и навсегда', admin: '/skorochtenie/admin/', store: 'sk_admin', api: 'https://skorochtenie-api.aivan-loginov.workers.dev' },
   { id: 'uq', tab: 'Рилсовая', name: 'Рилсовая', what: 'заголовки и уникализатор рилсов', admin: '/admin/rilsovaya/', store: 'uq_admin', api: 'https://uniq-api.aivan-loginov.workers.dev' },
   { id: 'kz', tab: 'Кортизол', name: 'Анти-Кортизол', what: 'протокол на 21 день', admin: '/admin/kortizol/', store: 'kz_admin', api: 'https://kortizol-api.aivan-loginov.workers.dev' },
-  { id: 'vsn', tab: 'Вы с ним', name: 'Вы с ним', what: 'совместимость по двум датам', admin: '/para/admin/', store: 'vsn_admin', api: 'https://para-api.aivan-loginov.workers.dev' }
+  { id: 'vsn', tab: 'Вы с ним', name: 'Вы с ним', what: 'совместимость по двум датам', admin: '/para/admin/', store: 'vsn_admin', api: 'https://para-api.aivan-loginov.workers.dev' },
+  { id: 'nat', tab: 'Натальная карта', name: 'Твоя натальная карта', what: 'полный разбор карты, 990 ₽', admin: '/natal/admin/', store: 'nat_admin', api: 'https://natal-api.aivan-loginov.workers.dev' }
 ];
 export const byId = id => PRODUCTS.find(p => p.id === id);
 
