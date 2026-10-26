@@ -1,0 +1,225 @@
+<!doctype html>
+<html lang="ru"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Твоя натальная карта: как тебя видят другие</title>
+<meta name="theme-color" content="#0b1538">
+<meta name="description" content="Натальная карта по дате, времени и городу рождения: Солнце, Луна и Асцендент сразу и бесплатно, полный разбор - характер, любовь, деньги, семья, предназначение и твой 2027">
+<meta property="og:title" content="Как тебя видят другие и кто ты на самом деле">
+<meta property="og:description" content="Натальная карта по дате, времени и городу рождения. Солнце, Луна и Асцендент - сразу и бесплатно">
+<link rel="preload" href="fonts/jost-var-cyrillic.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="preload" href="fonts/cormorant-500-cyrillic.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="modulepreload" href="main.js">
+<style>
+@font-face{font-family:'Cormorant Garamond';font-style:italic;font-weight:500;font-display:swap;src:url(fonts/cormorant-i500-cyrillic.woff2) format('woff2');unicode-range:U+0301, U+0400-045F, U+0490-0491, U+04B0-04B1, U+2116}
+@font-face{font-family:'Cormorant Garamond';font-style:italic;font-weight:500;font-display:swap;src:url(fonts/cormorant-i500-latin.woff2) format('woff2');unicode-range:U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD}
+@font-face{font-family:'Cormorant Garamond';font-style:normal;font-weight:500;font-display:swap;src:url(fonts/cormorant-500-cyrillic.woff2) format('woff2');unicode-range:U+0301, U+0400-045F, U+0490-0491, U+04B0-04B1, U+2116}
+@font-face{font-family:'Cormorant Garamond';font-style:normal;font-weight:500;font-display:swap;src:url(fonts/cormorant-500-latin.woff2) format('woff2');unicode-range:U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD}
+@font-face{font-family:'Cormorant Garamond';font-style:normal;font-weight:600;font-display:swap;src:url(fonts/cormorant-500-cyrillic.woff2) format('woff2');unicode-range:U+0301, U+0400-045F, U+0490-0491, U+04B0-04B1, U+2116}
+@font-face{font-family:'Cormorant Garamond';font-style:normal;font-weight:600;font-display:swap;src:url(fonts/cormorant-500-latin.woff2) format('woff2');unicode-range:U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD}
+@font-face{font-family:'Jost';font-style:normal;font-weight:400;font-display:swap;src:url(fonts/jost-var-cyrillic.woff2) format('woff2');unicode-range:U+0301, U+0400-045F, U+0490-0491, U+04B0-04B1, U+2116}
+@font-face{font-family:'Jost';font-style:normal;font-weight:400;font-display:swap;src:url(fonts/jost-var-latin.woff2) format('woff2');unicode-range:U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD}
+@font-face{font-family:'Jost';font-style:normal;font-weight:500;font-display:swap;src:url(fonts/jost-var-cyrillic.woff2) format('woff2');unicode-range:U+0301, U+0400-045F, U+0490-0491, U+04B0-04B1, U+2116}
+@font-face{font-family:'Jost';font-style:normal;font-weight:500;font-display:swap;src:url(fonts/jost-var-latin.woff2) format('woff2');unicode-range:U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD}
+@font-face{font-family:'Jost';font-style:normal;font-weight:600;font-display:swap;src:url(fonts/jost-var-cyrillic.woff2) format('woff2');unicode-range:U+0301, U+0400-045F, U+0490-0491, U+04B0-04B1, U+2116}
+@font-face{font-family:'Jost';font-style:normal;font-weight:600;font-display:swap;src:url(fonts/jost-var-latin.woff2) format('woff2');unicode-range:U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD}
+:root{--night:#050817;--navy:#0b1538;--gold:#d9b56c;--gold-hi:#f3dca0;--text:#f1ead9;--muted:#aab2d0;--field:rgba(9,16,46,.72);--line:rgba(217,181,108,.42)}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--night);color:var(--text);font-family:Jost,system-ui,sans-serif}
+.hero{min-height:100svh;position:relative;overflow:hidden;padding:0 20px 40px;
+  background:radial-gradient(110% 55% at 50% 0%,#1d2f78 0%,rgba(19,33,90,.55) 38%,transparent 72%),linear-gradient(180deg,#0b1538,#050817)}
+.wheel{width:min(118vw,620px);margin:-40% auto 0;display:block;opacity:.95}
+.w1,.w2,.w3{fill:none;stroke:var(--gold)}.w1{stroke-opacity:.5}.w2{stroke-opacity:.7}.w3{stroke-opacity:.25}
+.tk{stroke:var(--gold);stroke-opacity:.6}.hs{stroke:var(--gold);stroke-opacity:.18}.as{stroke:var(--gold-hi);stroke-opacity:.35}
+.gl{fill:var(--gold);font-size:15px}.pl{fill:var(--gold-hi);font-size:16px}
+.ac{stroke:#ffe7a8;stroke-width:2}.al{fill:#ffe7a8;font:600 13px Jost;letter-spacing:.12em}
+.in{max-width:460px;margin:2% auto 0;position:relative;text-align:center}
+.eyebrow{font-size:12px;letter-spacing:.32em;text-transform:uppercase;color:var(--gold)}
+h1{font:500 clamp(34px,9.4vw,52px)/1.05 'Cormorant Garamond',serif;margin:14px 0 14px}
+h1 i{color:var(--gold-hi)}
+.sub{color:var(--muted);font-size:16px;line-height:1.5;margin-bottom:26px}
+.form{display:grid;gap:10px;text-align:left}
+.row3{display:grid;grid-template-columns:1fr 1.5fr 1.1fr;gap:8px}.row2{display:grid;grid-template-columns:1fr 1fr;gap:8px;align-items:center}
+input,select{width:100%;height:52px;border-radius:12px;border:1px solid var(--line);background:var(--field);color:var(--text);font:16px Jost;padding:0 14px}
+input::placeholder{color:#8a92b4}
+.lbl{font-size:13px;color:var(--muted);margin-top:6px}
+.chk{display:flex;gap:8px;align-items:center;font-size:15px;color:var(--muted)}.chk input{width:20px;height:20px}
+.cta{margin-top:10px;height:58px;border:0;border-radius:14px;font:600 17px Jost;color:#1a1306;background:linear-gradient(180deg,#f3dca0,#d9b56c)}
+.note{text-align:center;color:var(--muted);font-size:14px;margin-top:4px}
+/* ---------- ошибка формы ---------- */
+.err{margin-top:10px;font-size:14.5px;line-height:1.4;color:#f3b9a0}
+
+/* ---------- результат: бесплатная часть и полный разбор ---------- */
+.res{position:relative;background:linear-gradient(180deg,#050817 0%,#0a1236 40%,#070c26 100%);border-top:1px solid rgba(217,181,108,.18)}
+.res-in{max-width:640px;margin:0 auto;padding:44px 20px 56px}
+.res .eyebrow{max-width:none}
+.r-title{margin-top:14px;text-align:center;font-family:'Cormorant Garamond',Georgia,serif;font-weight:500;font-size:52px;line-height:1;color:var(--text)}
+.r-sub{margin-top:10px;text-align:center;font-size:16px;color:var(--gold);letter-spacing:.02em}
+.cusp{margin:22px 0 0;padding:16px 16px 14px;border:1px solid var(--line);border-radius:16px;background:rgba(9,16,46,.6);font-size:15px;line-height:1.5;color:var(--muted)}
+.cusp-btns{display:flex;gap:8px;margin-top:12px}
+.cusp-btns button{flex:1;height:46px;border-radius:12px;border:1px solid var(--line);background:transparent;color:var(--text);font:500 16px/1 'Jost',sans-serif;cursor:pointer}
+.cusp-btns button[aria-pressed="true"]{background:rgba(217,181,108,.16);border-color:var(--gold);color:var(--gold-hi)}
+
+.md{margin-top:26px;font-size:17px;line-height:1.62;color:#e6dfcd}
+.md p{margin:0 0 16px}
+.md strong{color:var(--gold-hi);font-weight:600}
+.md h3{margin:38px 0 14px;font-family:'Cormorant Garamond',Georgia,serif;font-weight:600;font-size:31px;line-height:1.1;color:var(--text);text-wrap:balance}
+.md h3:first-child{margin-top:8px}
+.md ul,.md ol{margin:0 0 16px;padding-left:22px}
+.md li{margin:0 0 8px}
+.md li::marker{color:var(--gold)}
+
+.best{margin:6px 0 0;padding:16px 18px;border-left:2px solid var(--gold);background:rgba(217,181,108,.07);border-radius:0 14px 14px 0;font-size:17px;line-height:1.5}
+.best b{color:var(--gold-hi);font-weight:600}
+
+.lock{margin-top:28px;padding:22px 18px 20px;border:1px solid var(--line);border-radius:20px;background:radial-gradient(120% 80% at 50% 0%,rgba(29,47,120,.55),rgba(9,16,46,.7))}
+.lock-h{font-family:'Cormorant Garamond',Georgia,serif;font-size:28px;line-height:1.1;color:var(--text);text-align:center}
+.lock ul{list-style:none;margin:16px 0 18px;display:grid;gap:9px}
+.lock li{position:relative;padding-left:26px;font-size:16px;line-height:1.45;color:#dcd5c3}
+.lock li::before{content:"";position:absolute;left:2px;top:5px;width:12px;height:12px;background:var(--gold);
+  -webkit-mask:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 12'%3E%3Cpath d='M6 0Q6 6 12 6Q6 6 6 12Q6 6 0 6Q6 6 6 0Z'/%3E%3C/svg%3E") center/contain no-repeat;
+  mask:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 12'%3E%3Cpath d='M6 0Q6 6 12 6Q6 6 6 12Q6 6 0 6Q6 6 6 0Z'/%3E%3C/svg%3E") center/contain no-repeat}
+.lock .note{text-align:center}
+.vpn{margin-top:12px;padding:10px 12px;border:1px solid var(--line);border-radius:12px;text-align:center;font-size:15px;line-height:1.4;color:var(--gold-hi)}
+.vpnstep{margin-top:10px;padding:18px 16px 16px;border:1px solid var(--gold);border-radius:16px;background:rgba(217,181,108,.09);text-align:center;font-size:16px;line-height:1.5;color:#e6dfcd}
+.vpnstep-h{margin-bottom:6px;font-family:'Cormorant Garamond',Georgia,serif;font-size:27px;line-height:1.1;color:var(--gold-hi)}
+a.cta{text-decoration:none}
+.cta[hidden]{display:none}
+.cta[disabled]{opacity:.7;cursor:progress}
+.cta[disabled]::after{display:none}
+
+.linkbtn{display:block;margin:26px auto 0;background:none;border:0;color:var(--muted);font:500 15px/1.4 'Jost',sans-serif;text-decoration:underline;text-underline-offset:3px;cursor:pointer}
+.wait{margin-top:24px;text-align:center;font-size:17px;line-height:1.5;color:var(--muted)}
+.save{margin-top:30px;padding:16px 18px;border:1px dashed var(--line);border-radius:14px;font-size:15px;line-height:1.5;color:var(--muted)}
+.foot{padding:28px 20px 40px;text-align:center;font-size:13px;line-height:1.7;color:#7f88aa;background:#050817}
+.foot a{color:#aab2d0}
+@media (min-width:960px){
+  .res-in{padding:64px 20px 72px}
+  .r-title{font-size:68px}
+  .md{font-size:18px}
+}
+
+/* ---------- натальная карта: дополнения к стилям «Твоего 2027» (26.10.2026) ---------- */
+[hidden]{display:none!important}
+.res .r-sub{margin-top:14px;font-size:17px}
+.wheelbox{max-width:420px;margin:22px auto 0}
+.nw{display:block;width:100%;height:auto;overflow:visible}
+.nw .w1,.nw .w2,.nw .w3{fill:none;stroke:var(--gold)}.nw .w1{stroke-opacity:.55}.nw .w2{stroke-opacity:.75}.nw .w3{stroke-opacity:.3}
+.nw .tk{stroke:var(--gold);stroke-opacity:.65}.nw .hs{stroke:var(--gold);stroke-opacity:.22}.nw .ax{stroke:var(--gold-hi);stroke-opacity:.8;stroke-width:1.4}
+.nw .gl{font:15px/1 'Jost',sans-serif;text-anchor:middle;dominant-baseline:central;fill:var(--gold)}
+.nw .gl.fire{fill:#f0a37a}.nw .gl.earth{fill:#c9c27a}.nw .gl.air{fill:#a9c7ef}.nw .gl.water{fill:#8fd0c8}
+.nw .hn{font:10px/1 'Jost',sans-serif;text-anchor:middle;dominant-baseline:central;fill:var(--muted);opacity:.7}
+.nw .as{stroke-width:1;stroke-opacity:.55}.nw .as.soft{stroke:#9fc3ff}.nw .as.hard{stroke:#ff9a8a}
+.nw .pt{stroke:var(--gold-hi);stroke-width:1.4}
+.nw .pl{font:17px/1 'Jost',sans-serif;text-anchor:middle;dominant-baseline:central;fill:var(--gold-hi)}
+.nw .al{font:600 12px/1 'Jost',sans-serif;letter-spacing:.1em;fill:var(--gold-hi)}
+.tablebox{margin-top:18px;overflow-x:auto}
+.pos{width:100%;border-collapse:collapse;font-size:15px;line-height:1.35}
+.pos td{padding:7px 6px;border-bottom:1px solid rgba(217,181,108,.14);color:#dcd5c3;white-space:nowrap}
+.pos td:last-child{text-align:right;color:var(--muted)}
+.pos .g{display:inline-block;min-width:26px;color:var(--gold-hi);font-size:12px;letter-spacing:.04em}
+.pos i{font-style:normal;font-size:11px;color:#ff9a8a;margin-left:2px}
+.md h4{margin:26px 0 10px;font:600 15px/1.35 'Jost',sans-serif;letter-spacing:.08em;text-transform:uppercase;color:var(--gold)}
+.md h3+h4{margin-top:14px}
+.best{margin-top:10px}
+.best p{margin:0}
+.notime{margin-bottom:14px;color:var(--gold-hi)}
+.save p{margin:0}
+.save .linkbtn{margin-top:12px}
+.cityw{position:relative}
+.clist{position:absolute;z-index:5;left:0;right:0;top:calc(100% + 4px);list-style:none;margin:0;padding:6px;border:1px solid var(--line);border-radius:14px;background:#0b1538;box-shadow:0 18px 40px rgba(0,0,0,.45);max-height:320px;overflow:auto}
+.clist button{display:block;width:100%;text-align:left;padding:10px 10px;border:0;border-radius:10px;background:none;color:var(--text);font:16px/1.3 'Jost',sans-serif;cursor:pointer}
+.clist button:hover,.clist button:focus{background:rgba(217,181,108,.12);outline:none}
+.clist span{display:block;font-size:13px;color:var(--muted)}
+.form input:disabled{opacity:.45}
+@media print{
+  body,.res,.foot{background:#fff!important;color:#111!important}
+  .hero,.lock,.linkbtn,#result,.foot,.save{display:none!important}
+  .md,.pos td{color:#111!important}.md strong,.md h4,.md h3{color:#111!important}
+  .nw .gl,.nw .pl,.nw .al,.nw .hn{fill:#111!important}.nw line,.nw circle{stroke:#555!important}
+}
+.res .eyebrow{text-align:center}
+.lock .cta,.vpnstep .cta{display:block;width:100%}
+a.cta{display:flex;align-items:center;justify-content:center}
+</style></head><body>
+<section class="hero">
+  <svg class="nw wheel" aria-hidden="true" viewBox="0 0 400 400" role="img" aria-label="Карта неба"><circle cx="200" cy="200" r="196" class="w1"/><circle cx="200" cy="200" r="166" class="w2"/><circle cx="200" cy="200" r="70" class="w3"/><line x1="365.9" y1="205.6" x2="395.9" y2="206.6" class="tk"/><text x="376.3" y="159.1" class="gl fire">♈︎</text><line x1="346.5" y1="121.9" x2="373" y2="107.8" class="tk"/><text x="332.3" y="76.4" class="gl earth">♉︎</text><line x1="287.8" y1="59.1" x2="303.7" y2="33.7" class="tk"/><text x="252.7" y="26.9" class="gl air">♊︎</text><line x1="205.6" y1="34.1" x2="206.6" y2="4.1" class="tk"/><text x="159.1" y="23.7" class="gl water">♋︎</text><line x1="121.9" y1="53.5" x2="107.8" y2="27" class="tk"/><text x="76.4" y="67.7" class="gl fire">♌︎</text><line x1="59.1" y1="112.2" x2="33.7" y2="96.3" class="tk"/><text x="26.9" y="147.3" class="gl earth">♍︎</text><line x1="34.1" y1="194.4" x2="4.1" y2="193.4" class="tk"/><text x="23.7" y="240.9" class="gl air">♎︎</text><line x1="53.5" y1="278.1" x2="27" y2="292.2" class="tk"/><text x="67.7" y="323.6" class="gl water">♏︎</text><line x1="112.2" y1="340.9" x2="96.3" y2="366.3" class="tk"/><text x="147.3" y="373.1" class="gl fire">♐︎</text><line x1="194.4" y1="365.9" x2="193.4" y2="395.9" class="tk"/><text x="240.9" y="376.3" class="gl earth">♑︎</text><line x1="278.1" y1="346.5" x2="292.2" y2="373" class="tk"/><text x="323.6" y="332.3" class="gl air">♒︎</text><line x1="340.9" y1="287.8" x2="366.3" y2="303.7" class="tk"/><text x="373.1" y="252.7" class="gl water">♓︎</text><line x1="130" y1="200" x2="34" y2="200" class="ax"/><text x="120.6" y="216.2" class="hn">1</text><line x1="135.6" y1="227.5" x2="47.3" y2="265.2" class="hs"/><text x="136.3" y="250" class="hn">2</text><line x1="158" y1="256" x2="100.5" y2="332.9" class="hs"/><text x="174.9" y="277" class="hn">3</text><line x1="200.9" y1="270" x2="202.1" y2="366" class="ax"/><text x="226.8" y="276.4" class="hn">4</text><line x1="243" y1="255.2" x2="302" y2="331" class="hs"/><text x="264.4" y="249.1" class="hn">5</text><line x1="264.6" y1="226.9" x2="353.3" y2="263.8" class="hs"/><text x="279.4" y="215.9" class="hn">6</text><line x1="270" y1="200" x2="366" y2="200" class="ax"/><text x="279.4" y="183.8" class="hn">7</text><line x1="264.4" y1="172.5" x2="352.7" y2="134.8" class="hs"/><text x="263.7" y="150" class="hn">8</text><line x1="242" y1="144" x2="299.5" y2="67.1" class="hs"/><text x="225.1" y="123" class="hn">9</text><line x1="199.1" y1="130" x2="197.9" y2="34" class="ax"/><text x="173.2" y="123.6" class="hn">10</text><line x1="157" y1="144.8" x2="98" y2="69" class="hs"/><text x="135.6" y="150.9" class="hn">11</text><line x1="135.4" y1="173.1" x2="46.7" y2="136.2" class="hs"/><text x="120.6" y="184.1" class="hn">12</text><line x1="209.4" y1="269.4" x2="135.1" y2="173.7" class="as soft"/><line x1="210" y1="269.3" x2="135.1" y2="173.7" class="as soft"/><line x1="209.4" y1="269.4" x2="269.6" y2="192.2" class="as hard"/><line x1="210" y1="269.3" x2="269.6" y2="192.2" class="as hard"/><line x1="156.3" y1="254.7" x2="143" y2="159.4" class="as hard"/><line x1="134.7" y1="225.2" x2="143" y2="159.4" class="as soft"/><line x1="269.6" y1="192.2" x2="237.5" y2="259.1" class="as soft"/><line x1="143" y1="159.4" x2="234.6" y2="139.2" class="as hard"/><line x1="366" y1="200.6" x2="359" y2="200.6" class="pt"/><text x="344" y="200.6" class="pl">♆︎</text><line x1="365" y1="181.6" x2="358" y2="182.3" class="pt"/><text x="342.3" y="178" class="pl">♄︎</text><line x1="282.1" y1="55.7" x2="278.6" y2="61.8" class="pt"/><text x="271.2" y="74.8" class="pl">♅︎</text><line x1="64.8" y1="103.6" x2="70.5" y2="107.7" class="pt"/><text x="82.8" y="116.4" class="pl">♃︎</text><line x1="46.2" y1="137.6" x2="52.7" y2="140.2" class="pt"/><text x="66.6" y="145.9" class="pl">♂︎</text><line x1="45.1" y1="259.7" x2="51.6" y2="257.2" class="pt"/><text x="65.6" y="251.8" class="pl">☽︎</text><line x1="96.5" y1="329.8" x2="100.8" y2="324.3" class="pt"/><text x="110.2" y="312.6" class="pl">♀︎</text><line x1="222.4" y1="364.5" x2="221.5" y2="357.5" class="pt"/><text x="219.4" y="342.7" class="pl">☿︎</text><line x1="223.8" y1="364.3" x2="222.8" y2="357.4" class="pt"/><text x="241.5" y="337.9" class="pl">☉︎</text><line x1="289" y1="340.2" x2="285.2" y2="334.2" class="pt"/><text x="277.2" y="321.6" class="pl">♇︎</text><text x="100" y="193" class="al" text-anchor="middle">ASC</text><text x="212.7" y="100" class="al" text-anchor="middle">MC</text></svg>
+  <div class="in">
+    <p class="eyebrow">Натальная карта</p>
+    <h1>Как тебя видят другие <i>и кто ты на самом деле</i></h1>
+    <p class="sub">Полный разбор по дате, времени и городу рождения</p>
+    <form class="form" id="form" novalidate>
+      <span class="lbl" id="l-date">Дата рождения</span>
+      <div class="row3" role="group" aria-labelledby="l-date">
+        <input id="f-d" type="text" inputmode="numeric" maxlength="2" placeholder="День" autocomplete="bday-day" aria-label="День">
+        <select id="f-m" autocomplete="bday-month" aria-label="Месяц"><option value="">Месяц</option><option value="1">январь</option><option value="2">февраль</option><option value="3">март</option><option value="4">апрель</option><option value="5">май</option><option value="6">июнь</option><option value="7">июль</option><option value="8">август</option><option value="9">сентябрь</option><option value="10">октябрь</option><option value="11">ноябрь</option><option value="12">декабрь</option></select>
+        <input id="f-y" type="text" inputmode="numeric" maxlength="4" placeholder="Год" autocomplete="bday-year" aria-label="Год">
+      </div>
+      <label class="lbl" for="f-time">Время рождения</label>
+      <div class="row2"><input id="f-time" type="time"><label class="chk"><input id="f-notime" type="checkbox"> Не знаю время</label></div>
+      <label class="lbl" for="f-city">Город рождения</label>
+      <div class="cityw"><input id="f-city" type="text" placeholder="Начни вводить: Москва, Ленинград…" autocomplete="off" spellcheck="false" enterkeyhint="done"><ul id="f-city-list" class="clist" hidden></ul></div>
+      <p class="err" id="f-err" role="alert" hidden></p>
+      <button class="cta" type="submit" id="f-go">Построить мою карту</button>
+      <p class="note">Солнце, Луна и Асцендент - сразу и бесплатно</p>
+    </form>
+  </div>
+</section>
+<section class="res" id="result" hidden aria-live="polite">
+  <div class="res-in">
+    <p class="eyebrow"><span>Твоя натальная карта</span></p>
+    <p class="r-sub" id="r-sub"></p>
+    <div class="wheelbox" id="r-wheel"></div>
+    <div class="tablebox" id="r-table"></div>
+    <div class="md" id="r-free"></div>
+    <div class="best" id="r-hook"></div>
+    <div class="lock" id="r-lock">
+      <p class="lock-h">В полном разборе</p>
+      <ul>
+        <li>портрет: Солнце, Луна и Асцендент вместе, где они спорят и как их помирить</li>
+        <li>характер, ум и твоя стихия</li>
+        <li>любовь: какой партнёр тебе нужен и на чём держится твой союз</li>
+        <li>деньги, работа и твоё дело</li>
+        <li>дом, семья и дети</li>
+        <li>таланты и предназначение</li>
+        <li>уроки, слабые места и где твоя энергия</li>
+        <li>все планеты по домам и связи между ними</li>
+        <li>твой 2027 по карте: по каким твоим домам идут Юпитер и Сатурн и куда падают затмения</li>
+      </ul>
+      <p class="note notime" id="r-notime" hidden>Без времени рождения разбор короче: в нём нет Асцендента и домов. Если узнаешь время, построй карту заново, и она будет полной</p>
+      <button class="cta" type="button" id="pay">Открыть полный разбор - 990 ₽</button>
+      <div class="vpnstep" id="vpn-step" hidden>
+        <p class="vpnstep-h">Сначала выключи VPN</p>
+        <p>Через VPN страница оплаты не открывается. Выключи VPN на пару минут, оплати и включай обратно. Разбор откроется на этой странице сам</p>
+        <a class="cta" id="vpn-go" href="#">Перейти к оплате - 990 ₽</a>
+      </div>
+      <p class="err" id="pay-err" role="alert" hidden></p>
+      <p class="note">Оплата разовая, без подписки. Разбор откроется сразу на этой странице, а личная ссылка на него придёт на почту</p>
+      <p class="vpn" id="vpn-note">Если ссылка на оплату не открывается, выключи VPN</p>
+    </div>
+    <button class="linkbtn" type="button" id="again">Построить карту для другой даты</button>
+  </div>
+</section>
+
+<section class="res" id="full" hidden aria-live="polite">
+  <div class="res-in">
+    <p class="eyebrow"><span>Полный разбор</span></p>
+    <p class="r-sub" id="full-sub"></p>
+    <p class="wait" id="full-wait" hidden></p>
+    <div class="wheelbox" id="full-wheel"></div>
+    <div class="tablebox" id="full-table"></div>
+    <div class="md" id="full-md"></div>
+    <div class="save" id="full-save" hidden>
+      <p>Личная ссылка на этот разбор пришла в письме от кассы. По ней разбор откроется на любом телефоне или компьютере</p>
+      <button class="linkbtn" type="button" id="print">Сохранить разбор в PDF</button>
+    </div>
+    <button class="linkbtn" type="button" id="full-again">Построить карту для другой даты</button>
+  </div>
+</section>
+
+<footer class="foot">
+  Индивидуальный предприниматель Логинов Иван Владимирович<br>
+  <a href="oferta.html">Оферта</a> · <a href="/privacy.html">Конфиденциальность</a> · <a href="https://t.me/loginoff_ai">Поддержка</a><br>
+  Карта построена на астрономическом расчёте положения планет на минуту и место рождения и на классических трактовках астрологии. Носит развлекательный характер<br>
+  Города: <a href="https://www.geonames.org/">GeoNames</a>, CC BY 4.0
+</footer>
+<script type="module" src="main.js"></script>
+</body></html>
