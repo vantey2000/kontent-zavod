@@ -1,0 +1,575 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#2a0712">
+<title>Вы с ним совпадаете?</title>
+<meta name="description" content="Введи свою дату рождения и его: на сколько процентов вы совпадаете, что вас тянет друг к другу и какие вы вдвоём в страсти">
+<meta property="og:title" content="Вы с ним совпадаете?">
+<meta property="og:description" content="Совместимость по двум датам рождения: знаки зодиака, восточный гороскоп и ваш 2027 вдвоём">
+<link rel="preload" href="fonts/manrope-400-cyrillic.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="preload" href="fonts/playfair-500-cyrillic.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="modulepreload" href="main.js">
+<style>
+@font-face {
+  font-family: 'Manrope';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url(fonts/manrope-400-cyrillic.woff2) format('woff2');
+  unicode-range: U+0301, U+0400-045F, U+0490-0491, U+04B0-04B1, U+2116;
+}
+@font-face {
+  font-family: 'Manrope';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url(fonts/manrope-400-latin.woff2) format('woff2');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+@font-face {
+  font-family: 'Manrope';
+  font-style: normal;
+  font-weight: 500;
+  font-display: swap;
+  src: url(fonts/manrope-400-cyrillic.woff2) format('woff2');
+  unicode-range: U+0301, U+0400-045F, U+0490-0491, U+04B0-04B1, U+2116;
+}
+@font-face {
+  font-family: 'Manrope';
+  font-style: normal;
+  font-weight: 500;
+  font-display: swap;
+  src: url(fonts/manrope-400-latin.woff2) format('woff2');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+@font-face {
+  font-family: 'Manrope';
+  font-style: normal;
+  font-weight: 600;
+  font-display: swap;
+  src: url(fonts/manrope-400-cyrillic.woff2) format('woff2');
+  unicode-range: U+0301, U+0400-045F, U+0490-0491, U+04B0-04B1, U+2116;
+}
+@font-face {
+  font-family: 'Manrope';
+  font-style: normal;
+  font-weight: 600;
+  font-display: swap;
+  src: url(fonts/manrope-400-latin.woff2) format('woff2');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+@font-face {
+  font-family: 'Playfair Display';
+  font-style: italic;
+  font-weight: 400;
+  font-display: swap;
+  src: url(fonts/playfair-i400-cyrillic.woff2) format('woff2');
+  unicode-range: U+0301, U+0400-045F, U+0490-0491, U+04B0-04B1, U+2116;
+}
+@font-face {
+  font-family: 'Playfair Display';
+  font-style: italic;
+  font-weight: 400;
+  font-display: swap;
+  src: url(fonts/playfair-i400-latin.woff2) format('woff2');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+@font-face {
+  font-family: 'Playfair Display';
+  font-style: italic;
+  font-weight: 500;
+  font-display: swap;
+  src: url(fonts/playfair-i400-cyrillic.woff2) format('woff2');
+  unicode-range: U+0301, U+0400-045F, U+0490-0491, U+04B0-04B1, U+2116;
+}
+@font-face {
+  font-family: 'Playfair Display';
+  font-style: italic;
+  font-weight: 500;
+  font-display: swap;
+  src: url(fonts/playfair-i400-latin.woff2) format('woff2');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+@font-face {
+  font-family: 'Playfair Display';
+  font-style: normal;
+  font-weight: 500;
+  font-display: swap;
+  src: url(fonts/playfair-500-cyrillic.woff2) format('woff2');
+  unicode-range: U+0301, U+0400-045F, U+0490-0491, U+04B0-04B1, U+2116;
+}
+@font-face {
+  font-family: 'Playfair Display';
+  font-style: normal;
+  font-weight: 500;
+  font-display: swap;
+  src: url(fonts/playfair-500-latin.woff2) format('woff2');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+:root{
+  --wine-0:#14030a;
+  --wine-1:#2a0712;
+  --wine-2:#4a0e22;
+  --wine-3:#6f1a35;
+  --rose:#e2b49c;
+  --rose-hi:#f7dccb;
+  --rose-lo:#a9715d;
+  --pearl:#f6ece5;
+  --muted:rgba(246,226,220,.72);
+  --line:rgba(226,180,156,.38);
+  --field:rgba(28,4,12,.55);
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html{-webkit-text-size-adjust:100%}
+body{
+  background:var(--wine-0);
+  color:var(--pearl);
+  font-family:'Manrope',system-ui,sans-serif;
+  -webkit-font-smoothing:antialiased;
+  overflow-x:hidden;
+}
+
+/* ---------- фон: бархат ---------- */
+.hero{
+  position:relative;
+  min-height:100svh;
+  overflow:hidden;
+  isolation:isolate;
+  background:
+    radial-gradient(90% 45% at 12% 0%, rgba(150,34,66,.55) 0%, transparent 70%),
+    radial-gradient(70% 45% at 100% 85%, rgba(118,22,52,.45) 0%, transparent 70%),
+    radial-gradient(120% 80% at 50% 50%, transparent 55%, rgba(8,0,4,.55) 100%),
+    linear-gradient(172deg, #3d0a1b 0%, #2a0712 48%, #17030b 100%);
+}
+.hero::before{ /* отлив ворса, медленно ходит */
+  content:"";position:absolute;inset:-20%;z-index:-2;pointer-events:none;
+  background:linear-gradient(115deg, transparent 38%, rgba(255,190,205,.07) 47%, rgba(255,220,225,.11) 50%, rgba(255,190,205,.07) 53%, transparent 62%);
+  background-size:220% 220%;
+  animation:sheen 14s ease-in-out infinite alternate;
+}
+@keyframes sheen{from{background-position:100% 0}to{background-position:0 100%}}
+.hero::after{ /* ворс бархата */
+  content:"";position:absolute;inset:0;z-index:-1;pointer-events:none;opacity:.32;mix-blend-mode:soft-light;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='1.1' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+}
+
+/* ---------- две шёлковые нити ---------- */
+.silk{position:absolute;z-index:-1;pointer-events:none}
+.silk svg{display:block;width:100%;height:100%;overflow:visible}
+.silk-m{left:0;right:0;top:0;height:108px}
+.silk-d{display:none;inset:0}
+.silk .glow{fill:none;stroke:var(--rose);stroke-opacity:.16;stroke-width:9;filter:blur(5px)}
+.silk .th{fill:none;stroke-linecap:round;stroke-dasharray:1600;stroke-dashoffset:1600;animation:draw 2.8s .2s cubic-bezier(.3,.6,.2,1) forwards}
+.silk .t1{stroke:url(#gm);stroke-width:1.5}
+.silk .t2{stroke:url(#gm);stroke-width:.7;opacity:.55}
+.silk .t3{stroke:url(#gm);stroke-width:.5;opacity:.35}
+.silk-d .th{stroke-dasharray:4200;stroke-dashoffset:4200;animation-duration:3.4s}
+.silk .kiss{fill:var(--rose-hi)}
+.silk .kiss-g{fill:url(#kg);animation:pulse 4.5s ease-in-out infinite}
+@keyframes draw{to{stroke-dashoffset:0}}
+@keyframes pulse{50%{opacity:.45}}
+
+/* ---------- содержимое ---------- */
+.wrap{
+  position:relative;
+  max-width:460px;
+  margin:0 auto;
+  padding:104px 20px 24px;
+}
+.eyebrow{
+  display:flex;align-items:center;gap:12px;
+  font-size:11px;font-weight:600;letter-spacing:.13em;text-transform:uppercase;
+  color:var(--rose);line-height:1.5;white-space:nowrap;
+}
+.eyebrow i{display:block;flex:0 0 24px;height:1px;background:linear-gradient(90deg,transparent,var(--rose))}
+.eyebrow i.r{display:none}
+
+h1{
+  margin-top:12px;
+  font-family:'Playfair Display',Georgia,serif;
+  font-weight:500;
+  font-size:52px;
+  line-height:1.02;
+  letter-spacing:-.015em;
+  color:var(--pearl);
+}
+h1 em{
+  display:block;
+  font-style:italic;font-weight:400;
+  background:linear-gradient(100deg,var(--rose-lo) 0%,var(--rose-hi) 42%,var(--rose) 68%,var(--rose-lo) 100%);
+  -webkit-background-clip:text;background-clip:text;color:transparent;
+  padding:0 .08em .08em 0;
+}
+.lead{
+  text-wrap:pretty;
+  margin-top:10px;
+  max-width:350px;
+  font-size:15px;line-height:1.48;color:var(--muted);
+}
+
+.form{margin-top:18px}
+.group + .group{margin-top:10px}
+.glabel{
+  margin:0 0 6px 4px;
+  font-family:'Playfair Display',Georgia,serif;
+  font-style:italic;font-weight:400;
+  font-size:17px;line-height:1.25;
+  color:var(--rose-hi);
+}
+.fields{display:grid;grid-template-columns:.92fr 1.5fr 1.05fr;gap:8px}
+.field{position:relative;display:block}
+.field input,.field select{
+  width:100%;height:60px;
+  border-radius:30px;
+  border:1px solid var(--line);
+  background:var(--field);
+  color:var(--pearl);
+  font:500 17px/1 'Manrope',sans-serif;
+  text-align:center;
+  outline:none;
+  -webkit-appearance:none;appearance:none;
+  box-shadow:inset 0 1px 0 rgba(255,220,210,.06);
+  transition:border-color .2s,box-shadow .2s,background .2s;
+}
+.field select{padding:0 26px 0 12px;text-align-last:center;cursor:pointer}
+.field select:invalid{color:rgba(240,205,200,.55)}
+.field select option{color:#2a0712}
+.field input::placeholder{color:rgba(240,205,200,.55);opacity:1}
+.field input:focus,.field select:focus{border-color:var(--rose);box-shadow:0 0 0 3px rgba(226,180,156,.18);background:rgba(60,10,26,.7)}
+.field .chev{position:absolute;right:13px;top:50%;width:11px;height:11px;margin-top:-5.5px;pointer-events:none;stroke:var(--rose);fill:none;stroke-width:1.6}
+
+.cta{
+  position:relative;overflow:hidden;
+  margin-top:14px;
+  width:100%;height:62px;
+  border:0;border-radius:31px;cursor:pointer;
+  display:flex;align-items:center;justify-content:center;gap:12px;
+  font:600 17px/1 'Manrope',sans-serif;letter-spacing:.01em;
+  color:#3a0a1a;
+  background:linear-gradient(180deg,#fbe9de 0%,#ecc3ad 52%,#cf9a83 100%);
+  box-shadow:0 14px 34px -12px rgba(226,150,130,.55),inset 0 1px 0 rgba(255,255,255,.6);
+  transition:transform .15s;
+}
+.cta svg{width:26px;height:12px;fill:none;stroke:#3a0a1a;stroke-width:1.5;stroke-linecap:round;stroke-linejoin:round}
+.cta::after{
+  content:"";position:absolute;top:0;bottom:0;width:40%;left:-60%;
+  background:linear-gradient(100deg,transparent,rgba(255,255,255,.55),transparent);
+  animation:shine 5s 1.4s ease-in-out infinite;
+}
+@keyframes shine{0%{left:-60%}35%,100%{left:130%}}
+.cta:active{transform:scale(.985)}
+.note{
+  margin-top:11px;text-align:center;
+  font-size:13px;line-height:1.4;color:var(--muted);letter-spacing:.01em;
+}
+
+.sr-only{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+
+/* появление */
+.rise{opacity:0;transform:translateY(12px);animation:rise .9s cubic-bezier(.2,.7,.2,1) forwards}
+.d1{animation-delay:.05s}.d2{animation-delay:.15s}.d3{animation-delay:.28s}.d4{animation-delay:.4s}
+@keyframes rise{to{opacity:1;transform:none}}
+
+/* ---------- компьютер ---------- */
+@media (min-width:960px){
+  .hero{display:flex;align-items:center;justify-content:center;min-height:100vh}
+  .silk-m{display:none}
+  .silk-d{display:block}
+  .wrap{max-width:720px;width:100%;padding:64px 40px;text-align:center}
+  .eyebrow{justify-content:center;font-size:12.5px}
+  .eyebrow i{flex-basis:44px}
+  .eyebrow i.r{display:block;transform:scaleX(-1)}
+  h1{font-size:80px;line-height:1;margin-top:20px}
+  h1 em{padding-right:.08em}
+  .lead{margin:18px auto 0;max-width:540px;font-size:17.5px}
+  .form{margin:30px auto 0;max-width:620px}
+  .groups{display:grid;grid-template-columns:1fr 1fr;gap:28px;text-align:left}
+  .group + .group{margin-top:0}
+  .glabel{font-size:18px;margin-bottom:8px}
+  .field input,.field select{height:60px;font-size:17px}
+  .cta{max-width:420px;margin:22px auto 0;height:62px}
+  .note{font-size:14px}
+}
+@media (prefers-reduced-motion:reduce){
+  *,*::before,*::after{animation:none!important}
+  .rise{opacity:1;transform:none}
+  .silk .th{stroke-dashoffset:0}
+}
+/* ---------- ошибка формы ---------- */
+.err{margin-top:10px;font-size:14.5px;line-height:1.4;color:#ffc4b3}
+
+/* ---------- результат: бесплатная часть и полный разбор (вариант B «Бархат», выбран Иваном 26.10) ---------- */
+.res{position:relative;background:linear-gradient(180deg,#17030b 0%,#2a0712 38%,#1b040d 100%);border-top:1px solid rgba(226,180,156,.2)}
+.res-in{max-width:640px;margin:0 auto;padding:44px 20px 56px}
+.res .eyebrow{justify-content:center}
+
+/* процент пары: кольцо заполняется на --p процентов (ставит main.js) */
+.score{--p:0;position:relative;width:184px;height:184px;margin:22px auto 0;border-radius:50%;
+  background:conic-gradient(var(--rose-hi) 0,var(--rose) calc(var(--p) * 1%),rgba(226,180,156,.14) 0);
+  display:flex;flex-direction:column;align-items:center;justify-content:center}
+.score::before{content:"";position:absolute;inset:7px;border-radius:50%;background:radial-gradient(circle at 50% 35%,#4a0e22,#22050f 75%)}
+.score>*{position:relative}
+.score-n{font-family:'Playfair Display',Georgia,serif;font-weight:500;font-size:62px;line-height:1;color:var(--pearl)}
+.score-n small{font-size:30px;margin-left:2px;color:var(--rose)}
+.score-t{margin-top:6px;max-width:130px;text-align:center;font-size:13.5px;line-height:1.3;letter-spacing:.04em;color:var(--rose-hi)}
+
+.who{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:24px}
+.who div{padding:12px 12px 11px;border:1px solid var(--line);border-radius:14px;background:rgba(28,4,12,.5);text-align:center}
+.who dt{font-family:'Playfair Display',Georgia,serif;font-style:italic;font-size:19px;color:var(--rose)}
+.who dd{margin-top:3px;font-size:15px;line-height:1.35;color:var(--pearl)}
+
+.cusp{margin:14px 0 0;padding:16px 16px 14px;border:1px solid var(--line);border-radius:16px;background:rgba(28,4,12,.55);font-size:15px;line-height:1.5;color:var(--muted)}
+.cusp-btns{display:flex;gap:8px;margin-top:12px}
+.cusp-btns button{flex:1;height:46px;border-radius:12px;border:1px solid var(--line);background:transparent;color:var(--pearl);font:500 16px/1 'Manrope',sans-serif;cursor:pointer}
+.cusp-btns button[aria-pressed="true"]{background:rgba(226,180,156,.16);border-color:var(--rose);color:var(--rose-hi)}
+
+.md{margin-top:26px;font-size:17px;line-height:1.62;color:#f1e2da}
+.md p{margin:0 0 16px}
+.md strong{color:var(--rose-hi);font-weight:600}
+.md h3{margin:40px 0 14px;font-family:'Playfair Display',Georgia,serif;font-weight:500;font-size:28px;line-height:1.15;color:var(--pearl);text-wrap:balance}
+.md h3:first-child{margin-top:8px}
+.md ul,.md ol{margin:0 0 16px;padding-left:22px}
+.md li{margin:0 0 8px}
+.md li::marker{color:var(--rose)}
+
+.strast{margin:4px 0 18px;padding:18px 18px 16px;border-radius:18px;background:linear-gradient(135deg,rgba(150,34,66,.45),rgba(74,14,34,.5));border:1px solid rgba(247,220,203,.22)}
+.strast-h{font-family:'Playfair Display',Georgia,serif;font-style:italic;font-size:22px;color:var(--rose-hi)}
+.strast p:last-child{margin-top:6px;font-size:17px;line-height:1.55;color:var(--pearl)}
+
+.best{margin:6px 0 0;padding:16px 18px;border-left:2px solid var(--rose);background:rgba(226,180,156,.08);border-radius:0 14px 14px 0;font-size:17px;line-height:1.5}
+.best b{color:var(--rose-hi);font-weight:600}
+
+.lock{margin-top:28px;padding:22px 18px 20px;border:1px solid var(--line);border-radius:20px;background:radial-gradient(120% 80% at 50% 0%,rgba(111,26,53,.6),rgba(28,4,12,.75))}
+.lock-h{font-family:'Playfair Display',Georgia,serif;font-size:26px;line-height:1.15;color:var(--pearl);text-align:center}
+.lock ul{list-style:none;margin:16px 0 18px;display:grid;gap:9px}
+.lock li{position:relative;padding-left:26px;font-size:16px;line-height:1.45;color:#ecdcd3}
+.lock li::before{content:"";position:absolute;left:2px;top:5px;width:12px;height:12px;background:var(--rose);
+  -webkit-mask:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 12'%3E%3Cpath d='M6 0Q6 6 12 6Q6 6 6 12Q6 6 0 6Q6 6 6 0Z'/%3E%3C/svg%3E") center/contain no-repeat;
+  mask:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 12'%3E%3Cpath d='M6 0Q6 6 12 6Q6 6 6 12Q6 6 0 6Q6 6 6 0Z'/%3E%3C/svg%3E") center/contain no-repeat}
+.lock .cta{max-width:none;margin:10px 0 0;width:100%}
+.lock .note{text-align:center}
+.vpn{margin-top:12px;padding:10px 12px;border:1px solid var(--line);border-radius:12px;text-align:center;font-size:15px;line-height:1.4;color:var(--rose-hi)}
+.vpnstep{margin-top:10px;padding:18px 16px 16px;border:1px solid var(--rose);border-radius:16px;background:rgba(226,180,156,.1);text-align:center;font-size:16px;line-height:1.5;color:#f1e2da}
+.vpnstep-h{margin-bottom:6px;font-family:'Playfair Display',Georgia,serif;font-size:25px;line-height:1.15;color:var(--rose-hi)}
+a.cta{text-decoration:none}
+.cta[hidden]{display:none}
+.cta[disabled]{opacity:.7;cursor:progress}
+.cta[disabled]::after{display:none}
+
+.linkbtn{display:block;margin:26px auto 0;background:none;border:0;color:var(--muted);font:500 15px/1.4 'Manrope',sans-serif;text-decoration:underline;text-underline-offset:3px;cursor:pointer}
+.wait{margin-top:24px;text-align:center;font-size:17px;line-height:1.5;color:var(--muted)}
+.save{margin-top:30px;padding:16px 18px;border:1px dashed var(--line);border-radius:14px;font-size:15px;line-height:1.5;color:var(--muted)}
+.foot{padding:28px 20px 40px;text-align:center;font-size:13px;line-height:1.7;color:#a8848c;background:#14030a}
+.foot a{color:#e2b49c}
+@media (min-width:960px){
+  .res-in{padding:64px 20px 72px}
+  .score{width:208px;height:208px}
+  .score-n{font-size:70px}
+  .md{font-size:18px}
+}
+</style>
+</head>
+<body>
+<main class="hero">
+
+  <!-- две нити (телефон): переплетаются, в точке встречи искра -->
+  <div class="silk silk-m" aria-hidden="true">
+    <svg viewBox="0 0 390 108" preserveAspectRatio="xMidYMid slice">
+      <defs>
+        <linearGradient id="gm" gradientUnits="userSpaceOnUse" x1="0" y1="0" x2="390" y2="0">
+          <stop offset="0" stop-color="#e2b49c" stop-opacity="0"/>
+          <stop offset=".25" stop-color="#e2b49c"/>
+          <stop offset=".5" stop-color="#fbe6da"/>
+          <stop offset=".75" stop-color="#e2b49c"/>
+          <stop offset="1" stop-color="#e2b49c" stop-opacity="0"/>
+        </linearGradient>
+        <radialGradient id="kg"><stop offset="0" stop-color="#f7dccb" stop-opacity=".7"/><stop offset="1" stop-color="#f7dccb" stop-opacity="0"/></radialGradient>
+      </defs>
+      <path class="glow" d="M-20 22C70 14 120 94 195 56S318 98 410 86"/>
+      <path class="glow" d="M-20 92C70 100 120 18 195 56S318 14 410 26"/>
+      <g>
+        <path class="th t1" d="M-20 22C70 14 120 94 195 56S318 98 410 86"/>
+        <path class="th t2" d="M-20 26C70 18 120 98 195 60S318 102 410 90"/>
+        <path class="th t3" d="M-20 18C70 10 120 90 195 52S318 94 410 82"/>
+      </g>
+      <g>
+        <path class="th t1" d="M-20 92C70 100 120 18 195 56S318 14 410 26"/>
+        <path class="th t2" d="M-20 96C70 104 120 22 195 60S318 18 410 30"/>
+        <path class="th t3" d="M-20 88C70 96 120 14 195 52S318 10 410 22"/>
+      </g>
+      <circle cx="195" cy="56" r="20" class="kiss-g"/>
+      <path class="kiss" d="M195 46Q195 56 205 56Q195 56 195 66Q195 56 185 56Q195 56 195 46Z"/>
+    </svg>
+  </div>
+
+  <!-- две нити (компьютер): обнимают текст и встречаются слева и справа -->
+  <div class="silk silk-d" aria-hidden="true">
+    <svg viewBox="0 0 1440 900" preserveAspectRatio="xMidYMid slice">
+      <defs>
+        <linearGradient id="gd" gradientUnits="userSpaceOnUse" x1="0" y1="0" x2="1440" y2="0">
+          <stop offset="0" stop-color="#e2b49c" stop-opacity="0"/>
+          <stop offset=".14" stop-color="#e2b49c"/>
+          <stop offset=".5" stop-color="#fbe6da"/>
+          <stop offset=".86" stop-color="#e2b49c"/>
+          <stop offset="1" stop-color="#e2b49c" stop-opacity="0"/>
+        </linearGradient>
+      </defs>
+      <g style="--g:url(#gd)">
+        <path class="glow" d="M-60 820C40 740 110 580 180 450C270 300 360 50 720 44C1080 50 1170 300 1260 450C1330 580 1400 740 1500 820"/>
+        <path class="glow" d="M-60 80C40 160 110 320 180 450C270 600 360 856 720 862C1080 856 1170 600 1260 450C1330 320 1400 160 1500 80"/>
+        <path class="th t1" style="stroke:url(#gd)" d="M-60 820C40 740 110 580 180 450C270 300 360 50 720 44C1080 50 1170 300 1260 450C1330 580 1400 740 1500 820"/>
+        <path class="th t2" style="stroke:url(#gd)" d="M-60 826C40 746 116 584 186 454C276 306 364 56 720 50C1076 56 1164 306 1254 454C1324 584 1400 746 1500 826"/>
+        <path class="th t3" style="stroke:url(#gd)" d="M-60 814C40 734 104 576 174 446C264 294 356 44 720 38C1084 44 1176 294 1266 446C1336 576 1400 734 1500 814"/>
+        <path class="th t1" style="stroke:url(#gd)" d="M-60 80C40 160 110 320 180 450C270 600 360 856 720 862C1080 856 1170 600 1260 450C1330 320 1400 160 1500 80"/>
+        <path class="th t2" style="stroke:url(#gd)" d="M-60 74C40 154 116 316 186 446C276 594 364 850 720 856C1076 850 1164 594 1254 446C1324 316 1400 154 1500 74"/>
+        <path class="th t3" style="stroke:url(#gd)" d="M-60 86C40 166 104 324 174 454C264 606 356 862 720 868C1084 862 1176 606 1266 454C1336 324 1400 166 1500 86"/>
+      </g>
+      <circle cx="180" cy="450" r="34" class="kiss-g"/>
+      <path class="kiss" d="M180 434Q180 450 196 450Q180 450 180 466Q180 450 164 450Q180 450 180 434Z"/>
+      <circle cx="1260" cy="450" r="34" class="kiss-g"/>
+      <path class="kiss" d="M1260 434Q1260 450 1276 450Q1260 450 1260 466Q1260 450 1244 450Q1260 450 1260 434Z"/>
+    </svg>
+  </div>
+
+  <div class="wrap">
+    <p class="eyebrow rise d1"><i></i><span>Совместимость по двум датам рождения</span><i class="r"></i></p>
+
+    <h1 class="rise d2">Вы с ним <em>совпадаете?</em></h1>
+
+    <p class="lead rise d3">Введи свою дату рождения и его. Сразу увидишь, на сколько процентов вы совпадаете по знакам и восточному гороскопу, и что вас тянет друг к другу</p>
+
+    <form class="form rise d4" id="form" novalidate>
+      <div class="groups">
+        <div class="group" role="group" aria-labelledby="g1">
+          <p class="glabel" id="g1">Твоя дата рождения</p>
+          <div class="fields">
+            <label class="field">
+              <span class="sr-only">День</span>
+              <input type="text" inputmode="numeric" maxlength="2" placeholder="День" autocomplete="bday-day" id="f-d">
+            </label>
+            <label class="field">
+              <span class="sr-only">Месяц</span>
+              <select required autocomplete="bday-month" id="f-m">
+                <option value="" disabled selected>Месяц</option>
+                <option value="1">января</option><option value="2">февраля</option><option value="3">марта</option>
+                <option value="4">апреля</option><option value="5">мая</option><option value="6">июня</option>
+                <option value="7">июля</option><option value="8">августа</option><option value="9">сентября</option>
+                <option value="10">октября</option><option value="11">ноября</option><option value="12">декабря</option>
+              </select>
+              <svg class="chev" viewBox="0 0 12 12" aria-hidden="true"><path d="M2 4.5 6 8.5 10 4.5"/></svg>
+            </label>
+            <label class="field">
+              <span class="sr-only">Год</span>
+              <input type="text" inputmode="numeric" maxlength="4" placeholder="Год" autocomplete="bday-year" id="f-y">
+            </label>
+          </div>
+        </div>
+
+        <div class="group" role="group" aria-labelledby="g2">
+          <p class="glabel" id="g2">Его дата рождения</p>
+          <div class="fields">
+            <label class="field">
+              <span class="sr-only">День</span>
+              <input type="text" inputmode="numeric" maxlength="2" placeholder="День" id="g-d">
+            </label>
+            <label class="field">
+              <span class="sr-only">Месяц</span>
+              <select required id="g-m">
+                <option value="" disabled selected>Месяц</option>
+                <option value="1">января</option><option value="2">февраля</option><option value="3">марта</option>
+                <option value="4">апреля</option><option value="5">мая</option><option value="6">июня</option>
+                <option value="7">июля</option><option value="8">августа</option><option value="9">сентября</option>
+                <option value="10">октября</option><option value="11">ноября</option><option value="12">декабря</option>
+              </select>
+              <svg class="chev" viewBox="0 0 12 12" aria-hidden="true"><path d="M2 4.5 6 8.5 10 4.5"/></svg>
+            </label>
+            <label class="field">
+              <span class="sr-only">Год</span>
+              <input type="text" inputmode="numeric" maxlength="4" placeholder="Год" id="g-y">
+            </label>
+          </div>
+        </div>
+      </div>
+
+      <p class="err" id="f-err" role="alert" hidden></p>
+      <button class="cta" type="submit" id="f-go">
+        Узнать, подходим ли мы
+        <svg viewBox="0 0 26 12" aria-hidden="true"><path d="M1 6h23M19 1l5 5-5 5"/></svg>
+      </button>
+    </form>
+  </div>
+</main>
+<section class="res" id="result" hidden aria-live="polite">
+  <div class="res-in">
+    <p class="eyebrow"><span>Вы с ним</span></p>
+    <div class="score" id="r-score-box">
+      <p class="score-n"><span id="r-score"></span><small>%</small></p>
+      <p class="score-t" id="r-tier"></p>
+    </div>
+    <dl class="who">
+      <div><dt>Ты</dt><dd id="r-her"></dd></div>
+      <div><dt>Он</dt><dd id="r-him"></dd></div>
+    </dl>
+    <div class="cusp" id="r-cusp-her" hidden><span class="cusp-t"></span><div class="cusp-btns"></div></div>
+    <div class="cusp" id="r-cusp-him" hidden><span class="cusp-t"></span><div class="cusp-btns"></div></div>
+    <div class="md" id="r-free"></div>
+    <div class="strast">
+      <p class="strast-h">В страсти</p>
+      <p id="r-strast"></p>
+    </div>
+    <div class="md" id="r-east"></div>
+    <p class="best"><b>В 2027 у вас один опасный месяц.</b> Какой и что в нём не делать - в полном разборе</p>
+    <div class="lock" id="r-lock">
+      <p class="lock-h">В полном разборе вашей пары</p>
+      <ul>
+        <li>Что вас тянет друг к другу</li>
+        <li>Страсть: какие вы вдвоём и какая ты в страсти</li>
+        <li id="r-lock-he">Какой он в любви: чего ждёт и что не прощает</li>
+        <li>Как с ним говорить: фразы, которые работают, и те, что его отталкивают</li>
+        <li>Где вы ссоритесь и как мириться</li>
+        <li>Что его удерживает и что разрушает</li>
+        <li>Восточный гороскоп пары и стихии года</li>
+        <li>Ваш 2027 вдвоём: лучшее время пары и опасный месяц</li>
+      </ul>
+      <button class="cta" type="button" id="pay">Открыть разбор пары - 490 ₽</button>
+      <div class="vpnstep" id="vpn-step" hidden>
+        <p class="vpnstep-h">Сначала выключи VPN</p>
+        <p>Через VPN страница оплаты не открывается. Выключи VPN на пару минут, оплати и включай обратно. Разбор откроется на этой странице сам</p>
+        <a class="cta" id="vpn-go" href="#">Перейти к оплате - 490 ₽</a>
+      </div>
+      <p class="err" id="pay-err" role="alert" hidden></p>
+      <p class="note">Оплата разовая, без подписки. Разбор откроется сразу на этой странице, а личная ссылка на него придёт на почту</p>
+      <p class="vpn" id="vpn-note">Если ссылка на оплату не открывается, выключи VPN</p>
+    </div>
+    <button class="linkbtn" type="button" id="again">Посмотреть другую пару</button>
+  </div>
+</section>
+
+<section class="res" id="full" hidden aria-live="polite">
+  <div class="res-in">
+    <p class="eyebrow"><span>Разбор вашей пары</span></p>
+    <p class="wait" id="full-wait" hidden></p>
+    <div class="score" id="full-score-box">
+      <p class="score-n"><span id="full-score"></span><small>%</small></p>
+      <p class="score-t" id="full-tier"></p>
+    </div>
+    <dl class="who">
+      <div><dt>Ты</dt><dd id="full-her"></dd></div>
+      <div><dt>Он</dt><dd id="full-him"></dd></div>
+    </dl>
+    <div class="md" id="full-md"></div>
+    <p class="save" id="full-save" hidden>Личная ссылка на этот разбор пришла в письме от кассы. По ней разбор откроется на любом телефоне или компьютере, сохрани письмо</p>
+    <button class="linkbtn" type="button" id="full-again">Посмотреть другую пару</button>
+  </div>
+</section>
+
+<footer class="foot">
+  Индивидуальный предприниматель Логинов Иван Владимирович<br>
+  <a href="oferta.html">Оферта</a> · <a href="/privacy.html">Конфиденциальность</a> · <a href="https://t.me/loginoff_ai">Поддержка</a><br>
+  Совместимость считается по знакам зодиака, восточному гороскопу и астрономическому расчёту положения планет в 2027 году. Носит развлекательный характер
+</footer>
+<script type="module" src="main.js"></script>
+</body>
+</html>
