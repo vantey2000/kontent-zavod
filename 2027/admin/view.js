@@ -33,7 +33,7 @@ export function renderCards(S) {
     [n('open'), 'открыли страницу', 'за 7 дней · ввели дату ' + n('date')],
     [free, 'подарки и открытые вручную', 'без денег'],
     [n('pay', 1) + ' из ' + n('pay'), 'нажали оплату с VPN', 'за 7 дней' + (payNet ? ' · ' + payNet : ''), 1],
-    [n('vpngo'), 'с VPN перешли к оплате', 'после подсказки · уже без VPN ' + n('vpngo', 0)]
+    [n('block'), 'касса не открылась', 'показали «выключи VPN» · потом перешли к оплате ' + n('vpngo')]
   ];
   $('cards').innerHTML = cells.map(c => '<div class="card' + (c[3] ? ' hot' : '') + '"><b>' + esc(c[0]) + '</b><span>' + c[1] + '</span>' + (c[2] ? '<em>' + esc(c[2]) + '</em>' : '') + '</div>').join('');
 }
@@ -103,7 +103,7 @@ export function renderFunnel(S) {
     + '<div class="c">' + (i ? pct(s[1], steps[i - 1][1]) + ' от прошлого шага · ' + pct(s[1], steps[0][1]) + ' от открывших' : 'все, кто открыл') + '</div>'
     + (s[3] ? '<div class="c net">' + esc(s[3]) + '</div>' : '') + '</div>').join('');
   const gifts = orders(S).filter(o => o.paid && o.paid.via !== 'kassa' && mskDay(o.paid.at) >= from).length;
-  $('side').innerHTML = '<span>С VPN после подсказки перешли к оплате: <b>' + sum('vpngo') + '</b>, из них уже без VPN <b>' + sum('vpngo', r => r.z === 0) + '</b></span>'
+  $('side').innerHTML = '<span>Касса не открылась с телефона: <b>' + sum('block') + '</b>, после плашки перешли к оплате <b>' + sum('vpngo') + '</b>, из них уже без VPN <b>' + sum('vpngo', r => r.z === 0) + '</b></span>'
     + '<span>Открыли купленный разбор: <b>' + sum('full') + '</b></span><span>Выручка за срок: <b>' + rub(P.reduce((a, o) => a + o.paid.sum, 0)) + '</b></span>'
     + (gifts ? '<span>Подарки и вручную: <b>' + gifts + '</b></span>' : '');
 

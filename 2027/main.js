@@ -97,6 +97,7 @@ function showResult() {
   $('full').hidden = true;
   $('result').hidden = false;
   renderFree();
+  checkKassa();
   $('result').scrollIntoView({ behavior: matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth' });
 }
 
@@ -108,8 +109,27 @@ function payError(msg) {
   e.hidden = !msg;
 }
 
-// Человек с VPN (сервер видит адрес не из России): касса через VPN не открывается, поэтому вместо белого экрана
-// кнопка оплаты меняется на просьбу выключить VPN и ссылку на тот же заказ. url = null возвращает обычную кнопку
+/* Открывается ли касса с этого телефона (26.10). Через часть VPN форма кассы висит белым экраном, через другие открывается,
+   поэтому страна адреса не ответ: страница сама стучится в кассу в фоне, пока человек читает бесплатную часть.
+   Любой ответ сервера кассы = открывается (ответ не читается), нет ответа за 4 с = не открывается.
+   Нажатие берёт готовый итог, без второго ожидания. Заново касса проверяется при показе новой даты, если молчала:
+   человек мог выключить VPN */
+const KASSA_PING = 'https://ivanloginov.payform.ru/favicon.ico';
+const KASSA_WAIT = 4000;
+let kassaCheck = null, kassaUp = null;   // проверка и её итог, null - ещё идёт
+function checkKassa() {
+  if (kassaCheck && kassaUp !== false) return kassaCheck;
+  const ctl = new AbortController();
+  const t = setTimeout(() => ctl.abort(), KASSA_WAIT);
+  kassaUp = null;
+  kassaCheck = fetch(`${KASSA_PING}?t=${Date.now()}`, { method: 'HEAD', mode: 'no-cors', cache: 'no-store', signal: ctl.signal })
+    .then(() => true, () => false)
+    .then(ok => { clearTimeout(t); kassaUp = ok; return ok; });
+  return kassaCheck;
+}
+
+// Касса не ответила: вместо белого экрана кнопка оплаты меняется на просьбу выключить VPN и ссылку на тот же заказ.
+// url = null возвращает обычную кнопку
 function vpnStep(url) {
   $('vpn-step').hidden = !url;
   $('pay').hidden = !!url;
@@ -128,14 +148,16 @@ async function pay() {
   payError('');
   const { y, m, d, sign } = state;
   try {
+    const kassa = kassaCheck || checkKassa();   // обычно итог уже готов: проверка начата при показе бесплатной части
     const r = await fetch(API + '/api/order', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ y, m, d, sign }) });
     const b = await r.json().catch(() => ({}));
     if (r.ok && b.url) {
       store.set('g27.order', { order: b.order, k: b.k, at: Date.now() });
-      if (b.vpn) {
+      if (!(await kassa)) {
         btn.disabled = false;
         btn.textContent = PRICE_LABEL;
         vpnStep(b.url);
+        track('block');
         return;
       }
       location.href = b.url;
