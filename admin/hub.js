@@ -1,5 +1,5 @@
 // Общая админка ivan-loginov.ru/admin/ (26.10.2026): сводка денег по всем продуктам + админка каждого продукта во вкладке.
-// Вход одной ссылкой ...admin/#g27=…&kb=…&sk=…&uq=…&kz=…: ключи кладутся под имена админок продуктов, и встроенные админки входят сами
+// Вход одной ссылкой ...admin/#g27=…&kb=…&sk=…&uq=…&kz=…&vsn=…: ключи кладутся под имена админок продуктов, и встроенные админки входят сами
 import { PRODUCTS, byId, isOwn, $, esc, rub, mskDay, time, money, store, api, DAY } from './lib.js';
 
 const KEY_RE = /^[A-Za-z0-9_-]{16,}$/;
@@ -12,6 +12,7 @@ function keysFromHash() {
 }
 keysFromHash();
 store.set('g27.own', '1');   // телефон Ивана: страница гороскопа с него шаги в воронку не шлёт
+store.set('vsn.own', '1');   // и страница «Вы с ним» тоже
 
 const sum = (a, f) => a.reduce((s, x) => s + f(x), 0);
 /* цифры продукта: pays [{at, sum}] без своих оплат, facts [[подпись, число]], warn - о чём предупредить */
@@ -22,6 +23,9 @@ const LOAD = {
     const started = O.filter(o => now - o.at <= 3 * DAY && (!o.paid || o.paid.via === 'kassa')).length;
     return { pays, facts: [['купили', pays.length], ['начали оплату за 3 дня', started]],
       warn: !j.sell ? 'оплата выключена' : !j.lastNotify ? 'касса ещё не присылала уведомлений' : '' };
+  },
+  async vsn(p) {   // «Вы с ним» (26.10): тот же ответ overview, что у гороскопа
+    return LOAD.g27(p);
   },
   async kb(p) {
     let rows = [], cur = '', n = 0;
