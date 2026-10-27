@@ -1022,7 +1022,7 @@ const DEF = { look: 'barhat', font: null, pal: null, cL: null, cD: null, anim: '
 let S = Object.assign({}, DEF);
 try { const saved = JSON.parse(localStorage.getItem('zag-state') || 'null'); if (saved) S = Object.assign(S, saved, { tIn: 0, tOut: null }); } catch (e) {}
 delete S.halo;   // ключ 24.10: 85 сохранялось всем подряд, а теперь тень есть у каждого оформления (S.sh, null = своя)
-const persist = () => { try { localStorage.setItem('zag-state', JSON.stringify(S)); } catch (e) {} };
+const persist = () => { try { localStorage.setItem('zag-state', JSON.stringify(S)); } catch (e) {} if (typeof syncMine === 'function') syncMine(); };   // syncMine: «Мои стили» (16-mine.js)
 
 const cv = $('cv'), ctx = cv.getContext('2d');
 const video = document.createElement('video');
@@ -2176,3 +2176,81 @@ async function accAct(a, e, el) {
 
 accChip();
 accBoot();
+// «Мои стили» (27.10): оформление, шрифт, цвета, тень, размер, место и появление заголовка - на новый ролик одним касанием.
+// Текст и время у каждого ролика свои, стиль их не трогает. Хранятся в браузере этого телефона (zag-mine)
+const MINE_MAX = 12;
+function mineKey(s) { return JSON.stringify(['look', 'font', 'pal', 'cL', 'cD', 'sh', 'scale', 'cx', 'cy', 'anim'].map(k => (s[k] == null ? null : s[k]))); }
+function minePick(s) { const o = {}; ['look', 'font', 'pal', 'cL', 'cD', 'sh', 'scale', 'cx', 'cy', 'anim'].forEach(k => { o[k] = s[k] == null ? null : s[k]; }); return o; }
+function mineLoad() { try { const v = JSON.parse(localStorage.getItem('zag-mine') || '[]'); return Array.isArray(v) ? v.filter(m => m && m.s) : []; } catch (e) { return []; } }
+function mineStore(list) { try { localStorage.setItem('zag-mine', JSON.stringify(list)); return true; } catch (e) { return false; } }
+
+// нажатый стиль подсвечен, пока заголовок ровно такой; persist() зовёт это после каждой правки
+function syncMine() {
+  const box = document.getElementById('mineList'); if (!box) return;
+  const key = mineKey(S);
+  box.querySelectorAll('[data-key]').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.key === key)));
+}
+
+let mineHintTimer = 0;
+function mineHint(text, cls) {
+  const h = $('mineHint'); clearTimeout(mineHintTimer);
+  const idle = () => { const empty = !mineLoad().length; h.textContent = empty ? 'Настрой заголовок и сохрани: на следующем ролике стиль встанет одним касанием' : ''; h.className = 'hint'; h.hidden = !empty; };
+  if (!text) return idle();
+  h.textContent = text; h.className = 'hint' + (cls ? ' ' + cls : ''); h.hidden = false;
+  mineHintTimer = setTimeout(idle, 4000);
+}
+
+// картинка плитки: заголовок как сейчас на видео, вписан в плитку 3:2 с полями под свечение и крестик
+function mineThumb() {
+  const c = document.createElement('canvas'); c.width = 300; c.height = 200;
+  const x = c.getContext('2d'); x.fillStyle = '#2a1e24'; x.fillRect(0, 0, 300, 200);
+  if (L) { const k = Math.min(240 / Math.max(1, L.width), 140 / Math.max(1, L.height)); ENGINE.draw(x, L, { cx: 150, cy: 100, scale: k }); }
+  return c.toDataURL('image/jpeg', 0.82);
+}
+
+function mineApply(s) {
+  Object.assign(S, minePick(s));
+  press($('looks'), 'data-look', S.look); press($('fonts'), 'data-font', S.font || '');
+  press($('pals'), 'data-pal', S.pal || look().pal); press($('anims'), 'data-anim', S.anim);
+  syncColors(); syncLook(); syncHalo(); syncSize(); persist(); hideDone(); rebuild(0); restartAnim();
+}
+
+function mineSave() {
+  const list = mineLoad(), key = mineKey(S);
+  if (list.some(m => mineKey(m.s) === key)) return mineHint('Такой стиль уже сохранён, он подсвечен');
+  if (list.length >= MINE_MAX) return mineHint('Сохранено ' + MINE_MAX + ' стилей: удали ненужный крестиком, тогда сохранится новый', 'bad');
+  list.unshift({ id: Date.now().toString(36), s: minePick(S), name: look().name + (S.font ? ', ' + S.font : ''), img: mineThumb() });
+  if (!mineStore(list)) return mineHint('Не получилось сохранить: память браузера заполнена', 'bad');
+  if (navigator.storage && navigator.storage.persist) navigator.storage.persist().catch(() => {});   // просим браузер не чистить сохранённое
+  mineRender(); mineHint('Стиль сохранён. На новом ролике нажми его: всё встанет как сейчас', 'good');
+}
+
+function mineRender() {
+  const box = $('mineList');
+  box.querySelectorAll('.mitem').forEach(e => e.remove());
+  mineLoad().forEach(m => {
+    const it = document.createElement('div'); it.className = 'mitem';
+    const b = document.createElement('button'); b.type = 'button'; b.className = 'card'; b.dataset.key = mineKey(m.s);
+    const img = document.createElement('img'); img.alt = ''; if (m.img) img.src = m.img;
+    const n = document.createElement('span'); n.textContent = m.name || 'Мой стиль';
+    b.append(img, n); b.addEventListener('click', () => mineApply(m.s));
+    // удаление в два касания: случайный крестик ничего не стирает
+    const del = document.createElement('button'); del.type = 'button'; del.className = 'mdel'; del.textContent = '×'; del.setAttribute('aria-label', 'Удалить стиль');
+    del.addEventListener('click', () => {
+      if (del.classList.contains('sure')) {
+        mineStore(mineLoad().filter(x => x.id !== m.id)); mineRender(); mineHint('Стиль удалён');
+        return;
+      }
+      del.classList.add('sure'); del.textContent = 'Удалить?';
+      setTimeout(() => { del.classList.remove('sure'); del.textContent = '×'; }, 3000);
+    });
+    it.append(b, del); box.appendChild(it);   // плитка «Сохранить» стоит первой, за ней сохранённые, новые впереди
+  });
+  syncMine(); mineHint('');
+}
+
+(function buildMine() {
+  if (!$('mineList')) return;   // страница из старого кэша
+  $('mineSave').addEventListener('click', mineSave);
+  mineRender();
+})();

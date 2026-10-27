@@ -52,6 +52,15 @@ header h1 { font-size: 17px; margin: 0; font-weight: 700; }
 .card { border: 2px solid transparent; background: #0f0a0c; border-radius: 12px; padding: 4px; cursor: pointer; display: grid; gap: 4px; text-align: center; font-size: 12px; font-weight: 600; }
 .card canvas { width: 100%; aspect-ratio: 3 / 2; display: block; border-radius: 8px; background: #2a1e24; }
 .card[aria-pressed="true"] { border-color: var(--accent); }
+.mitem { position: relative; display: grid; min-width: 0; }
+.card img { width: 100%; aspect-ratio: 3 / 2; display: block; border-radius: 8px; background: #2a1e24; object-fit: contain; }
+.mitem .card span { overflow-wrap: anywhere; }
+.madd { border: 2px dashed var(--line); color: var(--accent); }
+.madd b { display: grid; place-items: center; aspect-ratio: 3 / 2; border-radius: 8px; background: #1a1216; font-size: 34px; line-height: 1; }
+.mdel { position: absolute; top: -10px; right: -10px; min-width: 26px; height: 26px; padding: 0 8px; border: 2px solid var(--panel); border-radius: 999px; background: #3a2a32; font-size: 15px; line-height: 1; cursor: pointer; }   /* на углу плитки, картинку не закрывает */
+.mdel.sure { background: var(--warn); color: #fff; font-size: 12px; font-weight: 700; }
+.mdel:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+#mineHint.good { color: var(--ok); } #mineHint.bad { color: var(--warn); }
 textarea { width: 100%; resize: vertical; min-height: 110px; border-radius: 12px; border: 1px solid var(--line); background: #0f0a0c; padding: 10px; font-weight: 700; font-size: 16px; line-height: 1.35; }
 label.row { display: grid; gap: 6px; font-size: 13px; color: var(--muted); }
 input[type=range] { width: 100%; accent-color: var(--accent); }
@@ -213,7 +222,15 @@ input[type=url] { border-radius: 12px; border: 1px solid var(--line); background
       <button role="tab" aria-selected="false" data-tab="time" type="button">Время</button>
     </div>
 
-    <div class="tab" data-pane="look"><div class="grid" id="looks"></div></div>
+    <div class="tab" data-pane="look">
+      <!-- мои стили (27.10): оформление, шрифт, цвета, тень, размер, место и появление на новый ролик одним касанием (16-mine.js) -->
+      <div class="fgroup">
+        <h3>Мои стили</h3>
+        <div class="grid" id="mineList"><button class="card madd" id="mineSave" type="button"><b aria-hidden="true">+</b><span>Сохранить мой стиль</span></button></div>
+        <p class="hint" id="mineHint" role="status"></p>
+      </div>
+      <div class="fgroup"><h3>Оформления</h3><div class="grid" id="looks"></div></div>
+    </div>
 
     <div class="tab" data-pane="text" hidden>
       <label class="row" for="txt">Каждая строка поля = строка заголовка</label>
