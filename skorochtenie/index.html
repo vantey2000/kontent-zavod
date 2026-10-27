@@ -251,6 +251,8 @@
   .scr-text i { display: inline-block; font-style: normal; transition: opacity .14s linear; }
   .scr-text i.m { transform: scaleX(-1); }
   .scr-text i.g { opacity: 0; }
+  .kt-demo { max-height: none; padding: 14px 12px; }
+  .kt-card { max-height: none; }
   .search-text span { cursor: pointer; color: var(--fg); }
   .search-text span.hit { background: var(--red-dim); color: var(--red-soft); border-radius: 4px; }
   .search-text span.miss { color: var(--red); }
@@ -324,6 +326,39 @@
         <p class="small center" id="start-paid" hidden><b>Доступ открыт.</b> Тренажёр откроется сразу после теста: от твоей скорости программа возьмёт стартовый темп</p>
         <button class="link" id="b-start-login" style="justify-self: center">Уже оплатил? Войти</button>
       </div>
+    </div>
+  </section>
+
+  <!-- 1а. Тест как в рилсе «Кривые буквы» (27.10.2026): ivan-loginov.ru/skorochtenie/#krivye, с меткой площадки #krivye-ig -->
+  <section id="s-kt" hidden>
+    <div class="top"><div class="logo" data-name></div></div>
+    <div class="stack" style="margin-top: 10px">
+      <span class="eyebrow">Тест как в рилсе</span>
+      <h1>Создаём новые нейронные связи. Уровень: <em id="kt-level-name"></em></h1>
+      <div class="scr-text kt-demo" id="kt-demo" aria-hidden="true"></div>
+      <p class="muted">Прочитай кривой текст и ответь на 3 вопроса. Секундомер пойдёт, как только нажмёшь «Начать»</p>
+      <div class="seg scr-seg" id="kt-seg" role="radiogroup" aria-label="Сложность"></div>
+      <button class="btn" id="b-kt-start">Начать</button>
+      <p class="muted small center">Бесплатно. Без регистрации</p>
+    </div>
+  </section>
+
+  <!-- 1б. Результат теста на кривых буквах: в базу не идёт, дальше обычный тест -->
+  <section id="s-ktres" hidden>
+    <div class="top"><div class="logo" data-name></div></div>
+    <div class="stack" style="margin-top: 16px">
+      <div class="stack" id="ktr-ok">
+        <span class="eyebrow" id="ktr-eyebrow"></span>
+        <div class="score"><span class="big" id="ktr-wpm"></span><span class="unit">слов<br>в минуту</span></div>
+        <div><span class="pill" id="ktr-comp"></span></div>
+        <p class="muted">Буквы перевёрнуты и гаснут, а мозг всё равно собирает из них слова. Обычный текст ты читаешь быстрее, свою обычную скорость покажет тест на минуту</p>
+      </div>
+      <div class="stack" id="ktr-bad" hidden>
+        <h2 id="ktr-bad-title"></h2>
+        <p class="muted" id="ktr-bad-text"></p>
+      </div>
+      <button class="btn" id="b-ktr-next"></button>
+      <button class="btn ghost" id="b-ktr-again"></button>
     </div>
   </section>
 

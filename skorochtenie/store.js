@@ -32,6 +32,7 @@ export function fresh() {
     sent: [],            // события воронки, уже отправленные с этого телефона (каждое один раз)
     best: {},            // лучшие результаты по упражнениям: { schulte: с, sight: уровень, flash: мс, memory: цифр, search: с, flipped: с на 100 слов }
     scramble: null,      // «Кривые буквы»: последняя сложность и темп подсветки { level: 0-3, wpm }
+    ktSeq: 0,            // сколько тестов на кривых буквах начато, для ротации текстов
   };
 }
 
@@ -66,6 +67,7 @@ function normalize(s) {
     readerLog: obj(s.readerLog) || {},
     testSeq: num(s.testSeq) || 0,
     best: bestOf(s),
+    ktSeq: num(s.ktSeq) || 0,
     scramble: obj(s.scramble) && num(s.scramble.level) !== null && num(s.scramble.wpm) !== null ? { level: s.scramble.level, wpm: s.scramble.wpm } : null,
     src: typeof s.src === 'string' && /^[a-z0-9-]{1,16}$/.test(s.src) ? s.src : null,
     sent: Array.isArray(s.sent) ? s.sent.filter(x => typeof x === 'string').slice(0, 20) : [],

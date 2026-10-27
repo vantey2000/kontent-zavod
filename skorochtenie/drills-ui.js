@@ -287,7 +287,47 @@ export function flipped(body, ctx) {
 }
 
 // ---- Кривые буквы ----
-// Карточка строками, как в рилсе: буквы отражены, регистр скачет, часть букв гаснет. Подсветка идёт по словам в заданном темпе.
+// Карточка кривых букв строками, как в рилсе: слово = span.w, буква = i (зеркальная - .m). Общая для упражнения и теста #krivye
+export function scrambleCard(box, tokens, level, random = Math.random) {
+  box.textContent = '';
+  const words = [], letters = [];
+  for (const line of d.scrambleLines(tokens)) {
+    const ln = el('div', 'line');
+    line.forEach((t, k) => {
+      const w = el('span', 'w');
+      for (const g of d.scrambleWord(t, level, random)) {
+        const ch = el('i', g.mirror ? 'm' : null, g.ch);
+        w.append(ch);
+        if (g.letter) letters.push(ch);
+      }
+      ln.append(w); if (k < line.length - 1) ln.append(' ');
+      words.push(w);
+    });
+    box.append(ln);
+  }
+  return { words, letters };
+}
+
+// Гаснущие буквы: одновременно гаснет доля уровня от всех букв, каждая на 0,35-0,65 с. tick(..., off) возвращает все буквы
+export function flickerer(random = Math.random) {
+  const gone = new Map();   // буква -> когда вернуть
+  return {
+    tick(letters, level, off) {
+      const now = performance.now();
+      for (const [ch, t] of gone) if (t <= now || off) { ch.classList.remove('g'); gone.delete(ch); }
+      if (off) return;
+      const want = d.goneCount(level, letters.length);
+      for (let n = 0; gone.size < want && n < 20; n++) {
+        const ch = letters[Math.floor(random() * letters.length)];
+        if (gone.has(ch)) continue;
+        ch.classList.add('g'); gone.set(ch, now + 350 + random() * 300);
+      }
+    },
+    clear() { gone.clear(); },
+  };
+}
+
+// Упражнение: карточка строками, как в рилсе: буквы отражены, регистр скачет, часть букв гаснет. Подсветка идёт по словам в заданном темпе.
 // Сложность и темп меняются на ходу и запоминаются (ctx.prefs / ctx.savePrefs). В своей тренировке тексты идут, пока есть время
 export function scramble(body, ctx) {
   const clock = ctx.seconds ? countdown(ctx.seconds) : null;
@@ -315,7 +355,7 @@ export function scramble(body, ctx) {
   body.append(seg, box, res, controls);
 
   let tokens = [], words = [], letters = [], i = 0, timer = null, flick = null, nextT = null, paused = false, finished = false;
-  const gone = new Map();   // буква -> когда вернуть
+  const fl = flickerer(ctx.random);
 
   const save = () => ctx.savePrefs && ctx.savePrefs({ level, wpm: speed });
   const setLabel = () => { label.textContent = `Темп подсветки ${speed} слов/мин`; };
@@ -325,21 +365,8 @@ export function scramble(body, ctx) {
   // текст рисуется заново на каждом уровне, подсветка остаётся на том же слове
   function paint() {
     segBtns.forEach((b, k) => b.setAttribute('aria-checked', String(k === level)));
-    box.textContent = ''; words = []; letters = []; gone.clear();
-    for (const line of d.scrambleLines(tokens)) {
-      const ln = el('div', 'line');
-      line.forEach((t, k) => {
-        const w = el('span', 'w');
-        for (const g of d.scrambleWord(t, level, ctx.random)) {
-          const ch = el('i', g.mirror ? 'm' : null, g.ch);
-          w.append(ch);
-          if (g.letter) letters.push(ch);
-        }
-        ln.append(w); if (k < line.length - 1) ln.append(' ');
-        words.push(w);
-      });
-      box.append(ln);
-    }
+    fl.clear();
+    ({ words, letters } = scrambleCard(box, tokens, level, ctx.random));
     words.forEach((w, k) => { if (k < i - 1 || finished) w.classList.add('read'); else if (k === i - 1) w.classList.add('on'); });
   }
   function setLevel(k) {
@@ -348,17 +375,7 @@ export function scramble(body, ctx) {
   }
 
   // гаснет доля букв уровня, каждая на полсекунды; в паузе и после конца текста всё видно
-  function flicker() {
-    const now = performance.now();
-    for (const [ch, t] of gone) if (t <= now || paused || finished) { ch.classList.remove('g'); gone.delete(ch); }
-    if (paused || finished) return;
-    const want = d.goneCount(level, letters.length);
-    for (let n = 0; gone.size < want && n < 20; n++) {
-      const ch = letters[Math.floor(ctx.random() * letters.length)];
-      if (gone.has(ch)) continue;
-      ch.classList.add('g'); gone.set(ch, now + 350 + ctx.random() * 300);
-    }
-  }
+  const flicker = () => fl.tick(letters, level, paused || finished);
 
   function tick() {
     timer = null;

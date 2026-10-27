@@ -1,13 +1,13 @@
 // Интерфейс: экраны и упражнения. Вся арифметика в core.js, хранение в store.js
 import * as c from './core.js';
 import * as dr from './drills.js';
-import { DRILL_UI, countdown } from './drills-ui.js';
-import { TESTS, LIBRARY } from './content.js';
+import { DRILL_UI, countdown, scrambleCard, flickerer } from './drills-ui.js';
+import { TESTS, KT_TESTS, LIBRARY } from './content.js';
 import * as store from './store.js';
 import * as m from './motion.js';
 
 const $ = id => document.getElementById(id);
-const SCREENS = ['start', 'read', 'quiz', 'result', 'pay', 'wait', 'acct', 'login', 'home', 'plan', 'ex', 'lib', 'own', 'done', 'trial'];
+const SCREENS = ['start', 'kt', 'ktres', 'read', 'quiz', 'result', 'pay', 'wait', 'acct', 'login', 'home', 'plan', 'ex', 'lib', 'own', 'done', 'trial'];
 const ANCHOR = 0.38;          // опорная буква на 38% ширины, как засечка в ролике
 const WORD_PX = 46;
 
@@ -165,7 +165,7 @@ function showQuestion() {
     b.addEventListener('click', () => {
       if (i === q.answer) run.correct++;
       run.idx++;
-      if (run.idx < n) showQuestion(); else finishTest();
+      if (run.idx < n) showQuestion(); else if (run.kt) finishKt(); else finishTest();
     }, { once: true });
     box.append(b);
   });
@@ -212,6 +212,86 @@ function finishTest() {
   show('result');
   if (reveal) reveal();
 }
+
+// ---------- тест как в рилсе «Кривые буквы» (27.10.2026) ----------
+// Человек из рилса видит ту же карточку: уровень, отражённые буквы, гаснущие буквы. Читает на время и отвечает на 3 вопроса.
+// Кривая скорость в базу не идёт: она всегда ниже обычной, читалка и цель программы от неё пошли бы слишком медленно.
+// Дальше обычный тест на минуту и прежний путь
+let ktLevel = 2, ktNext = () => {}, ktAgain = () => {};
+const ktFlick = flickerer();
+const KT_DEMO = c.tokenize('Проверим, как быстро ты читаешь кривые буквы');
+
+function ktFlicker(letters) {
+  ktFlick.clear();
+  const iv = setInterval(() => ktFlick.tick(letters, ktLevel, false), 120);
+  stopActive = () => clearInterval(iv);
+}
+
+function paintKt() {
+  const seg = $('kt-seg');
+  seg.textContent = '';
+  dr.SCRAMBLE.forEach((L, i) => {
+    const b = el('button', null, L.name);
+    b.type = 'button'; b.setAttribute('role', 'radio'); b.setAttribute('aria-checked', String(i === ktLevel));
+    b.addEventListener('click', () => { if (i !== ktLevel) { stopActive(); ktLevel = i; paintKt(); } });
+    seg.append(b);
+  });
+  $('kt-level-name').textContent = dr.SCRAMBLE[ktLevel].name.toUpperCase();
+  ktFlicker(scrambleCard($('kt-demo'), KT_DEMO, ktLevel).letters);
+}
+
+function showKt(level = ktLevel) {
+  ktLevel = dr.scrambleLevel(level);
+  show('kt');
+  paintKt();
+}
+
+function startKt() {
+  const t = KT_TESTS[(state.ktSeq || 0) % KT_TESTS.length];
+  state.ktSeq = (state.ktSeq || 0) + 1;
+  persist();
+  $('read-title').textContent = `Уровень: ${dr.SCRAMBLE[ktLevel].name}`;
+  $('read-count').textContent = `${c.countWords(t.text)} слов`;
+  const box = $('read-text');
+  box.textContent = '';
+  const card = el('div', 'scr-text kt-card');
+  box.append(card);
+  const { letters } = scrambleCard(card, c.tokenize(t.text), ktLevel);
+  show('read', { instant: true });   // секундомер идёт ровно с показа текста, как в обычном тесте
+  ktFlicker(letters);
+  run = { test: t, words: c.countWords(t.text), started: performance.now(), seconds: 0, correct: 0, idx: 0, kt: true, ktLevel };
+}
+
+function finishKt() {
+  const r = c.scoreKt({ words: run.words, seconds: run.seconds, correct: run.correct, total: run.test.questions.length });
+  const bad = r.tooFast || r.tooSlow, lvl = run.ktLevel;
+  $('ktr-ok').hidden = bad;
+  $('ktr-bad').hidden = !bad;
+  $('b-ktr-again').hidden = bad;
+  if (bad) {
+    $('ktr-bad-title').textContent = r.tooFast ? 'Похоже, текст пролистан' : 'Похоже, тест прерывался';
+    $('ktr-bad-text').textContent = r.tooFast
+      ? `Получилось быстрее ${c.KT.maxWpm} слов в минуту: кривой текст так не читается. Пройди ещё раз и читай каждое слово`
+      : `Получилось меньше ${c.KT.minWpm} слов в минуту: скорее всего, ты отвлёкся. Пройди ещё раз, не отрываясь`;
+    $('b-ktr-next').textContent = 'Пройти ещё раз';
+    ktNext = () => showKt(lvl);
+  } else {
+    const up = Math.min(lvl + 1, dr.SCRAMBLE.length - 1);
+    const fresh = !state.tests.length;
+    $('ktr-eyebrow').textContent = `Кривой текст · уровень ${dr.SCRAMBLE[lvl].name}`;
+    $('ktr-wpm').textContent = String(r.wpm);
+    $('ktr-comp').textContent = `Верных ответов: ${r.correct} из ${r.total}`;
+    $('b-ktr-next').textContent = fresh ? 'Узнать обычную скорость' : 'На главную';
+    $('b-ktr-again').textContent = up > lvl ? `Ещё раз · уровень ${dr.SCRAMBLE[up].name}` : 'Ещё раз · новый текст';
+    ktNext = fresh ? startTest : goHome;
+    ktAgain = () => showKt(up);
+  }
+  show('ktres');
+}
+
+$('b-kt-start').addEventListener('click', startKt);
+$('b-ktr-next').addEventListener('click', () => ktNext());
+$('b-ktr-again').addEventListener('click', () => ktAgain());
 
 $('b-start').addEventListener('click', startTest);
 $('b-retry').addEventListener('click', startTest);
@@ -1390,6 +1470,7 @@ $('b-own').addEventListener('click', () => {
 if (c.wantsLogin(location.hash, location.search)) { if (state.auth && acc().paid && !acc().trial) showAcct(); else showLogin('start'); }
 else if (c.wantsBuy(location.hash, location.search)) showPay('start', 'buy');
 else if (c.wantsPay(location.hash)) showPay('start', 'all');   // из директа: оба тарифа, «Назад» - на главную или первый экран
+else if (c.wantsKrivye(location.hash)) showKt();                // из рилса «Кривые буквы»: тест в том же виде, что в рилсе
 else if (state.tests.length) goHome(); else show('start');
 
 // Доступ сверяется с сервером в фоне, после первого экрана. Вернулся с кассы (?paid=1) или пришёл по ссылке

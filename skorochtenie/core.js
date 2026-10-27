@@ -40,6 +40,21 @@ export function wantsBuy(hash, search) {
   return (!!s && /^kupit(-|$)/.test(s)) || new URLSearchParams(String(search ?? '')).has('kupit');
 }
 
+// Тест как в рилсе «Кривые буквы» (просьба Ивана 27.10.2026): ivan-loginov.ru/skorochtenie/#krivye сразу открывает тест на кривых
+// буквах. С меткой площадки - #krivye-ig, в учёте воронки это отдельная площадка
+export function wantsKrivye(hash) {
+  const s = sourceFromHash(hash);
+  return !!s && /^krivye(-|$)/.test(s);
+}
+
+// Результат теста на кривых буквах: слов в минуту и верные ответы. Кривой текст быстрее 600 не читается (пролистан),
+// медленнее 10 - тест прерывался; такой результат не показываем
+export const KT = { maxWpm: 600, minWpm: 10 };
+export function scoreKt({ words, seconds, correct, total }) {
+  const wpm = seconds > 0 ? Math.round((words / seconds) * 60) : Infinity;   // «Прочитал» сразу = пролистан
+  return { wpm, correct, total, tooFast: wpm > KT.maxWpm, tooSlow: wpm < KT.minWpm };
+}
+
 // Адрес входа из письма кассы после оплаты (18.10.2026): ivan-loginov.ru/skorochtenie/#voyti сразу открывает вход
 // по почте и паролю. Раньше на новом телефоне «Уже оплатил? Войти» было только на экране оплаты, после теста
 export function wantsLogin(hash, search) {
