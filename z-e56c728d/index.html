@@ -73,6 +73,9 @@ input[type=range] { width: 100%; accent-color: var(--accent); }
 .err { color: var(--warn); font-size: 13px; margin: 0; }
 @media (prefers-reduced-motion: reduce) { .bar i { transition: none; } }
 .hbtns { display: flex; gap: 8px; }
+.foot { grid-column: 1 / -1; display: grid; gap: 8px; justify-items: center; text-align: center; padding: 8px 0 4px; }
+.foot .btn { color: var(--fg); text-decoration: none; }
+@media (min-width: 900px) { .app:not(.uqmode) > .foot { grid-column: 2; } }
 @media (max-width: 520px) { header { flex-wrap: wrap; } header h1 { flex: 1 1 100%; } .hbtns { flex: 1 1 100%; } .hbtns .btn { flex: 1; text-align: center; } }
 #uqOpen[aria-pressed="true"] { background: var(--fg); color: var(--bg); border-color: var(--fg); }
 .uqp { background: var(--panel); border: 1px solid var(--line); border-radius: 16px; padding: 10px; display: grid; gap: 10px; min-width: 0; }
@@ -240,6 +243,12 @@ input[type=url] { border-radius: 12px; border: 1px solid var(--line); background
     <p class="hint" id="outHint">Без звука: музыку добавишь в Instagram</p>
     <p class="err" id="outErr" hidden></p>
   </div>
+
+  <!-- поддержка и предложения: сразу в личку Ивана, поле сообщения уже начато словом «Рилсовая» (27.10) -->
+  <footer class="foot">
+    <p class="hint">Рилсовая в тесте. Чего не хватает, что мешает, какие шрифты добавить - напиши, доделаю</p>
+    <a class="btn" id="support" href="https://t.me/loginoff_ai?text=%D0%A0%D0%B8%D0%BB%D1%81%D0%BE%D0%B2%D0%B0%D1%8F%3A%20" target="_blank" rel="noopener">Поддержка и предложения</a>
+  </footer>
 </div>
 <script src="mp4-muxer.min.js"></script>
 <script src="app.js"></script>
