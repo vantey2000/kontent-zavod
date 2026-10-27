@@ -94,8 +94,7 @@ input[type=range] { width: 100%; accent-color: var(--accent); }
 .promo { display: grid; grid-template-columns: 1fr auto; align-items: center; gap: 2px 12px; width: 100%; max-width: 440px; margin-bottom: 6px; text-align: left; text-decoration: none; color: var(--fg); background: var(--panel); border: 1px solid var(--accent); border-radius: 16px; padding: 12px 14px; }
 .promo small { font-size: 11px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; color: var(--accent); }
 .promo b { font-size: 16px; line-height: 1.25; }
-.promo span { font-size: 13px; color: var(--muted); }
-.promo i { grid-column: 2; grid-row: 1 / span 3; font-style: normal; font-size: 22px; color: var(--accent); }
+.promo i { grid-column: 2; grid-row: 1 / span 2; font-style: normal; font-size: 22px; color: var(--accent); }
 .promo:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 @media (min-width: 900px) { .app:not(.uqmode) > .foot { grid-column: 2; } }
 @media (max-width: 520px) { header { flex-wrap: wrap; } header h1 { flex: 1 1 100%; } .hbtns { flex: 1 1 100%; } .hbtns .btn { flex: 1; text-align: center; } }
@@ -276,11 +275,10 @@ input[type=url] { border-radius: 12px; border: 1px solid var(--line); background
 
   <!-- поддержка и предложения: сразу в личку Ивана, поле сообщения уже начато словом «Рилсовая» (27.10) -->
   <footer class="foot">
-    <!-- плашка Карусельной (27.10): 5 бесплатных каруселей после регистрации живут в самой Карусельной (trial.js, TRIAL_DEFAULT) -->
+    <!-- плашка Карусельной (27.10): про бесплатные карусели здесь не пишем, решение Ивана 27.10 -->
     <a class="promo" id="karusel" href="https://ivan-loginov.ru/karusel/" target="_blank" rel="noopener">
       <small>Карусельная</small>
       <b>Приложение для сборки каруселей</b>
-      <span>5 каруселей бесплатно после регистрации</span>
       <i aria-hidden="true">→</i>
     </a>
     <p class="hint">Рилсовая в тесте. Чего не хватает, что мешает, какие шрифты добавить - напиши, доделаю</p>

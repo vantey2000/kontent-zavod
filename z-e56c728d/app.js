@@ -614,7 +614,7 @@ const ENGINE = (() => {
 
   // как строка i выглядит в момент t (секунды от появления заголовка)
   function motion(anim, i, t) {
-    if (anim === 'pop' || anim === 'pulse') {
+    if (anim === 'pop') {
       const p = clamp((t - i * 0.09) / 0.5);
       return { k: p ? outBack(p) : 0, dx: 0, dy: 0, a: clamp(p * 3) };
     }
@@ -635,7 +635,7 @@ const ENGINE = (() => {
     let fade = 1;
     if (o.left != null && o.left < 0.3) fade = clamp(o.left / 0.3);
     if (fade <= 0) return;
-    const breathe = o.anim === 'pulse' && t > 0.6 ? 1 + 0.035 * Math.sin((t - 0.6) * Math.PI * 1.6) : 1;
+    const breathe = o.anim === 'pulse' ? 1 + 0.035 * Math.sin(t * Math.PI * 1.6) : 1;   // «Пульсирует»: сразу на месте и дышит с первого кадра, без выпрыгивания (27.10)
     L.parts.forEach((p, i) => {
       const m = motion(o.anim, i, t);
       if (!m.a || !m.k) return;
