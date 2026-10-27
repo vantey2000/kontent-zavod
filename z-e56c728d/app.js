@@ -1272,9 +1272,10 @@ function buildText() {
 
 const BAD_VIDEO = 'Это видео браузер не открыл. Попробуй другой файл или в камере айфона включи формат «Наиболее совместимый»';
 let tapTimer = 0;
+// айфон не грузит видео, пока его не включили: нажатие на кнопку заранее разрешает включать его без нового нажатия
+function armVideo() { if (!hasVideo) { video.load(); video.play().catch(() => {}); } }
 function buildFile() {
-  // айфон не грузит видео, пока его не включили: нажатие на кнопку заранее разрешает включать его без нового нажатия
-  document.querySelector('.upl').addEventListener('click', () => { if (!hasVideo) { video.load(); video.play().catch(() => {}); } });
+  document.querySelector('.upl').addEventListener('click', armVideo);
   $('file').addEventListener('change', () => {
     const f = $('file').files[0]; if (!f) return;
     $('file').value = '';                                    // тот же файл можно выбрать ещё раз
@@ -1310,7 +1311,7 @@ function hideDone() { outFile = null; $('done').hidden = true; $('make').hidden 
 function showErr(t) { const e = $('outErr'); e.textContent = t; e.hidden = !t; }
 
 async function make() {
-  if (!hasVideo) return showErr('Сначала загрузи своё видео кнопкой «Загрузить видео» сверху');
+  if (!hasVideo) { armVideo(); return $('file').click(); }   // без видео «Собрать» сразу открывает выбор ролика (27.10: под кнопкой ни строчки)
   if (!L) return showErr('Напиши текст заголовка во вкладке «Текст»');
   if (typeof accVideo === 'function' && !(await accVideo())) return;   // доступ: вход, 3 бесплатные, подписка (14-access.js)
   showErr(''); exporting = true; $('make').disabled = true; $('bar').hidden = false;
@@ -1319,7 +1320,7 @@ async function make() {
     const r = await EXPORT.run(video, paint, p => { $('barI').style.width = Math.round(p * 100) + '%'; $('make').textContent = 'Собираю… ' + Math.round(p * 100) + '%'; });
     outFile = new File([r.blob], 'zagolovok.' + r.ext, { type: r.blob.type }); window.__way = r.way;
     $('make').hidden = true; $('done').hidden = false;
-    $('outHint').textContent = 'Готово за ' + Math.round((performance.now() - t0) / 1000) + ' с, ' + (r.blob.size / 1048576).toFixed(1).replace('.', ',') + ' МБ. «Поделиться» открывает меню телефона: там Instagram и «Сохранить видео»';
+    window.__made = Math.round((performance.now() - t0) / 1000) + ' с, ' + (r.blob.size / 1048576).toFixed(1).replace('.', ',') + ' МБ';   // для проверок
   } catch (e) {
     showErr('Не получилось собрать видео: ' + (e && e.message ? e.message : e));
   } finally {
@@ -1648,7 +1649,7 @@ async function uqMap(items, n, fn) {
 
 const uqSt = (id, text, cls) => { const el = $(id); el.textContent = text; el.className = 'hint' + (cls ? ' ' + cls : ''); };
 const uqBoxSt = (B, text, cls) => { B.st.textContent = text; B.st.className = 'hint uqst' + (cls ? ' ' + cls : ''); };
-const uqDraft = () => { try { localStorage.setItem('uq-draft', JSON.stringify({ url: $('uqUrl').value, title: $('uqTitle').value, text: $('uqText').value })); } catch (e) {} };
+const uqDraft = () => { try { localStorage.setItem('uq-draft', JSON.stringify({ title: $('uqTitle').value, text: $('uqText').value })); } catch (e) {} };
 
 // полоса процента: у этапа своя доля полосы, внутри неё доля растёт по времени (оценка по длине кусков) и по готовым кускам;
 // запрос отмечает готовность в своём этапе, поэтому поздний ответ отменённого запуска не двигает полосу нового
@@ -1880,7 +1881,7 @@ function uqBox(key) {
 }
 
 (function buildUniq() {
-  try { const d = JSON.parse(localStorage.getItem('uq-draft') || 'null'); if (d) { $('uqUrl').value = d.url || ''; $('uqTitle').value = d.title || ''; $('uqText').value = d.text || ''; } } catch (e) {}
+  try { const d = JSON.parse(localStorage.getItem('uq-draft') || 'null'); if (d) { $('uqTitle').value = d.title || ''; $('uqText').value = d.text || ''; } } catch (e) {}
   UQ.B.title = uqBox('title'); UQ.B.text = uqBox('text');
   const rerun = () => { for (const B of Object.values(UQ.B)) if (B.F || B.busy) uqRun(B, false); };   // лицо и тире меняют весь текст
   const vbox = $('uqVoices');
