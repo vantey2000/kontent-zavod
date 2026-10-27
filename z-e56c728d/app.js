@@ -2254,3 +2254,118 @@ function mineRender() {
   $('mineSave').addEventListener('click', mineSave);
   mineRender();
 })();
+// «Распределить текст» (27.10): длинный заголовок одной строкой сам раскладывается на строки.
+// Ширины строк выравниваются с учётом кегля строк оформления (в «Бархате» первая строка мельче - на неё ложится больше слов),
+// предлоги и союзы не висят в конце строки, тире и частицы не начинают строку, лучше рвать после запятой.
+// Без числа строк выбирается то, при котором буквы в кадре крупнее всего (2-6 строк)
+const SPLIT_HANG = new Set('и а но да или либо в во на с со к ко о об обо от ото по до из изо за у не ни для без при про под над перед через из-за из-под что чтобы как если когда чем где лишь только даже'.split(' '));
+const SPLIT_SOFT = new Set('мой моя моё мои твой твоя твои свой своя свои наш наша ваш ваша этот эта это эти тот та те самый самая самое самые очень так такой такая такие все всё весь вся каждый каждая'.split(' '));
+const SPLIT_GLUE = /^(же|ли|ль|бы|б|[-–—]+|[!?.,:;…♥]+)$/i;
+
+// слова -> неразрывные куски: тире, частицы и отдельные знаки прилипают к предыдущему слову
+function splitUnits(text) {
+  const out = [];
+  text.replace(/\s+/g, ' ').trim().split(' ').filter(Boolean).forEach(w => {
+    if (out.length && SPLIT_GLUE.test(w)) out[out.length - 1] += ' ' + w; else out.push(w);
+  });
+  return out;
+}
+const splitBare = (u) => u.split(' ').pop().toLowerCase().replace(/[«»"'()*]/g, '');
+
+// штраф за конец строки на этом куске и бонус за знак препинания
+function splitEnd(u) {
+  if (/[,:;.!?…\-–—]$/.test(u)) return -0.12;   // после запятой, двоеточия, тире строка рвётся естественно
+  const w = splitBare(u);
+  if (SPLIT_HANG.has(w)) return 0.6;
+  if (/^\d+$/.test(w)) return 0.4;            // «10» без «способов»
+  if (SPLIT_SOFT.has(w)) return 0.45;
+  return 0;
+}
+
+// лучшая раскладка кусков на n строк: строки ширины m*кегль^0.6 как можно ближе к общей цели
+// (кегль в степени 0.6: разница строк оформления видна, но строки не превращаются в лесенку из одиночных слов)
+function splitBest(units, n, widths, space, sizes) {
+  const N = units.length, pre = [0];
+  units.forEach((u, i) => pre.push(pre[i] + widths[i]));
+  const wOf = (a, b) => pre[b] - pre[a] + space * (b - a - 1);
+  const sz = (i) => Math.pow(sizes[i % sizes.length], 0.6);
+  let inv = 0; for (let i = 0; i < n; i++) inv += 1 / sz(i);
+  const T = wOf(0, N) / inv;
+  const dp = Array.from({ length: n + 1 }, () => new Array(N + 1).fill(Infinity)), from = dp.map(r => r.map(() => -1));
+  dp[0][0] = 0;
+  for (let i = 1; i <= n; i++) {
+    const s = sz(i - 1);
+    for (let j = i; j <= N - (n - i); j++) {
+      for (let k = i - 1; k < j; k++) {
+        if (dp[i - 1][k] === Infinity) continue;
+        const W = wOf(k, j) * s;
+        let c = ((W - T) / T) ** 2;
+        if (i < n) c += splitEnd(units[j - 1]);
+        if (j - k === 1 && splitBare(units[k]).length <= 3) c += 0.5;   // строка из одного короткого слова
+        else if (j - k === 1 && N >= 1.6 * n) c += 0.2;                  // слов много, а строка из одного
+        if (dp[i - 1][k] + c < dp[i][j]) { dp[i][j] = dp[i - 1][k] + c; from[i][j] = k; }
+      }
+    }
+  }
+  const lines = []; let j = N;
+  for (let i = n; i > 0; i--) { const k = from[i][j]; lines.unshift(units.slice(k, j)); j = k; }
+  return { lines, cost: dp[n][N] };
+}
+
+// мерка ширины кусков шрифтом текущего оформления; kx и lead подстроены по заголовку, который уже на видео
+function splitMeasure() {
+  const st = look(), font = S.font || st.font, weight = (!S.font && st.weight) || FONT_W[font] || 400;
+  const caps = st.style === 'atlas' || st.style === 'velvet';
+  const x = document.createElement('canvas').getContext('2d'); x.font = `${weight} 100px "${font}", sans-serif`;
+  const m = (t) => x.measureText(caps ? t.replace(/\*/g, '').toUpperCase() : t.replace(/\*/g, '')).width / 100;
+  let kx = 1, lead = 0.9;
+  if (L && L.parts.length) {
+    const cur = unstar(lines()), ks = [];
+    L.parts.forEach((p, i) => { const w = cur[i] ? m(cur[i]) : 0; if (w > 0 && p.size > 0) ks.push(p.tw / (w * p.size)); });
+    if (ks.length) kx = ks.reduce((a, b) => a + b, 0) / ks.length;
+    const sum = L.parts.reduce((a, p) => a + p.size, 0); if (sum > 0) lead = L.height / sum;
+  }
+  return { m, kx, lead, sizes: st.style === 'orig' ? [st.sizes[0]] : st.sizes, uniform: st.style === 'orig' };
+}
+
+// насколько крупными выйдут буквы у раскладки (как в ENGINE.layout: ширина строки до 800, высота заголовка до 940)
+function splitSize(lines, M) {
+  const f = lines.map((l, i) => { const s = M.sizes[i % M.sizes.length]; return Math.min(1, 800 / Math.max(1, M.m(l.join(' ')) * s * M.kx)); });
+  const fu = Math.min(...f);
+  const sz = lines.map((l, i) => M.sizes[i % M.sizes.length] * (M.uniform ? fu : f[i]));
+  const H = M.lead * sz.reduce((a, b) => a + b, 0), g = Math.min(1, 940 / Math.max(1, H));
+  return sz.reduce((a, b) => a + b, 0) / sz.length * g;
+}
+
+// n = число строк или null (подобрать самому); возвращает, сколько строк вышло
+function splitText(text, n) {
+  const units = splitUnits(text);
+  if (units.length < 2) return { text: units.join(' '), n: units.length };
+  const M = splitMeasure(), widths = units.map(u => M.m(u)), space = M.m(' ');
+  const tryN = (k) => { const r = splitBest(units, k, widths, space, M.sizes); r.size = splitSize(r.lines, M); r.n = k; return r; };
+  let best;
+  if (n) best = tryN(Math.min(n, units.length));
+  else {
+    // крупнее буквы - лучше; неровные строки и висячие предлоги немного снижают оценку; при почти равных - меньше строк
+    const all = []; for (let k = 2; k <= Math.min(6, units.length); k++) all.push(tryN(k));
+    all.forEach(r => { r.score = r.size * (1 - Math.min(0.3, Math.max(0, r.cost) / r.n * 0.5)); });
+    const top = Math.max(...all.map(r => r.score));
+    best = all.find(r => r.score >= top * 0.92);
+  }
+  return { text: best.lines.map(l => l.join(' ')).join('\n'), n: best.n };
+}
+
+function splitApply(n) {
+  const txt = $('txt'), src = txt.value.trim();
+  if (!src) return;
+  const r = splitText(src, n);
+  txt.value = S.text = r.text; persist(); rebuild(0); hideDone();
+  document.querySelectorAll('#splitN [data-lines]').forEach(b => b.setAttribute('aria-pressed', String(+b.dataset.lines === r.n)));
+}
+
+(function buildSplit() {
+  if (!$('splitAuto')) return;   // страница из старого кэша
+  $('splitAuto').addEventListener('click', () => splitApply(null));
+  document.querySelectorAll('#splitN [data-lines]').forEach(b => b.addEventListener('click', () => splitApply(+b.dataset.lines)));
+  $('txt').addEventListener('input', () => document.querySelectorAll('#splitN [data-lines]').forEach(b => b.setAttribute('aria-pressed', 'false')));
+})();
