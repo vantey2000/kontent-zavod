@@ -685,8 +685,9 @@ const FONT_GROUPS = [
 const FONT_W = {};
 FONT_GROUPS.forEach(([, list]) => list.forEach(([f, w]) => { FONT_W[f] = w; }));
 
-// палитры: светлая строка, тёмная строка, сердечко
+// палитры: светлая строка, тёмная строка, сердечко. Чёрно-белый первым: им пользуется большинство (27.10)
 const PALETTES = [
+  { id: 'bw', name: 'Чёрно-белый', l: '#ffffff', d: '#141414', h: '#ffffff' },
   { id: 'pink', name: 'Розовый', l: '#f7aec8', d: '#8f1440', h: '#ff7fb0', vd: '#b8123c' },
   { id: 'lilac', name: 'Конфета', l: '#ff3d9a', d: '#6c2bff', h: '#ff8cc6' },
   { id: 'mint', name: 'Мята', l: '#a8f0d4', d: '#0b6b50', h: '#5fe0b0' },
@@ -696,7 +697,6 @@ const PALETTES = [
   { id: 'choco', name: 'Шоколад', l: '#f3d2b3', d: '#5b2a12', h: '#e8a77a' },
   { id: 'neon', name: 'Неон', l: '#ff4fd8', d: '#38f3ff', h: '#ff4fd8' },
   { id: 'red', name: 'Красный', l: '#ffffff', d: '#e3122d', h: '#ff4d6a' },
-  { id: 'bw', name: 'Чёрно-белый', l: '#ffffff', d: '#141414', h: '#ffffff' },
   // «Оригинал»: белый текст и жёлтое выделение, цвет снят со скрина рилса Ивана 24.10.2026
   { id: 'orig', name: 'Белый и жёлтый', l: '#ffffff', d: '#eace4a', h: '#eace4a' }
 ];
@@ -720,7 +720,7 @@ const STYLES = [
 // тень вокруг букв по умолчанию: своя у оформления (у «Оригинала» 85), иначе 50 = прежняя тень, у неона и оформлений без тени 0
 const haloDef = (st) => (st.halo != null ? st.halo : st.shadow === false || st.style === 'neon' ? 0 : 50);
 
-function pal(id) { return PALETTES.find(p => p.id === id) || PALETTES[0]; }
+function pal(id) { return PALETTES.find(p => p.id === id) || PALETTES.find(p => p.id === 'pink'); }
 
 function shadeHex(hex, k) {
   const n = parseInt(hex.slice(1), 16), r = n >> 16, g = (n >> 8) & 255, b = n & 255;
@@ -1312,7 +1312,7 @@ function showErr(t) { const e = $('outErr'); e.textContent = t; e.hidden = !t; }
 
 async function make() {
   if (!hasVideo) { armVideo(); return $('file').click(); }   // без видео «Собрать» сразу открывает выбор ролика (27.10: под кнопкой ни строчки)
-  if (!L) return showErr('Напиши текст заголовка во вкладке «Текст»');
+  if (!L) return showErr('Напиши текст заголовка во вкладке «Заголовок»');
   if (typeof accVideo === 'function' && !(await accVideo())) return;   // доступ: вход, 3 бесплатные, подписка (14-access.js)
   showErr(''); exporting = true; $('make').disabled = true; $('bar').hidden = false;
   const t0 = performance.now();

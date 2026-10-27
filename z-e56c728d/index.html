@@ -214,15 +214,24 @@ input[type=url] { border-radius: 12px; border: 1px solid var(--line); background
 
   <div class="panel">
     <div class="seg" role="tablist" aria-label="Настройки заголовка">
-      <button role="tab" aria-selected="true" data-tab="look" type="button">Оформление</button>
-      <button role="tab" aria-selected="false" data-tab="text" type="button">Текст</button>
+      <button role="tab" aria-selected="true" data-tab="text" type="button">Заголовок</button>
+      <button role="tab" aria-selected="false" data-tab="look" type="button">Оформление</button>
       <button role="tab" aria-selected="false" data-tab="font" type="button">Шрифт</button>
       <button role="tab" aria-selected="false" data-tab="color" type="button">Цвет</button>
       <button role="tab" aria-selected="false" data-tab="anim" type="button">Появление</button>
       <button role="tab" aria-selected="false" data-tab="time" type="button">Время</button>
     </div>
 
-    <div class="tab" data-pane="look">
+    <div class="tab" data-pane="text">
+      <label class="row" for="txt">Каждая строка поля = строка заголовка</label>
+      <p class="hint" id="txtHint" hidden>Слово в *звёздочках* выделится вторым цветом, например: Мужчины *влюбляются* СИЛЬНЕЕ</p>
+      <textarea id="txt" rows="4">САМЫЙ ТОПОВЫЙ
+ДОМАШНИЙ
+ДЕВАЙС
+ДЛЯ ЛИЦА</textarea>
+    </div>
+
+    <div class="tab" data-pane="look" hidden>
       <!-- мои стили (27.10): оформление, шрифт, цвета, тень, размер, место и появление на новый ролик одним касанием (16-mine.js) -->
       <div class="fgroup">
         <h3>Мои стили</h3>
@@ -230,15 +239,6 @@ input[type=url] { border-radius: 12px; border: 1px solid var(--line); background
         <p class="hint" id="mineHint" role="status"></p>
       </div>
       <div class="fgroup"><h3>Оформления</h3><div class="grid" id="looks"></div></div>
-    </div>
-
-    <div class="tab" data-pane="text" hidden>
-      <label class="row" for="txt">Каждая строка поля = строка заголовка</label>
-      <p class="hint" id="txtHint" hidden>Слово в *звёздочках* выделится вторым цветом, например: Мужчины *влюбляются* СИЛЬНЕЕ</p>
-      <textarea id="txt" rows="4">САМЫЙ ТОПОВЫЙ
-ДОМАШНИЙ
-ДЕВАЙС
-ДЛЯ ЛИЦА</textarea>
     </div>
 
     <div class="tab" data-pane="font" hidden>
