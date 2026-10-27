@@ -1,0 +1,209 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="robots" content="noindex, nofollow">
+<meta name="theme-color" content="#120c0f">
+<title>Рилсовая: как пользоваться</title>
+<meta name="description" content="Инструкция со скринами: забрать текст с чужого рилса, уникализировать его и поставить заголовок на своё видео">
+<meta property="og:title" content="Рилсовая: как пользоваться">
+<meta property="og:description" content="Забрать текст с чужого рилса, уникализировать и поставить заголовок на своё видео. Инструкция со скринами">
+<meta property="og:image" content="https://ivan-loginov.ru/n-2f254e947957/img/og.jpg">
+<meta property="og:type" content="article">
+<style>
+  :root {
+    --bg: #120c0f; --panel: #1c1418; --line: #33252c; --fg: #f6ecf1; --muted: #b49ea9;
+    --accent: #ff7aa6; --accent-ink: #2a0614; --yellow: #ffd600; --ok: #6fe0a6; --warn: #ff5a6a;
+    color-scheme: dark;
+  }
+  * { box-sizing: border-box; }
+  html { -webkit-text-size-adjust: 100%; scroll-behavior: smooth; }
+  body { margin: 0; background: var(--bg); color: var(--fg);
+    font: 17px/1.55 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif; }
+  .wrap { max-width: 640px; margin: 0 auto; padding: 20px 16px 56px; }
+  a { color: var(--accent); text-underline-offset: 3px; }
+  b, strong { font-weight: 650; }
+
+  .hero { padding: 14px 0 6px; }
+  .kicker { font-size: 13px; letter-spacing: 1.4px; text-transform: uppercase; color: var(--muted); margin-bottom: 10px; }
+  h1 { font-size: 34px; line-height: 1.1; letter-spacing: -0.5px; margin: 0 0 14px; }
+  h1 em { font-style: normal; color: var(--accent); }
+  .lead { font-size: 18px; margin: 0 0 18px; }
+  .cta { display: block; text-align: center; text-decoration: none; background: var(--accent); color: var(--accent-ink);
+    font-weight: 700; font-size: 18px; border-radius: 14px; padding: 15px 18px; margin: 0 0 12px; }
+  .cta.ghost { background: var(--panel); color: var(--fg); border: 1px solid var(--line); }
+  .stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin: 6px 0 20px; }
+  .stat { background: var(--panel); border: 1px solid var(--line); border-radius: 14px; padding: 12px 10px; }
+  .stat .v { font-weight: 750; font-size: 21px; line-height: 1.1; color: var(--yellow); white-space: nowrap; }
+  .stat .l { font-size: 12.5px; line-height: 1.3; color: var(--muted); margin-top: 4px; }
+
+  .toc { display: flex; gap: 8px; overflow-x: auto; padding: 2px 0 12px; margin: 0 0 6px; scrollbar-width: none; }
+  .toc::-webkit-scrollbar { display: none; }
+  .toc a { flex: 0 0 auto; text-decoration: none; color: var(--fg); background: var(--panel); border: 1px solid var(--line);
+    border-radius: 999px; padding: 7px 13px; font-size: 14px; }
+
+  section { background: var(--panel); border: 1px solid var(--line); border-radius: 18px; padding: 20px 18px 10px;
+    margin: 0 0 16px; scroll-margin-top: 12px; }
+  h2 { font-size: 22px; line-height: 1.2; margin: 0 0 12px; letter-spacing: -0.2px; display: flex; gap: 10px; align-items: baseline; }
+  h2 .n { flex: 0 0 auto; display: inline-flex; align-items: center; justify-content: center; width: 30px; height: 30px;
+    border-radius: 50%; background: var(--accent); color: var(--accent-ink); font-size: 15px; font-weight: 800; transform: translateY(-2px); }
+  h3 { font-size: 17px; margin: 20px 0 8px; }
+  p { margin: 0 0 12px; }
+  ol, ul { margin: 0 0 12px; padding-left: 22px; }
+  li { margin: 0 0 8px; }
+  .btn-name { display: inline-block; background: #0f0a0c; border: 1px solid var(--line); border-radius: 8px;
+    padding: 0 7px; font-weight: 650; font-size: 15px; white-space: nowrap; }
+  .ok { color: var(--ok); font-weight: 650; }
+  .bad { color: var(--warn); font-weight: 650; }
+
+  figure { margin: 14px auto 16px; max-width: 380px; }
+  figure img { display: block; width: 100%; height: auto; border-radius: 16px; border: 1px solid var(--line); background: #0f0a0c; }
+  figcaption { font-size: 13.5px; color: var(--muted); margin-top: 7px; text-align: center; }
+  .tip { background: #241a1f; border-left: 3px solid var(--yellow); border-radius: 10px; padding: 11px 13px; margin: 0 0 14px; font-size: 15.5px; }
+  .tip b { color: var(--yellow); }
+  .foot { text-align: center; color: var(--muted); font-size: 13px; margin-top: 26px; }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header class="hero">
+  <div class="kicker">Инструкция со скринами</div>
+  <h1><em>Рилсовая</em>: как пользоваться</h1>
+  <p class="lead">Программа забирает заголовок и текст с чужого рилса или карусели, уникализирует их и ставит заголовок на ваше видео. Работает в браузере телефона, бесплатно и без регистрации</p>
+  <a class="cta" href="https://ivan-loginov.ru/z-e56c728d/">Открыть Рилсовую</a>
+  <div class="stats">
+    <div class="stat"><div class="v">~30 с</div><div class="l">забрать заголовок и текст по ссылке</div></div>
+    <div class="stat"><div class="v">5-30%</div><div class="l">уникализация на выбор</div></div>
+    <div class="stat"><div class="v">11 · 48</div><div class="l">оформлений и шрифтов</div></div>
+  </div>
+</header>
+
+<nav class="toc" aria-label="Разделы">
+  <a href="#start">Начало</a><a href="#tekst">Забрать текст</a><a href="#uniq">Уникализация</a><a href="#video">Видео</a><a href="#ramki">Рамки</a><a href="#oformlenie">Оформление</a><a href="#sborka">Сборка</a><a href="#svyaz">Предложения</a>
+</nav>
+
+<section id="start">
+  <h2><span class="n">1</span>Откройте программу</h2>
+  <p>Откройте ссылку в браузере телефона. Ставить ничего не нужно, регистрироваться тоже. С компьютера программа тоже работает</p>
+  <p>Сверху две кнопки:</p>
+  <ul>
+    <li><span class="btn-name">Уникализатор</span> - забрать текст с чужого рилса или карусели и переделать его</li>
+    <li><span class="btn-name">Загрузить видео</span> - поставить заголовок на своё видео</li>
+  </ul>
+  <figure><img src="img/01-start.webp" width="720" height="756" alt="Первый экран Рилсовой: кнопки Уникализатор и Загрузить видео, под ними превью рилса"><figcaption>Первый экран</figcaption></figure>
+</section>
+
+<section id="tekst">
+  <h2><span class="n">2</span>Заберите текст с чужого рилса</h2>
+  <ol>
+    <li>Скопируйте в Instagram ссылку на рилс или карусель, которые хотите переработать</li>
+    <li>В Рилсовой нажмите <span class="btn-name">Уникализатор</span></li>
+    <li>Вставьте ссылку в поле и нажмите <span class="btn-name">Забрать текст</span></li>
+  </ol>
+  <figure><img src="img/02-link.webp" width="720" height="1226" alt="Уникализатор: поле для ссылки, кнопка Забрать текст, выбор От чьего лица" loading="lazy"><figcaption>Ссылка вставлена, осталось нажать «Забрать текст»</figcaption></figure>
+  <p>Примерно через полминуты в окошках появятся заголовок с обложки и текст под рилсом. У карусели программа забирает текст со всех слайдов</p>
+  <figure><img src="img/03-fetched.webp" width="720" height="860" alt="Заголовок рилса забран в окошко Заголовок с видео" loading="lazy"><figcaption>Заголовок забран с обложки моего рилса</figcaption></figure>
+  <div class="tip"><b>Заголовок не распознался?</b> Сделайте скрин кадра, где виден заголовок, и нажмите <span class="btn-name">Загрузить скрин кадра с заголовком</span></div>
+  <div class="tip"><b>Свой текст</b> можно вставить в окошки и без ссылки</div>
+</section>
+
+<section id="uniq">
+  <h2><span class="n">3</span>Уникализируйте</h2>
+  <p>Сначала выберите, от чьего лица писать: <span class="btn-name">Как в оригинале</span>, <span class="btn-name">От мужчины</span>, <span class="btn-name">От женщины</span> или <span class="btn-name">Со стороны</span>. Взяли рилс у девушки, а вы мужчина - нажмите «От мужчины», и текст перепишется под вас</p>
+  <p>Потом нажмите процент под окошком: 5, 10, 15, 20 или 30. Текст переделается прямо на месте</p>
+  <figure><img src="img/04-title.webp" width="720" height="922" alt="Заголовок уникализирован на 10 процентов, изменённые слова подсвечены" loading="lazy"><figcaption>Было «Большинство купили Алису», стало «Многие взяли Алису»</figcaption></figure>
+  <ul>
+    <li><b>Подсвечено</b> то, что программа поменяла. Не нравится правка - нажмите на неё, и вернётся оригинал</li>
+    <li>Под окошком видно, сколько процентов слов изменено</li>
+    <li><span class="btn-name">Другой вариант</span> - новые правки на тот же процент</li>
+    <li><span class="btn-name">Скопировать</span> - забрать готовый текст, например в подпись к рилсу</li>
+    <li><span class="btn-name">Очистить</span> - вернуть пустое окошко</li>
+  </ul>
+  <p>Текст под рилсом уникализируется так же, в своём окошке</p>
+  <figure><img src="img/05-text.webp" width="720" height="774" alt="Текст под рилсом уникализирован, изменённые куски подсвечены" loading="lazy"><figcaption>Текст под рилсом после 10%</figcaption></figure>
+  <div class="tip"><b>Тире.</b> Кнопка «Длинное тире → короткое» включена сразу: длинные тире «—» в тексте станут обычными «-»</div>
+</section>
+
+<section id="video">
+  <h2><span class="n">4</span>Поставьте заголовок на своё видео</h2>
+  <ol>
+    <li>В окошке заголовка нажмите <span class="btn-name">В заголовок ролика</span>: заголовок перейдёт на видео</li>
+    <li>Нажмите <span class="btn-name">Загрузить видео</span> и выберите ролик из галереи</li>
+    <li>Двигайте заголовок пальцем, двумя пальцами меняйте размер</li>
+  </ol>
+  <p>Вернуться к видео без переноса заголовка: кнопка <span class="btn-name">← К ролику</span> сверху</p>
+  <figure><img src="img/06-video.webp" width="720" height="756" alt="Заголовок в оформлении Бархат на видео, вокруг жёлтые рамки Instagram" loading="lazy"><figcaption>Заголовок на видео в оформлении «Бархат»</figcaption></figure>
+  <p>Под видео два ползунка: <b>Размер заголовка</b> и <b>Тень вокруг букв</b>. Тень: 0 - без тени, 50 - родная у оформления, 100 - плотная тёмная кайма, если заголовок теряется на светлом фоне</p>
+  <figure><img src="img/07-sliders.webp" width="720" height="250" alt="Ползунки Размер заголовка и Тень вокруг букв" loading="lazy"></figure>
+</section>
+
+<section id="ramki">
+  <h2><span class="n">5</span>Проверьте рамки Instagram</h2>
+  <p>Жёлтые рамки показывают, что в Instagram закроет интерфейс: шапка Reels сверху, ник, подпись и музыка снизу, лайки и комментарии справа</p>
+  <ul>
+    <li>Внизу горит <span class="ok">В рилсе всё видно</span> - заголовок ничем не закрыт</li>
+    <li>Горит красным <span class="bad">Заголовок заходит под…</span> - сдвиньте его или уменьшите</li>
+  </ul>
+  <figure><img src="img/07b-toggles.webp" width="720" height="62" alt="Кнопки Рамки Instagram, Сетка 3:4, Пауза, По центру" loading="lazy"></figure>
+  <ul>
+    <li><span class="btn-name">Рамки Instagram</span> - показать или спрятать рамки. В готовое видео они не попадают</li>
+    <li><span class="btn-name">Сетка 3:4</span> - какая часть кадра видна в сетке профиля</li>
+    <li><span class="btn-name">Пауза</span> - остановить видео в превью</li>
+    <li><span class="btn-name">По центру</span> - вернуть заголовок на исходное место и в исходный размер</li>
+  </ul>
+</section>
+
+<section id="oformlenie">
+  <h2><span class="n">6</span>Настройте оформление</h2>
+  <p>Ниже видео шесть вкладок</p>
+
+  <h3>Оформление</h3>
+  <p>11 готовых стилей. «Бархат» - объёмные плюшевые буквы, «Оригинал» - белый текст с тенью</p>
+  <figure><img src="img/08-looks.webp" width="720" height="1032" alt="Вкладка Оформление: 11 стилей заголовка" loading="lazy"></figure>
+
+  <h3>Текст</h3>
+  <p>Поправить заголовок руками. Каждая строка поля - строка заголовка на видео. В оформлении «Оригинал» слово в *звёздочках* выделится вторым цветом</p>
+  <figure><img src="img/09-tab-text.webp" width="720" height="488" alt="Вкладка Текст: поле заголовка" loading="lazy"></figure>
+
+  <h3>Шрифт</h3>
+  <p>48 шрифтов с русскими буквами. Шрифт меняется у текущего оформления. Вернуть родной: нажмите оформление ещё раз</p>
+  <figure><img src="img/10-tab-font.webp" width="720" height="984" alt="Вкладка Шрифт: список шрифтов" loading="lazy"></figure>
+
+  <h3>Цвет</h3>
+  <p>Готовые палитры или свои цвета для светлых и тёмных строк</p>
+  <figure><img src="img/11-tab-color.webp" width="720" height="878" alt="Вкладка Цвет: палитры и свои цвета" loading="lazy"></figure>
+
+  <h3>Появление</h3>
+  <p>Как заголовок появится в ролике: без анимации, выпрыгивает, падает сверху, по строкам или пульсирует</p>
+  <figure><img src="img/12-tab-anim.webp" width="720" height="440" alt="Вкладка Появление: варианты анимации" loading="lazy"></figure>
+
+  <h3>Время</h3>
+  <p>На какой секунде заголовок появляется и когда исчезает</p>
+  <figure><img src="img/13-tab-time.webp" width="720" height="526" alt="Вкладка Время: ползунки появления и исчезновения" loading="lazy"></figure>
+</section>
+
+<section id="sborka">
+  <h2><span class="n">7</span>Соберите видео и выложите</h2>
+  <ol>
+    <li>Нажмите <span class="btn-name">Собрать видео</span> и подождите: ролик на 7 секунд собирается примерно за 15 секунд</li>
+    <li><span class="btn-name">Поделиться</span> открывает меню телефона: там Instagram и «Сохранить видео». Можно выложить сразу, не сохраняя на телефон</li>
+    <li><span class="btn-name">Скачать</span> - сохранить файл</li>
+  </ol>
+  <figure><img src="img/14-done.webp" width="720" height="206" alt="Видео собрано: кнопки Поделиться и Скачать" loading="lazy"></figure>
+  <div class="tip"><b>Звук.</b> Видео собирается без звука: музыку добавьте в Instagram при публикации</div>
+</section>
+
+<section id="svyaz">
+  <h2><span class="n">8</span>Напишите, что улучшить</h2>
+  <p>Рилсовая в тесте, я её дорабатываю. Чего не хватает, что мешает, какие шрифты и оформления добавить - напишите мне. В самом низу программы есть кнопка <span class="btn-name">Поддержка и предложения</span>, она ведёт ко мне в Telegram</p>
+  <figure><img src="img/15-support.webp" width="720" height="192" alt="Кнопка Поддержка и предложения внизу программы" loading="lazy"></figure>
+  <a class="cta ghost" href="https://t.me/loginoff_ai?text=%D0%A0%D0%B8%D0%BB%D1%81%D0%BE%D0%B2%D0%B0%D1%8F%3A%20">Написать предложение</a>
+  <a class="cta" href="https://ivan-loginov.ru/z-e56c728d/">Открыть Рилсовую</a>
+</section>
+
+<p class="foot">Иван Логинов · <a href="https://ivan-loginov.ru/">ivan-loginov.ru</a></p>
+</div>
+</body>
+</html>
