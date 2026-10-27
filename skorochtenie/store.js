@@ -19,7 +19,7 @@ export function fresh() {
     acc: null,           // последний ответ сервера о доступе: { paid, until, plan, renews, stopped, next, gift, forever }
     pending: null,       // заказ, ушедший в кассу: { order, k, plan, at } - по нему телефон забирает доступ после оплаты
     trial: null,         // момент начала пробы (мс), одна на телефон. Без trun - старые пробные сутки
-    trun: null,          // пробная тренировка: { i - следующий шаг, done - момент окончания (мс) или null, skip - пропущенные упражнения }
+    trun: null,          // пробная тренировка: { i - следующий шаг, done - момент окончания (мс) или null }
     tdsent: false,       // сервер узнал, что пробная тренировка пройдена
     tid: null,           // номер пробы для учёта в админке (случайный, без почты)
     tsent: null,         // что сервер знает о пробе: null - ничего, '-' - без почты, почта - с этой почтой
@@ -32,7 +32,6 @@ export function fresh() {
     sent: [],            // события воронки, уже отправленные с этого телефона (каждое один раз)
     best: {},            // лучшие результаты по упражнениям: { schulte: с, sight: уровень, flash: мс, memory: цифр, search: с, flipped: с на 100 слов }
     scramble: null,      // «Кривые буквы»: последняя сложность и темп подсветки { level: 0-3, wpm }
-    ktSeq: 0,            // сколько тестов на кривых буквах начато, для ротации текстов
   };
 }
 
@@ -67,19 +66,18 @@ function normalize(s) {
     readerLog: obj(s.readerLog) || {},
     testSeq: num(s.testSeq) || 0,
     best: bestOf(s),
-    ktSeq: num(s.ktSeq) || 0,
     scramble: obj(s.scramble) && num(s.scramble.level) !== null && num(s.scramble.wpm) !== null ? { level: s.scramble.level, wpm: s.scramble.wpm } : null,
     src: typeof s.src === 'string' && /^[a-z0-9-]{1,16}$/.test(s.src) ? s.src : null,
     sent: Array.isArray(s.sent) ? s.sent.filter(x => typeof x === 'string').slice(0, 20) : [],
   };
 }
 
-// прогресс пробной тренировки: шаг 0-13, окончание числом или null, пропущенные - только строки
+// прогресс пробной тренировки: шаг 0-13 (13 - длина пробы 16.10, дальше шаг ограничивает core.trialState), окончание числом или null
 function trunOf(t) {
   const o = obj(t);
   if (!o) return null;
   const i = num(o.i);
-  return { i: i === null ? 0 : Math.min(13, Math.max(0, Math.floor(i))), done: num(o.done), skip: Array.isArray(o.skip) ? o.skip.filter(x => typeof x === 'string').slice(0, 13) : [] };
+  return { i: i === null ? 0 : Math.min(13, Math.max(0, Math.floor(i))), done: num(o.done) };
 }
 
 function bestOf(s) {

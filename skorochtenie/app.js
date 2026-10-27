@@ -1,13 +1,13 @@
 // Интерфейс: экраны и упражнения. Вся арифметика в core.js, хранение в store.js
 import * as c from './core.js';
 import * as dr from './drills.js';
-import { DRILL_UI, countdown, scrambleCard, flickerer } from './drills-ui.js';
-import { TESTS, KT_TESTS, LIBRARY } from './content.js';
+import { DRILL_UI, countdown } from './drills-ui.js';
+import { TESTS, LIBRARY } from './content.js';
 import * as store from './store.js';
 import * as m from './motion.js';
 
 const $ = id => document.getElementById(id);
-const SCREENS = ['start', 'kt', 'ktres', 'read', 'quiz', 'result', 'pay', 'wait', 'acct', 'login', 'home', 'plan', 'ex', 'lib', 'own', 'done', 'trial'];
+const SCREENS = ['start', 'read', 'quiz', 'result', 'pay', 'wait', 'acct', 'login', 'home', 'plan', 'ex', 'lib', 'own', 'done'];
 const ANCHOR = 0.38;          // опорная буква на 38% ширины, как засечка в ролике
 const WORD_PX = 46;
 
@@ -43,6 +43,7 @@ function show(name, { instant = false } = {}) {
   stopActive();
   stopActive = () => {};
   stopDemo();
+  hideTrialEnd();   // окно «Пробный режим пройден» закрывается любым переходом: к оплате, на главную
   const id = ++showSeq;
   const swap = () => {
     if (id !== showSeq) return;   // пока переход ждал кадра, показали другой экран: устаревшая смена не применяется
@@ -165,7 +166,7 @@ function showQuestion() {
     b.addEventListener('click', () => {
       if (i === q.answer) run.correct++;
       run.idx++;
-      if (run.idx < n) showQuestion(); else if (run.kt) finishKt(); else finishTest();
+      if (run.idx < n) showQuestion(); else finishTest();
     }, { once: true });
     box.append(b);
   });
@@ -213,86 +214,6 @@ function finishTest() {
   if (reveal) reveal();
 }
 
-// ---------- тест как в рилсе «Кривые буквы» (27.10.2026) ----------
-// Человек из рилса видит ту же карточку: уровень, отражённые буквы, гаснущие буквы. Читает на время и отвечает на 3 вопроса.
-// Кривая скорость в базу не идёт: она всегда ниже обычной, читалка и цель программы от неё пошли бы слишком медленно.
-// Дальше обычный тест на минуту и прежний путь
-let ktLevel = 2, ktNext = () => {}, ktAgain = () => {};
-const ktFlick = flickerer();
-const KT_DEMO = c.tokenize('Проверим, как быстро ты читаешь кривые буквы');
-
-function ktFlicker(letters) {
-  ktFlick.clear();
-  const iv = setInterval(() => ktFlick.tick(letters, ktLevel, false), 120);
-  stopActive = () => clearInterval(iv);
-}
-
-function paintKt() {
-  const seg = $('kt-seg');
-  seg.textContent = '';
-  dr.SCRAMBLE.forEach((L, i) => {
-    const b = el('button', null, L.name);
-    b.type = 'button'; b.setAttribute('role', 'radio'); b.setAttribute('aria-checked', String(i === ktLevel));
-    b.addEventListener('click', () => { if (i !== ktLevel) { stopActive(); ktLevel = i; paintKt(); } });
-    seg.append(b);
-  });
-  $('kt-level-name').textContent = dr.SCRAMBLE[ktLevel].name.toUpperCase();
-  ktFlicker(scrambleCard($('kt-demo'), KT_DEMO, ktLevel).letters);
-}
-
-function showKt(level = ktLevel) {
-  ktLevel = dr.scrambleLevel(level);
-  show('kt');
-  paintKt();
-}
-
-function startKt() {
-  const t = KT_TESTS[(state.ktSeq || 0) % KT_TESTS.length];
-  state.ktSeq = (state.ktSeq || 0) + 1;
-  persist();
-  $('read-title').textContent = `Уровень: ${dr.SCRAMBLE[ktLevel].name}`;
-  $('read-count').textContent = `${c.countWords(t.text)} слов`;
-  const box = $('read-text');
-  box.textContent = '';
-  const card = el('div', 'scr-text kt-card');
-  box.append(card);
-  const { letters } = scrambleCard(card, c.tokenize(t.text), ktLevel);
-  show('read', { instant: true });   // секундомер идёт ровно с показа текста, как в обычном тесте
-  ktFlicker(letters);
-  run = { test: t, words: c.countWords(t.text), started: performance.now(), seconds: 0, correct: 0, idx: 0, kt: true, ktLevel };
-}
-
-function finishKt() {
-  const r = c.scoreKt({ words: run.words, seconds: run.seconds, correct: run.correct, total: run.test.questions.length });
-  const bad = r.tooFast || r.tooSlow, lvl = run.ktLevel;
-  $('ktr-ok').hidden = bad;
-  $('ktr-bad').hidden = !bad;
-  $('b-ktr-again').hidden = bad;
-  if (bad) {
-    $('ktr-bad-title').textContent = r.tooFast ? 'Похоже, текст пролистан' : 'Похоже, тест прерывался';
-    $('ktr-bad-text').textContent = r.tooFast
-      ? `Получилось быстрее ${c.KT.maxWpm} слов в минуту: кривой текст так не читается. Пройди ещё раз и читай каждое слово`
-      : `Получилось меньше ${c.KT.minWpm} слов в минуту: скорее всего, ты отвлёкся. Пройди ещё раз, не отрываясь`;
-    $('b-ktr-next').textContent = 'Пройти ещё раз';
-    ktNext = () => showKt(lvl);
-  } else {
-    const up = Math.min(lvl + 1, dr.SCRAMBLE.length - 1);
-    const fresh = !state.tests.length;
-    $('ktr-eyebrow').textContent = `Кривой текст · уровень ${dr.SCRAMBLE[lvl].name}`;
-    $('ktr-wpm').textContent = String(r.wpm);
-    $('ktr-comp').textContent = `Верных ответов: ${r.correct} из ${r.total}`;
-    $('b-ktr-next').textContent = fresh ? 'Узнать обычную скорость' : 'На главную';
-    $('b-ktr-again').textContent = up > lvl ? `Ещё раз · уровень ${dr.SCRAMBLE[up].name}` : 'Ещё раз · новый текст';
-    ktNext = fresh ? startTest : goHome;
-    ktAgain = () => showKt(up);
-  }
-  show('ktres');
-}
-
-$('b-kt-start').addEventListener('click', startKt);
-$('b-ktr-next').addEventListener('click', () => ktNext());
-$('b-ktr-again').addEventListener('click', () => ktAgain());
-
 $('b-start').addEventListener('click', startTest);
 $('b-retry').addEventListener('click', startTest);
 $('b-read-done').addEventListener('click', () => {
@@ -302,53 +223,68 @@ $('b-read-done').addEventListener('click', () => {
 });
 $('b-result-next').addEventListener('click', () => {
   if (acc().paid) return goHome();
-  if (trialGoing(c.trialState(state, Date.now()))) return runTrial();
+  const tr = c.trialState(state, Date.now());
+  if (trialGoing(tr)) return runTrial();
+  if (tr.status === 'none') return startTrial();
   showPay('result');
 });
 $('b-result-plans').addEventListener('click', () => showPay('result'));
 
-// Под результатом: текст «зачем тренировать» и программа. Без доступа - «Начать программу» на оплату, бесплатная
-// тренировка дня (одна читалка, решение Ивана 21.10.2026) остаётся за «Продолжить бесплатно». Начатая 16.10 пробная
-// тренировка - «Продолжить» с того же места. Доступ есть (купил или идут старые сутки) - сразу к тренировке
+// Под результатом: текст «зачем тренировать» и программа. Без доступа главная кнопка - пробная тренировка из двух
+// упражнений по минуте (просьба Ивана 27.10.2026), «Посмотреть тарифы» - сразу на оплату; начатая - «Продолжить»
+// с того же места. Проба позади - «Начать программу» на оплату, бесплатная читалка дня (решение Ивана 21.10.2026)
+// остаётся за «Продолжить бесплатно». Доступ есть (купил или идут старые сутки) - сразу к тренировке
 function paintResultOffer(wpm) {
   const offer = !acc().paid;
   const tr = c.trialState(state, Date.now());
-  const going = offer && trialGoing(tr);
+  const fresh = offer && tr.status === 'none', going = offer && trialGoing(tr);
   $('r-hour').textContent = c.formatInt(c.wordsPerHour(wpm));
   $('r-why').hidden = !offer;
   $('r-offer').classList.toggle('offer', offer);
-  $('r-trial').hidden = !offer || going;
+  $('r-trial').hidden = !offer || fresh || going;
+  if ($('r-trial-new')) $('r-trial-new').hidden = !fresh;   // ?. - страница из кэша может быть ещё без этой строки
   $('r-trial-over').hidden = !going;
   if (going) $('r-trial-over').textContent = `Пробная тренировка начата: пройдено ${tr.i} из ${c.TRIAL_STEPS.length}. Продолжишь с того же места`;
-  $('b-result-plans').hidden = !going;
-  $('b-result-next').textContent = !offer ? 'К тренировке' : going ? 'Продолжить пробную тренировку' : 'Начать программу';
+  $('b-result-plans').hidden = !(fresh || going);
+  $('b-result-next').textContent = !offer ? 'К тренировке' : fresh ? 'Начать пробную тренировку' : going ? 'Продолжить пробную тренировку' : 'Начать программу';
 }
 
 // ---------- пробная тренировка ----------
-// Снята 17.10.2026 (решение Ивана): новым не предлагается. Кто начал 16.10, доигрывает: все 13 упражнений по очереди
-// (core.TRIAL_STEPS), «Пропустить» и «← Назад» как раньше, на главной «Продолжить» с того же места. Пройдена - день
-// засчитан, финал с личными цифрами, дальше бесплатный режим. Учёт в фоне: «tend» = прошёл до конца.
+// Одна на телефон, после теста (просьба Ивана 27.10.2026): читалка слово за словом, как в первом рилсе, и «Кривые буквы»
+// из второго, ровно по минуте (core.TRIAL_STEPS). Минута читалки вышла - «Дальше»; минута второго упражнения вышла -
+// окно «Пробный режим пройден» с тарифами. «← Назад» пробу не сжигает: на главной «Продолжить» с того же места.
+// Пройдена - день засчитан, дальше бесплатный режим. Учёт в фоне: «trial» = начал, «tend» = прошёл до конца.
 // Старые пробные сутки (state.trial без trun) дорабатывают 24 часа
 
 const trialGoing = tr => tr.status === 'active' && !tr.legacy;
+
+function startTrial() {
+  if (acc().paid || c.trialState(state, Date.now()).status !== 'none') return goHome();
+  state.trial = Date.now();
+  state.trun = { i: 0, done: null };
+  persist();
+  track('trial');
+  syncTrial();
+  runTrial();
+}
 
 function runTrial() {
   const tr = c.trialState(state, Date.now());
   if (!trialGoing(tr)) return goHome();
   if (tr.i >= c.TRIAL_STEPS.length) return finishTrial();
-  const s = c.TRIAL_STEPS[tr.i];
+  const s = c.TRIAL_STEPS[tr.i], step = tr.i, last = step === c.TRIAL_STEPS.length - 1;
   openExercise(s.kind, {
-    minutes: s.minutes, tables: s.tables, seconds: s.seconds,
-    stepLabel: `Пробная · ${tr.i + 1} из ${c.TRIAL_STEPS.length}`,
-    onDone: () => nextTrial(false),
-    onSkip: () => nextTrial(true),
+    seconds: s.seconds, hard: true,
+    stepLabel: `Пробная · ${step + 1} из ${c.TRIAL_STEPS.length}`,
+    onDone: () => nextTrial(step),
+    onTimeUp: last ? () => nextTrial(step) : null,   // после второго упражнения окно всплывает само, без «Дальше»
   });
 }
 
-function nextTrial(skipped) {
-  const run = state.trun;
-  if (skipped) run.skip = [...run.skip.filter(k => k !== c.TRIAL_STEPS[run.i].kind), c.TRIAL_STEPS[run.i].kind];
-  run.i++;
+// шаг засчитывается один раз: минута вышла и следом нажали «Дальше» - второй раз не двигаем
+function nextTrial(step) {
+  if (!state.trun || state.trun.done || state.trun.i !== step) return;
+  state.trun.i++;
   persist();
   runTrial();
 }
@@ -361,70 +297,32 @@ function finishTrial() {
   persist();
   track('tend');
   syncTrial();
-  paintTrialDone();
-  show('trial');
+  showTrialEnd();
 }
 
-// Финал пробы: что получилось в каждом упражнении - точка отсчёта, и сборка своей тренировки из понравившихся
-function trialResults() {
-  const B = state.best, sec = v => `${fmtSec(v)} с`;
-  return [
-    ['Читалка', `${speedToday()} слов в минуту`],
-    ['Таблица Шульте', B.schulte != null && sec(B.schulte)],
-    ['Шульте буквами', B['schulte-letters'] != null && sec(B['schulte-letters'])],
-    ['Шульте 6x6', B['schulte-6'] != null && sec(B['schulte-6'])],
-    ['Растяжка взгляда', B.sight && `ширина ${Math.round(dr.sightOffset(B.sight) * 200)}%`],
-    ['Вспышка', B.flash && `выдержка ${B.flash} мс`],
-    ['Запомни число', B.memory && `${B.memory} цифр`],
-    ['Поиск буквы', B.search != null && sec(B.search)],
-    ['Перевёрнутый текст', B.flipped != null && `${fmtSec(B.flipped)} с на 100 слов`],
-  ].filter(r => r[1]);
+// Окно «Пробный режим пройден» поверх второго упражнения: полная программа и два тарифа. Тариф открывает оплату с ним
+// (там согласие с офертой), «Не сейчас» - главная с бесплатным режимом. ?. - страница из кэша может быть ещё без окна
+function showTrialEnd() {
+  const box = $('m-trial');
+  if (!box) return goHome();
+  $('mt-month').textContent = c.formatRub(c.CONFIG.priceMonth);
+  $('mt-life').textContent = c.formatRub(c.CONFIG.priceLife);
+  box.hidden = false;
+  box.scrollTop = 0;
+  $('mt-title').focus({ preventScroll: true });
+  const chk = box.querySelector('.check');   // галочка дорисовывается, как на «Тренировка сделана»
+  m.drawPath(chk.querySelector('circle'), { len: 2 * Math.PI * 44, ms: 450 });
+  m.drawPath(chk.querySelector('.tick'), { len: 54, ms: 350, delay: 300 });
 }
-
-function paintTrialDone() {
-  const tr = c.trialState(state, Date.now()), n = c.TRIAL_STEPS.length, passed = n - tr.skip.length;
-  $('tr-sub').textContent = `${passed} из ${n} упражнений${tr.skip.length ? `, пропущено ${tr.skip.length}` : ''}. Первый день серии засчитан`;
-  const nums = $('tr-nums');
-  nums.textContent = '';
-  for (const [k, v] of trialResults()) { const row = el('div', 'nrow'); row.append(el('span', 'muted', k), el('b', null, v)); nums.append(row); }
-  paintTrialPick();
-}
-
-// «Собери свою тренировку»: отмеченное сразу сохраняется в state.train (минуты по умолчанию), ничего - по программе
-function paintTrialPick() {
-  const t = trainNow();
-  const on = new Set(t.mode === 'custom' ? t.items.map(i => i.kind) : []);
-  const list = $('tr-pick');
-  list.textContent = '';
-  for (const kind of c.TRAIN_KINDS) {
-    const info = c.STEP_INFO[kind];
-    const row = el('div', 'prow' + (on.has(kind) ? ' on' : ''));
-    row.dataset.kind = kind;
-    const chk = el('button', 'pchk');
-    chk.type = 'button';
-    chk.setAttribute('aria-pressed', String(on.has(kind)));
-    const txt = el('span');
-    txt.append(el('b', null, info.title), el('span', 'muted small', info.hint));
-    chk.append(el('span', 'box'), txt);
-    chk.addEventListener('click', () => {
-      const kinds = on.has(kind) ? [...on].filter(k => k !== kind) : [...on, kind];
-      state.train = c.normalizeTrain(kinds.length
-        ? { mode: 'custom', items: kinds.map(k => ({ kind: k, minutes: defaultMinutes(k) })) }
-        : { ...trainNow(), mode: 'program' });
-      persist();
-      paintTrialPick();
-      const f = document.querySelector(`#tr-pick .prow[data-kind="${kind}"] .pchk`);
-      if (f) f.focus({ preventScroll: true });
-    });
-    row.append(chk);
-    list.append(row);
-  }
-  const items = t.mode === 'custom' ? t.items : [];
-  $('tr-total').textContent = items.length
-    ? `Своя тренировка: упражнений ${items.length}, ${c.pluralMinutes(c.stepsMinutes(items))}. Время каждого поменяешь в «Настроить тренировку»`
-    : `Ничего не отмечено: тренировка дня пойдёт по программе, ${c.pluralMinutes(c.stepsMinutes(c.dailySteps(day().day, true)))}`;
-}
-$('b-tr-pay').addEventListener('click', () => showPay('home'));
+function hideTrialEnd() { if ($('m-trial')) $('m-trial').hidden = true; }
+// тариф уже выбран в окне: оплата открывается сразу на нём, прокрученная к согласию и кнопке
+document.querySelectorAll('#m-trial [data-buy]').forEach(b => b.addEventListener('click', async () => {
+  selectTier(b.dataset.buy);   // до показа: экран оплаты появляется уже с этим тарифом
+  await showPay('home');
+  if (!$('s-pay').hidden) $('s-pay').querySelector('.plans').scrollIntoView({ block: 'start' });
+}));
+$('b-mt-later')?.addEventListener('click', goHome);
+document.addEventListener('keydown', e => { if (e.key === 'Escape' && $('m-trial') && !$('m-trial').hidden) goHome(); });
 
 // Учёт пробы для админки (сервер skorochtenie-api, trial.js): кто сейчас на пробе и кто из них купил.
 // Номер пробы придумывает телефон, сервер узнаёт начало и площадку, после входа в оплаченный доступ - почту,
@@ -494,7 +392,7 @@ function payTerms() {
 function selectTier(tier) {
   if (tier !== payTier) $('pay-ok').checked = false;
   payTier = tier;
-  document.querySelectorAll('.plan').forEach(x => x.setAttribute('aria-checked', String(x.dataset.tier === tier)));
+  document.querySelectorAll('#s-pay .plan').forEach(x => x.setAttribute('aria-checked', String(x.dataset.tier === tier)));
   payTerms();
 }
 
@@ -511,9 +409,10 @@ function showPay(back, mode = 'all') {
   $('pay-month').textContent = c.formatRub(priceMonth);
   $('plan-month').hidden = one;
   $('b-free').hidden = one || a.trial;   // на старых сутках «Продолжить бесплатно» не нужен: «Назад» ведёт обратно
-  const tr = c.trialState(state, Date.now());
-  $('b-trial-pay').hidden = one || a.paid || !trialGoing(tr);   // новую пробу не предлагаем, начатую - продолжить
-  $('b-trial-pay').textContent = `Продолжить пробную тренировку · ${tr.i} из ${c.TRIAL_STEPS.length}`;
+  // пробу не брал и тест пройден - пройти её отсюда, начатую - продолжить; без теста читалке не от чего взять темп
+  const tr = c.trialState(state, Date.now()), fresh = tr.status === 'none' && !!state.tests.length;
+  $('b-trial-pay').hidden = one || a.paid || !(fresh || trialGoing(tr));
+  $('b-trial-pay').textContent = fresh ? 'Пройти пробную тренировку · 2 минуты' : `Продолжить пробную тренировку · ${tr.i} из ${c.TRIAL_STEPS.length}`;
   $('b-login-open').hidden = up;
   $('pay-refund').textContent = `Если не подойдёт, вернём деньги в течение ${refundDays} дней`;
   if (one) { $('pay-ok').checked = false; selectTier('life'); } else payTerms();
@@ -522,10 +421,10 @@ function showPay(back, mode = 'all') {
   showErr('pay-err', '');
   $('pay-consent').classList.remove('need');
   track('pay');
-  show('pay');
+  return show('pay');
 }
 
-document.querySelectorAll('.plan').forEach(p => p.addEventListener('click', () => selectTier(p.dataset.tier)));
+document.querySelectorAll('#s-pay .plan').forEach(p => p.addEventListener('click', () => selectTier(p.dataset.tier)));
 $('pay-ok').addEventListener('change', () => { if ($('pay-ok').checked) { $('pay-consent').classList.remove('need'); showErr('pay-err', ''); } });
 $('b-pay').addEventListener('click', async () => {
   if (!$('pay-ok').checked) {
@@ -566,7 +465,7 @@ function payBtnReset() {
 addEventListener('pagehide', () => clearTimeout(payWatch));
 addEventListener('pageshow', e => { if (e.persisted) payBtnReset(); });   // вернулся «Назад» с кассы: кнопка снова живая
 $('b-free').addEventListener('click', () => { track('free'); homeOrStart(); });   // по #pay-… приходят и без теста
-$('b-trial-pay').addEventListener('click', () => (trialGoing(c.trialState(state, Date.now())) ? runTrial() : goHome()));
+$('b-trial-pay').addEventListener('click', () => (trialGoing(c.trialState(state, Date.now())) ? runTrial() : startTrial()));
 $('b-pay-back').addEventListener('click', () => (payBack === 'acct' ? showAcct() : payBack === 'result' && run ? show('result') : payBack === 'start' ? homeOrStart() : goHome()));
 
 // доступ пришёл с сервера: запоминаем вход и кэш доступа
@@ -907,8 +806,8 @@ function renderHome() {
   $('h-storage').hidden = store.isPersistent();
 }
 
-// Карточка пробы на главной, только у тех, кто взял пробу до 17.10.2026: начатая тренировка - «Продолжить» с того же
-// места, старые сутки - отсчёт. Пробы не было или она кончилась - карточки нет, на главной бесплатный режим
+// Карточка пробы на главной: начатая пробная тренировка (ушёл посреди) - «Продолжить» с того же места, старые сутки
+// 16.10 - отсчёт. Пробы не было или она кончилась - карточки нет, на главной бесплатный режим
 let homeTrial = false;   // главная нарисована с идущими старыми сутками: отсчёт обновляется, конец суток перерисует замки
 function paintTrialCard(a) {
   const box = $('h-trial'), b = $('b-trial-home');
@@ -1194,8 +1093,6 @@ function openExercise(kind, opts) {
   $('ex-title').textContent = opts.title || TITLES[kind];
   $('ex-hint').textContent = HINTS[kind];
   $('ex-step').textContent = opts.stepLabel || '';
-  $('b-ex-skip').hidden = !opts.onSkip;   // пробная тренировка: нелюбимое упражнение можно пропустить
-  skipEx = opts.onSkip || null;
   const body = $('ex-body');
   body.textContent = '';
   show('ex');
@@ -1203,10 +1100,12 @@ function openExercise(kind, opts) {
   if (SCHULTE[kind]) return schulte(body, { ...opts, kind, ...SCHULTE[kind] });
   if (DRILL_UI[kind]) return DRILL_UI[kind](body, drillCtx(kind, opts));
   if (kind === 'reader') {
-    // скорость стоит на месте: скорость читалки на сегодня, сдвинуть можно только ползунком (разгон до 1000 снят 21.10.2026)
-    const p = opts.tokens ? { tokens: opts.tokens } : takePassage(speed * opts.minutes);
+    // скорость стоит на месте: скорость читалки на сегодня, сдвинуть можно только ползунком (разгон до 1000 снят 21.10.2026).
+    // Пробная тренировка (hard) идёт ровно по часам: текста берём в полтора раза больше минуты, читалку обрывает отсчёт
+    const limit = opts.hard ? opts.seconds : 0;
+    const p = opts.tokens ? { tokens: opts.tokens } : takePassage(limit ? Math.ceil(speed * limit / 60 * 1.5) : speed * opts.minutes);
     if (!opts.title && p.title) $('ex-title').textContent = `Читалка · ${p.author}, «${p.title}»`;
-    return timed(body, { mode: 'reader', tokens: p.tokens, wpm: speed, onDone: opts.onDone });
+    return timed(body, { mode: 'reader', tokens: p.tokens, wpm: speed, onDone: opts.onDone, seconds: limit });
   }
   const factor = { blocks: 0.8, pointer: 0.7, column: 0.8, hopscotch: 0.7 }[kind] || 0.7;
   const s = round10(speed * factor);
@@ -1223,6 +1122,8 @@ function drillCtx(kind, opts) {
     words: words(),
     tokens: p ? p.tokens : [],
     seconds: opts.seconds || 0,
+    hard: !!opts.hard,             // пробная тренировка: минута вышла - упражнение закончено сразу
+    onTimeUp: opts.onTimeUp || null,
     more: () => takePassage(size || 120).tokens,   // следующий текст, пока не вышло время своей тренировки (и «Новый текст»)
     speed: speedToday(),
     prefs: state.scramble,
@@ -1236,12 +1137,11 @@ function drillCtx(kind, opts) {
   };
 }
 
-$('b-ex-back').addEventListener('click', () => { session = null; skipEx = null; goHome(); });
-let skipEx = null;
-$('b-ex-skip').addEventListener('click', () => { const f = skipEx; skipEx = null; stopActive(); stopActive = () => {}; if (f) f(); });
+$('b-ex-back').addEventListener('click', () => { session = null; goHome(); });
 
-// Читалка, блоки и указка: один движок с паузой, скоростью и прогрессом
-function timed(body, { mode, tokens, wpm, onDone }) {
+// Читалка, блоки и указка: один движок с паузой, скоростью и прогрессом. seconds - пробная тренировка: сверху отсчёт,
+// время вышло - текст обрывается и появляется «Дальше»
+function timed(body, { mode, tokens, wpm, onDone, seconds = 0 }) {
   // единицы показа: слово, блок, строка колонки или остановка указки по точкам
   let hops = null;
   if (mode === 'hopscotch') {
@@ -1298,6 +1198,8 @@ function timed(body, { mode, tokens, wpm, onDone }) {
   const controls = el('div', 'controls'); controls.append(bar, rangeBox, row, doneB);
   controls.style.marginTop = '14px';
   body.append(controls);
+  const clock = seconds ? countdown(seconds, finish) : null;
+  if (clock) { body.prepend(clock.el); bar.hidden = true; }   // полосу текста заменяет отсчёт минуты
 
   // скорость держится та, что на ползунке: сама не растёт (разгон «Динамическая | Фиксированная» снят 21.10.2026)
   const setLabel = () => { label.textContent = `Скорость ${speed} слов/мин`; };
@@ -1350,6 +1252,8 @@ function timed(body, { mode, tokens, wpm, onDone }) {
 
   function finish() {
     finished = true;
+    if (timer) { clearTimeout(timer); timer = null; }
+    if (clock) clock.stop();
     if (word) word.textContent = '';
     if (chunkEl) chunkEl.textContent = 'Готово';
     pauseB.hidden = true; back10.hidden = true;
@@ -1374,7 +1278,7 @@ function timed(body, { mode, tokens, wpm, onDone }) {
   const onVis = () => { if (document.hidden) setPaused(true); };
   document.addEventListener('visibilitychange', onVis);
 
-  stopActive = () => { finished = true; if (timer) clearTimeout(timer); document.removeEventListener('visibilitychange', onVis); };
+  stopActive = () => { finished = true; if (timer) clearTimeout(timer); if (clock) clock.stop(); document.removeEventListener('visibilitychange', onVis); };
   timer = setTimeout(tick, 600);   // полсекунды, чтобы глаз нашёл засечку
 }
 
@@ -1470,7 +1374,6 @@ $('b-own').addEventListener('click', () => {
 if (c.wantsLogin(location.hash, location.search)) { if (state.auth && acc().paid && !acc().trial) showAcct(); else showLogin('start'); }
 else if (c.wantsBuy(location.hash, location.search)) showPay('start', 'buy');
 else if (c.wantsPay(location.hash)) showPay('start', 'all');   // из директа: оба тарифа, «Назад» - на главную или первый экран
-else if (c.wantsKrivye(location.hash)) showKt();                // из рилса «Кривые буквы»: тест в том же виде, что в рилсе
 else if (state.tests.length) goHome(); else show('start');
 
 // Доступ сверяется с сервером в фоне, после первого экрана. Вернулся с кассы (?paid=1) или пришёл по ссылке

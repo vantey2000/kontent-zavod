@@ -1,6 +1,7 @@
 // Экраны новых упражнений: растяжка, вспышка, поиск буквы, запомни число, перевёрнутый текст.
 // Вся арифметика в drills.js. Каждый экран получает body и ctx: { onDone, record(kind, value), words, tokens, random, setStop, fmtSec,
-// seconds - время своей тренировки (нет = по числу раундов, как в программе), more() - следующий кусок текста }
+// seconds - время своей тренировки (нет = по числу раундов, как в программе), more() - следующий кусок текста,
+// hard - пробная тренировка: время вышло = упражнение закончено сразу, onTimeUp - зовётся в этот момент }
 import * as d from './drills.js';
 import { wordDelayMs, clockText } from './core.js';
 
@@ -14,18 +15,21 @@ function el(tag, cls, text) {
 const ROUNDS = { sight: 12, flash: 12, memory: 10 };
 
 // Обратный отсчёт своей тренировки: полоса и «Осталось 0:42». over() - минуты вышли: новый раунд, таблицу или текст
-// не начинаем, начатое доигрываем. Время идёт по часам, как у тренировки с секундомером
-export function countdown(seconds) {
+// не начинаем, начатое доигрываем. Время идёт по часам, как у тренировки с секундомером. onOver - пробная тренировка:
+// один раз, когда время вышло, упражнение заканчивается сразу; остановили раньше (ушёл с экрана) - не зовётся
+export function countdown(seconds, onOver = null) {
   const box = el('div', 'clock');
   const label = el('span', 'muted small');
   const bar = el('div', 'progress'); const barI = el('i'); bar.append(barI);
   box.append(label, bar);
   const ms = seconds * 1000, t0 = performance.now();
   const left = () => Math.max(0, ms - (performance.now() - t0));
+  let fired = false;
   const paint = () => {
     const l = left();
-    label.textContent = l > 0 ? `Осталось ${clockText(l)}` : 'Время вышло, доделай начатое';
+    label.textContent = l > 0 ? `Осталось ${clockText(l)}` : onOver ? 'Время вышло' : 'Время вышло, доделай начатое';
     barI.style.transform = `scaleX(${1 - l / ms})`;
+    if (!l && onOver && !fired) { fired = true; clearInterval(iv); onOver(); }
   };
   paint();
   const iv = setInterval(paint, 250);
@@ -287,8 +291,8 @@ export function flipped(body, ctx) {
 }
 
 // ---- Кривые буквы ----
-// Карточка кривых букв строками, как в рилсе: слово = span.w, буква = i (зеркальная - .m). Общая для упражнения и теста #krivye
-export function scrambleCard(box, tokens, level, random = Math.random) {
+// Карточка кривых букв строками, как в рилсе: слово = span.w, буква = i (зеркальная - .m)
+function scrambleCard(box, tokens, level, random = Math.random) {
   box.textContent = '';
   const words = [], letters = [];
   for (const line of d.scrambleLines(tokens)) {
@@ -309,7 +313,7 @@ export function scrambleCard(box, tokens, level, random = Math.random) {
 }
 
 // Гаснущие буквы: одновременно гаснет доля уровня от всех букв, каждая на 0,35-0,65 с. tick(..., off) возвращает все буквы
-export function flickerer(random = Math.random) {
+function flickerer(random = Math.random) {
   const gone = new Map();   // буква -> когда вернуть
   return {
     tick(letters, level, off) {
@@ -328,9 +332,10 @@ export function flickerer(random = Math.random) {
 }
 
 // Упражнение: карточка строками, как в рилсе: буквы отражены, регистр скачет, часть букв гаснет. Подсветка идёт по словам в заданном темпе.
-// Сложность и темп меняются на ходу и запоминаются (ctx.prefs / ctx.savePrefs). В своей тренировке тексты идут, пока есть время
+// Сложность и темп меняются на ходу и запоминаются (ctx.prefs / ctx.savePrefs). В своей тренировке тексты идут, пока есть время,
+// в пробной (ctx.hard) минута вышла - упражнение закончено посреди текста
 export function scramble(body, ctx) {
-  const clock = ctx.seconds ? countdown(ctx.seconds) : null;
+  const clock = ctx.seconds ? countdown(ctx.seconds, ctx.hard ? timeUp : null) : null;
   const prefs = ctx.prefs || {};
   let level = d.scrambleLevel(prefs.level ?? 2), speed = d.scrambleWpm(prefs.wpm, ctx.speed);
   const seg = el('div', 'seg scr-seg'); seg.setAttribute('role', 'radiogroup'); seg.setAttribute('aria-label', 'Сложность');
@@ -401,6 +406,14 @@ export function scramble(body, ctx) {
     if (clock) clock.stop();
     res.textContent = line;
     doneB.hidden = false; doneB.focus();
+  }
+  function timeUp() {
+    clearTimeout(timer); clearTimeout(nextT); timer = null;
+    finished = true; flicker();
+    words.forEach(w => w.classList.remove('on'));
+    pauseB.hidden = true;
+    stopAll(`Минута вышла · ${d.SCRAMBLE[level].name} · ${speed} слов/мин`);
+    if (ctx.onTimeUp) ctx.onTimeUp();
   }
 
   function page(all) {

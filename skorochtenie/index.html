@@ -101,17 +101,15 @@
   .why .ticks li { line-height: 1.45; }
   .offer, .trialcard { box-shadow: inset 0 0 0 2px var(--red); }
   .tc-title { font: 400 24px/1.15 var(--display); font-variant-numeric: lining-nums; }
-  /* пробная тренировка: «Пропустить» в упражнении и личные цифры на финале */
-  .exskip { display: block; margin: -2px 0 6px; padding: 6px 0; font-size: 14px; }
-  .nums { display: grid; gap: 0; }
-  .nrow { display: flex; justify-content: space-between; gap: 12px; padding: 9px 0; border-bottom: 1px solid var(--rule); }
-  .nrow:last-child { border-bottom: 0; }
-  .nrow b { font-variant-numeric: tabular-nums lining-nums; text-align: right; }
-  .trpick { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
-  .trpick .prow { padding: 0 10px; }
-  .trpick .pchk { min-height: 48px; gap: 8px; padding: 8px 0; }
-  .trpick .pchk .small { display: none; }
-  .trpick .pchk b { font-size: 14px; line-height: 1.25; }
+  /* окно «Пробный режим пройден» поверх второго упражнения пробной тренировки: лист снизу, своя прокрутка */
+  .modal { position: fixed; inset: 0; z-index: 20; display: flex; flex-direction: column; align-items: center; padding-top: 40px; background: rgba(0, 0, 0, .6); overflow-y: auto; overscroll-behavior: contain; animation: fade var(--dur-enter) var(--ease-out); }
+  .modal[hidden] { display: none; }
+  /* margin-top: auto прижимает лист к низу, а высокий лист прокручивается целиком (у align-items: flex-end верх уходил бы за край) */
+  .sheet { width: 100%; max-width: 520px; margin-top: auto; gap: 12px; background: var(--bg); border-radius: 22px 22px 0 0; box-shadow: inset 0 1px 0 var(--line); padding: 18px 16px max(16px, env(safe-area-inset-bottom)); animation: rise var(--dur-screen) var(--ease-out); }
+  .sheet .check { width: 52px; height: 52px; margin: 0 auto; }
+  .sheet h2 { font-size: 28px; outline: none; }
+  .sheet .ticks { margin: 0; gap: 6px; font-size: 15px; }
+  .sheet .plan { padding: 12px 16px; }
   /* своя тренировка: переключатель режима, отметка упражнения и кнопки времени (выбранное залито, как тема) */
   .plan-link { display: block; margin: 4px auto 0; }
   .plan-link .lock { margin-right: 4px; vertical-align: -1px; }
@@ -251,8 +249,6 @@
   .scr-text i { display: inline-block; font-style: normal; transition: opacity .14s linear; }
   .scr-text i.m { transform: scaleX(-1); }
   .scr-text i.g { opacity: 0; }
-  .kt-demo { max-height: none; padding: 14px 12px; }
-  .kt-card { max-height: none; }
   .search-text span { cursor: pointer; color: var(--fg); }
   .search-text span.hit { background: var(--red-dim); color: var(--red-soft); border-radius: 4px; }
   .search-text span.miss { color: var(--red); }
@@ -329,39 +325,6 @@
     </div>
   </section>
 
-  <!-- 1а. Тест как в рилсе «Кривые буквы» (27.10.2026): ivan-loginov.ru/skorochtenie/#krivye, с меткой площадки #krivye-ig -->
-  <section id="s-kt" hidden>
-    <div class="top"><div class="logo" data-name></div></div>
-    <div class="stack" style="margin-top: 10px">
-      <span class="eyebrow">Тест как в рилсе</span>
-      <h1>Создаём новые нейронные связи. Уровень: <em id="kt-level-name"></em></h1>
-      <div class="scr-text kt-demo" id="kt-demo" aria-hidden="true"></div>
-      <p class="muted">Прочитай кривой текст и ответь на 3 вопроса. Секундомер пойдёт, как только нажмёшь «Начать»</p>
-      <div class="seg scr-seg" id="kt-seg" role="radiogroup" aria-label="Сложность"></div>
-      <button class="btn" id="b-kt-start">Начать</button>
-      <p class="muted small center">Бесплатно. Без регистрации</p>
-    </div>
-  </section>
-
-  <!-- 1б. Результат теста на кривых буквах: в базу не идёт, дальше обычный тест -->
-  <section id="s-ktres" hidden>
-    <div class="top"><div class="logo" data-name></div></div>
-    <div class="stack" style="margin-top: 16px">
-      <div class="stack" id="ktr-ok">
-        <span class="eyebrow" id="ktr-eyebrow"></span>
-        <div class="score"><span class="big" id="ktr-wpm"></span><span class="unit">слов<br>в минуту</span></div>
-        <div><span class="pill" id="ktr-comp"></span></div>
-        <p class="muted">Буквы перевёрнуты и гаснут, а мозг всё равно собирает из них слова. Обычный текст ты читаешь быстрее, свою обычную скорость покажет тест на минуту</p>
-      </div>
-      <div class="stack" id="ktr-bad" hidden>
-        <h2 id="ktr-bad-title"></h2>
-        <p class="muted" id="ktr-bad-text"></p>
-      </div>
-      <button class="btn" id="b-ktr-next"></button>
-      <button class="btn ghost" id="b-ktr-again"></button>
-    </div>
-  </section>
-
   <!-- 2. Текст теста -->
   <section id="s-read" hidden>
     <div class="top"><div class="logo" data-name></div><span class="muted small" id="read-count"></span></div>
@@ -410,6 +373,7 @@
         <span class="eyebrow" id="r-offer-eb">Программа на 30 дней</span>
         <p class="muted"><span id="r-start-l">Читалка начнёт с</span> <b id="r-start" style="color: var(--fg)"></b> и к 30-му дню дойдёт до <b id="r-goal" style="color: var(--fg)"></b> слов в минуту. Это темп тренировки, а не обещание результата: результат покажет повторный тест через 7 дней</p>
         <p id="r-trial"><b>Читалка на твоей скорости открыта бесплатно, 2&nbsp;минуты в день.</b> Полная тренировка дня на 10&nbsp;минут и все 14 упражнений - по подписке</p>
+        <p id="r-trial-new" hidden><b>Сейчас пробная тренировка на 2&nbsp;минуты, бесплатно:</b> читалка слово за словом и «Кривые буквы», ровно по минуте на каждое упражнение</p>
         <p id="r-trial-over" hidden></p>
         <button class="btn" id="b-result-next">Начать программу</button>
       </div>
@@ -428,7 +392,7 @@
     <h1 style="font-size: 34px">Программа <em>«Скорочтение»</em> на 30 дней</h1>
     <ul class="ticks" style="margin-bottom: 18px">
       <li>Тренировка дня 10 минут, скорость читалки растёт от твоего теста</li>
-      <li>13 тренировок: Шульте трёх видов, растяжка взгляда, вспышка, запомни число, поиск буквы, читалка, блоки, указка, колонка, указка по точкам, перевёрнутый текст</li>
+      <li>14 упражнений: Шульте трёх видов, растяжка взгляда, вспышка, запомни число, поиск буквы, читалка, блоки, указка, колонка, указка по точкам, перевёрнутый текст, кривые буквы</li>
       <li>Своя тренировка: выбираешь упражнения и время каждого, от 1 минуты</li>
       <li>Библиотека классики и читалка для любого своего текста</li>
       <li>Повторный тест раз в 7 дней и график роста</li>
@@ -579,36 +543,10 @@
 
   <!-- 7. Упражнение -->
   <!-- Финал пробной тренировки: личные цифры, «Собери свою тренировку», оплата -->
-  <section id="s-trial" hidden>
-    <svg class="check" viewBox="0 0 96 96" aria-hidden="true"><circle cx="48" cy="48" r="44"/><path class="tick" d="M30 49 L43 62 L67 36"/></svg>
-    <h2 class="center">Пробная тренировка пройдена</h2>
-    <p class="muted center" id="tr-sub" style="margin: 8px 0 20px"></p>
-    <div class="stack">
-      <div class="card stack">
-        <span class="eyebrow">Твоя точка отсчёта</span>
-        <div class="nums" id="tr-nums"></div>
-        <p class="muted small">Через 30 дней тренировок эти цифры будет с чем сравнить</p>
-      </div>
-      <div class="card stack">
-        <span class="eyebrow">Собери свою тренировку</span>
-        <p class="muted small">Отметь, что понравилось: с доступом тренировка дня пойдёт по этому списку. Не отметишь ничего - по программе</p>
-        <div class="trpick" id="tr-pick"></div>
-        <p class="muted small" id="tr-total"></p>
-      </div>
-      <div class="card stack offer">
-        <span class="eyebrow">Программа на 30 дней</span>
-        <p><b>Оставь тренировки себе.</b> Тренировка дня на 10 минут или своя, все 14 упражнений, библиотека классики, читалка для своего текста и повторный тест раз в 7 дней</p>
-        <button class="btn" id="b-tr-pay">Открыть доступ</button>
-      </div>
-      <button class="btn ghost" data-home>На главную</button>
-    </div>
-  </section>
-
   <section id="s-ex" hidden>
     <div class="top"><button class="back" id="b-ex-back">← Назад</button><div class="top-r"><span class="muted small" id="ex-step"></span><div class="tswitch compact" role="group" aria-label="Сменить тему"><span class="ts-cap">Сменить тему</span><span class="ts-seg"><button type="button" data-mode-set="night">Тёмная</button><button type="button" data-mode-set="day">Светлая</button></span></div></div></div>
     <h2 id="ex-title" style="margin-top: 6px"></h2>
     <p class="muted small" id="ex-hint" style="margin: 4px 0 6px"></p>
-    <button class="link exskip" id="b-ex-skip" hidden>Пропустить упражнение →</button>
     <div id="ex-body"></div>
   </section>
 
@@ -640,6 +578,26 @@
     </div>
     <button class="btn" data-home>На главную</button>
   </section>
+
+  <!-- 11. Пробный режим пройден (27.10.2026): окно всплывает, когда вышла минута второго упражнения пробной тренировки -->
+  <div class="modal" id="m-trial" role="dialog" aria-modal="true" aria-labelledby="mt-title" hidden>
+    <div class="sheet stack">
+      <svg class="check" viewBox="0 0 96 96" aria-hidden="true"><circle cx="48" cy="48" r="44"/><path class="tick" d="M30 49 L43 62 L67 36"/></svg>
+      <h2 class="center" id="mt-title" tabindex="-1">Пробный режим пройден</h2>
+      <p class="muted center">Ты попробовал 2 упражнения из 14. Скорость растёт от регулярных тренировок, а не от одной</p>
+      <span class="eyebrow">Полная программа</span>
+      <ul class="ticks">
+        <li>30 дней по 10 минут, темп растёт от твоего теста</li>
+        <li>Все 14 упражнений, и кривые буквы тоже</li>
+        <li>Повторный тест раз в 7 дней и график роста</li>
+      </ul>
+      <div class="plans">
+        <button class="plan" data-buy="month"><span><b>Подписка на месяц</b><br><span class="muted small">можно отменить в любой момент</span></span><span class="p" id="mt-month"></span></button>
+        <button class="plan" data-buy="life"><span><b>Навсегда</b><br><span class="muted small">один раз, без повторных списаний</span></span><span class="p" id="mt-life"></span></button>
+      </div>
+      <button class="link" id="b-mt-later" style="justify-self: center; color: var(--muted); font-weight: 400">Не сейчас</button>
+    </div>
+  </div>
 </main>
 <script type="module" src="app.js"></script>
 </body>

@@ -40,21 +40,6 @@ export function wantsBuy(hash, search) {
   return (!!s && /^kupit(-|$)/.test(s)) || new URLSearchParams(String(search ?? '')).has('kupit');
 }
 
-// Тест как в рилсе «Кривые буквы» (просьба Ивана 27.10.2026): ivan-loginov.ru/skorochtenie/#krivye сразу открывает тест на кривых
-// буквах. С меткой площадки - #krivye-ig, в учёте воронки это отдельная площадка
-export function wantsKrivye(hash) {
-  const s = sourceFromHash(hash);
-  return !!s && /^krivye(-|$)/.test(s);
-}
-
-// Результат теста на кривых буквах: слов в минуту и верные ответы. Кривой текст быстрее 600 не читается (пролистан),
-// медленнее 10 - тест прерывался; такой результат не показываем
-export const KT = { maxWpm: 600, minWpm: 10 };
-export function scoreKt({ words, seconds, correct, total }) {
-  const wpm = seconds > 0 ? Math.round((words / seconds) * 60) : Infinity;   // «Прочитал» сразу = пролистан
-  return { wpm, correct, total, tooFast: wpm > KT.maxWpm, tooSlow: wpm < KT.minWpm };
-}
-
 // Адрес входа из письма кассы после оплаты (18.10.2026): ivan-loginov.ru/skorochtenie/#voyti сразу открывает вход
 // по почте и паролю. Раньше на новом телефоне «Уже оплатил? Войти» было только на экране оплаты, после теста
 export function wantsLogin(hash, search) {
@@ -200,27 +185,17 @@ export function streak(doneKeys, todayKey) {
 export const MILESTONES = [7, 14, 30];
 export const isMilestone = n => MILESTONES.includes(n);
 
-// Пробная тренировка (16.10.2026, снята 17.10.2026): новым не предлагается, кто начал - доигрывает. Все 13 упражнений
-// по очереди, около 12 минут. Чередуем взгляд и чтение, начинаем с читалки (хук ролика), заканчиваем личной цифрой.
-// Раунды по часам (seconds), Шульте по одной таблице, тексты на ~45 секунд, поиск и перевёрнутый текст - одна страница
+// Пробная тренировка (просьба Ивана 27.10.2026): после теста два упражнения из обоих рилсов, ровно по минуте - читалка
+// слово за словом (первый рилс) и «Кривые буквы» (второй). Минута вышла - упражнение закончено; после второго окно
+// «Пробный режим пройден» с тарифами. Одна на телефон. 16-17.10 проба была из всех 13 упражнений: начатая тогда
+// продолжается с этого списка, номер шага не выходит за его конец
 export const TRIAL_STEPS = [
-  { kind: 'reader', minutes: 1 },
-  { kind: 'schulte', tables: 1 },
-  { kind: 'blocks', minutes: 0.75 },
-  { kind: 'sight', seconds: 45 },
-  { kind: 'pointer', minutes: 0.75 },
-  { kind: 'flash', seconds: 45 },
-  { kind: 'column', minutes: 0.75 },
-  { kind: 'search' },
-  { kind: 'hopscotch', minutes: 0.75 },
-  { kind: 'schulte-letters', tables: 1 },
-  { kind: 'flipped' },
-  { kind: 'schulte-6', tables: 1 },
-  { kind: 'memory', seconds: 45 },
-].map(x => ({ minutes: 1, tables: 1, seconds: 0, ...x }));
+  { kind: 'reader', seconds: 60 },
+  { kind: 'scramble', seconds: 60 },
+];
 
-// Состояние пробы. state.trial = момент начала. Новая проба несёт state.trun = { i, done, skip }: следующий шаг,
-// момент окончания, пропущенные упражнения; идёт, пока не пройдена, без срока. Без trun - старые пробные сутки:
+// Состояние пробы. state.trial = момент начала. Пробная тренировка несёт state.trun = { i, done }: следующий шаг
+// и момент окончания; идёт, пока не пройдена, без срока. Без trun - старые пробные сутки:
 // 24 часа с нажатия, часы телефона, переведённые назад раньше начала, сутки не продлевают
 export function trialState(state, now) {
   const t = state && state.trial;
@@ -228,7 +203,7 @@ export function trialState(state, now) {
   const run = state.trun;
   if (run && typeof run === 'object') {
     const i = Math.min(TRIAL_STEPS.length, Math.max(0, Math.floor(run.i) || 0));
-    return { status: run.done ? 'over' : 'active', legacy: false, i, done: run.done || null, skip: Array.isArray(run.skip) ? run.skip : [], until: null, left: 0 };
+    return { status: run.done ? 'over' : 'active', legacy: false, i, done: run.done || null, until: null, left: 0 };
   }
   const until = t + CONFIG.trialHours * 36e5;
   if (now >= until || now < t - 10 * 6e4) return { status: 'over', legacy: true, until, left: 0 };
