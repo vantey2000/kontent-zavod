@@ -805,6 +805,7 @@ function renderHome() {
     { k: 'column', ic: '⫶', nm: 'Колонка', ds: 'сверху вниз' },
     { k: 'hopscotch', ic: '∴', nm: 'Указка по точкам', ds: 'две-три остановки на строку' },
     { k: 'flipped', ic: '∀', nm: 'Перевёрнутый текст', ds: B.flipped ? `${fmtSec(B.flipped)} с на 100 слов` : 'вверх ногами' },
+    { k: 'scramble', ic: 'ЯR', nm: 'Кривые буквы', ds: state.scramble ? `${dr.SCRAMBLE[dr.scrambleLevel(state.scramble.level)].name}, ${dr.scrambleWpm(state.scramble.wpm, speedToday())} сл/мин` : 'зеркальные буквы' },
     { k: 'lib', ic: '¶', nm: 'Библиотека', ds: `Чехов и Тургенев, ${LIBRARY.length} текстов` },
     { k: 'own', ic: '✎', nm: 'Свой текст', ds: 'статьи, книги, письма' },
     { k: 'test', ic: '◷', nm: 'Тест скорости', ds: rt.available ? 'можно пройти сейчас' : `повторный через ${c.pluralDays(rt.inDays)}`, wide: true },
@@ -844,7 +845,7 @@ function paintTrialCard(a) {
     b.className = ghost ? 'btn ghost' : 'btn';
   };
   if (a.trial) set('Полный доступ на сутки', `Осталось ${c.leftText(tr.left)}`,
-    'Пройди тренировку дня и загляни во все 13 упражнений. Понравится - оставь доступ себе', 'Оставить доступ', true);
+    'Пройди тренировку дня и загляни во все 14 упражнений. Понравится - оставь доступ себе', 'Оставить доступ', true);
   else set('Пробная тренировка', `Пройдено ${tr.i} из ${n}`,
     `Продолжишь с того же места. Следующее упражнение: ${c.STEP_INFO[c.TRIAL_STEPS[Math.min(tr.i, n - 1)].kind].title}`, 'Продолжить');
 }
@@ -983,7 +984,7 @@ function finishDay() {
   if (a.trial) dt.textContent = `Это был день ${day().day} из ${c.CONFIG.programDays}. Пробный доступ закончится через ${c.leftText(a.until - Date.now())}: оставь его, и завтра программа продолжится`;
   else if (!a.paid) {
     dt.textContent = '';
-    dt.append(el('i', 'lock'), ' ', 'Бесплатная тренировка на сегодня пройдена, следующая завтра. Полная тренировка дня на 10 минут и все 13 упражнений - по подписке');
+    dt.append(el('i', 'lock'), ' ', 'Бесплатная тренировка на сегодня пройдена, следующая завтра. Полная тренировка дня на 10 минут и все 14 упражнений - по подписке');
   }
 }
 $('b-done-keep').addEventListener('click', () => showPay('home'));
@@ -1095,6 +1096,7 @@ const HINTS = {
   memory: 'Число покажется на полторы секунды. Запомни и набери',
   search: 'Не читай текст, сканируй глазами. Нажимай каждое слово с нужной буквой',
   flipped: 'Прочитай абзац вверх ногами в своём темпе, потом нажми «Прочитал»',
+  scramble: 'Буквы отражены и скачут, часть гаснет. Мозг всё равно узнаёт слово целиком: успевай за подсветкой',
 };
 const TITLES = Object.fromEntries(Object.entries(c.STEP_INFO).map(([k, v]) => [k, v.title]));
 const SCHULTE = { schulte: { size: 5 }, 'schulte-letters': { size: 5, symbols: c.SCHULTE_LETTERS }, 'schulte-6': { size: 6 } };
@@ -1135,12 +1137,16 @@ function openExercise(kind, opts) {
 // Контекст для экранов drills-ui: слова, кусок текста, запись лучшего результата, очистка таймеров
 function drillCtx(kind, opts) {
   let atDone = null;
-  const p = kind === 'search' ? takePassage(70) : kind === 'flipped' ? takePassage(120) : null;
+  const size = { search: 70, flipped: 120, scramble: 50 }[kind];
+  const p = size ? takePassage(size) : null;
   return {
     words: words(),
     tokens: p ? p.tokens : [],
     seconds: opts.seconds || 0,
-    more:() => takePassage(kind === 'search' ? 70 : 120).tokens,   // следующий текст, пока не вышло время своей тренировки
+    more: () => takePassage(size || 120).tokens,   // следующий текст, пока не вышло время своей тренировки (и «Новый текст»)
+    speed: speedToday(),
+    prefs: state.scramble,
+    savePrefs: v => { state.scramble = v; persist(); },
     random: Math.random,
     fmtSec,
     onDone: () => { if (atDone) atDone(); opts.onDone && opts.onDone(); },

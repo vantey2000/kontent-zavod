@@ -121,6 +121,52 @@ export const columnLines = tokens => chunk(tokens, 4, 20);
 // ---- Перевёрнутый текст: секунд на 100 слов ----
 export const flippedScore = (words, seconds) => (words > 0 ? Math.round((seconds / words) * 100 * 10) / 10 : 0);
 
+// ---- Кривые буквы (рилс @postolnik.anna, просьба Ивана 27.10.2026): буквы отражены зеркально, регистр скачет, похожие буквы
+// заменены цифрами, часть букв гаснет. Доли те же, что в Ролике_14 (монтаж/Ролик_14/2_черновики/tools/render_14.py LEVELS) ----
+export const SCRAMBLE = [
+  { name: 'Лёгкий', swap: 0.35, mirror: 0, digit: 0, gone: 0 },
+  { name: 'Средний', swap: 0.45, mirror: 0.35, digit: 0.04, gone: 0.02 },
+  { name: 'Сложный', swap: 0.45, mirror: 0.75, digit: 0.08, gone: 0.05 },
+  { name: 'Эксперт', swap: 0.5, mirror: 0.9, digit: 0.15, gone: 0.08 },
+];
+export const SCRAMBLE_WPM = { min: 40, max: 400, step: 10 };
+const LOOKALIKE = { о: '0', О: '0', з: '3', З: '3', б: '6', Б: '6' };
+const swapCase = ch => (ch === ch.toLowerCase() ? ch.toUpperCase() : ch.toLowerCase());
+export const scrambleLevel = v => clamp(Math.round(Number(v)) || 0, 0, SCRAMBLE.length - 1);
+
+// Слово -> буквы { ch, mirror, letter }. Цифра встаёт только вместо похожей буквы и не отражается, знаки препинания как есть
+export function scrambleWord(word, level, random = Math.random) {
+  const L = SCRAMBLE[scrambleLevel(level)];
+  return [...word].map(ch => {
+    if (!/\p{L}/u.test(ch)) return { ch, mirror: false, letter: false };
+    if (LOOKALIKE[ch] && random() < L.digit) return { ch: LOOKALIKE[ch], mirror: false, letter: true };
+    return { ch: random() < L.swap ? swapCase(ch) : ch, mirror: random() < L.mirror, letter: true };
+  });
+}
+
+// Строки карточки, как стихотворные строки в рилсе: не длиннее maxChars знаков вместе с пробелами
+export function scrambleLines(tokens, maxChars = 26) {
+  const lines = [];
+  let cur = [], len = 0;
+  for (const t of tokens) {
+    if (cur.length && len + 1 + t.length > maxChars) { lines.push(cur); cur = []; len = 0; }
+    len += (cur.length ? 1 : 0) + t.length;
+    cur.push(t);
+  }
+  if (cur.length) lines.push(cur);
+  return lines;
+}
+
+// Сколько букв погашено одновременно: доля уровня от всех букв карточки
+export const goneCount = (level, letters) => Math.round(SCRAMBLE[scrambleLevel(level)].gone * letters);
+
+// Темп подсветки по умолчанию: кривой текст читается медленнее, берём 40% скорости читалки на сегодня
+export const scrambleWpm = (v, speed = 200) => {
+  const n = Number(v);
+  const w = Number.isFinite(n) && n > 0 ? n : speed * 0.4;
+  return clamp(Math.round(w / SCRAMBLE_WPM.step) * SCRAMBLE_WPM.step, SCRAMBLE_WPM.min, SCRAMBLE_WPM.max);
+};
+
 // Что считается лучшим результатом: у времени меньше лучше, у уровней больше лучше
 export const BETTER = {
   schulte: 'min', 'schulte-letters': 'min', 'schulte-6': 'min',

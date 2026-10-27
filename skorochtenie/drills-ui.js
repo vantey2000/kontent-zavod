@@ -286,4 +286,128 @@ export function flipped(body, ctx) {
   page(ctx.tokens);
 }
 
-export const DRILL_UI = { sight, flash, search, memory, flipped };
+// ---- Кривые буквы ----
+// Карточка строками, как в рилсе: буквы отражены, регистр скачет, часть букв гаснет. Подсветка идёт по словам в заданном темпе.
+// Сложность и темп меняются на ходу и запоминаются (ctx.prefs / ctx.savePrefs). В своей тренировке тексты идут, пока есть время
+export function scramble(body, ctx) {
+  const clock = ctx.seconds ? countdown(ctx.seconds) : null;
+  const prefs = ctx.prefs || {};
+  let level = d.scrambleLevel(prefs.level ?? 2), speed = d.scrambleWpm(prefs.wpm, ctx.speed);
+  const seg = el('div', 'seg scr-seg'); seg.setAttribute('role', 'radiogroup'); seg.setAttribute('aria-label', 'Сложность');
+  const segBtns = d.SCRAMBLE.map((L, i) => {
+    const b = el('button', null, L.name); b.type = 'button'; b.setAttribute('role', 'radio');
+    b.addEventListener('click', () => setLevel(i));
+    seg.append(b); return b;
+  });
+  const box = el('div', 'scr-text');
+  const res = el('p', 'muted center drill-res');
+  const label = el('span', 'muted small');
+  const range = el('input'); range.type = 'range';
+  range.min = d.SCRAMBLE_WPM.min; range.max = d.SCRAMBLE_WPM.max; range.step = d.SCRAMBLE_WPM.step; range.value = speed;
+  range.setAttribute('aria-label', 'Темп подсветки, слов в минуту');
+  const rangeBox = el('div', 'range'); rangeBox.append(label, range);
+  const pauseB = el('button', 'btn', 'Пауза');
+  const newB = el('button', 'btn ghost', 'Новый текст');
+  const row = el('div', 'row'); row.append(newB, pauseB);
+  const doneB = el('button', 'btn', 'Дальше'); doneB.hidden = true;
+  const controls = el('div', 'controls'); controls.append(rangeBox, row, doneB);
+  if (clock) body.append(clock.el);
+  body.append(seg, box, res, controls);
+
+  let tokens = [], words = [], letters = [], i = 0, timer = null, flick = null, nextT = null, paused = false, finished = false;
+  const gone = new Map();   // буква -> когда вернуть
+
+  const save = () => ctx.savePrefs && ctx.savePrefs({ level, wpm: speed });
+  const setLabel = () => { label.textContent = `Темп подсветки ${speed} слов/мин`; };
+  range.addEventListener('input', () => { speed = Number(range.value); setLabel(); save(); });
+  setLabel();
+
+  // текст рисуется заново на каждом уровне, подсветка остаётся на том же слове
+  function paint() {
+    segBtns.forEach((b, k) => b.setAttribute('aria-checked', String(k === level)));
+    box.textContent = ''; words = []; letters = []; gone.clear();
+    for (const line of d.scrambleLines(tokens)) {
+      const ln = el('div', 'line');
+      line.forEach((t, k) => {
+        const w = el('span', 'w');
+        for (const g of d.scrambleWord(t, level, ctx.random)) {
+          const ch = el('i', g.mirror ? 'm' : null, g.ch);
+          w.append(ch);
+          if (g.letter) letters.push(ch);
+        }
+        ln.append(w); if (k < line.length - 1) ln.append(' ');
+        words.push(w);
+      });
+      box.append(ln);
+    }
+    words.forEach((w, k) => { if (k < i - 1 || finished) w.classList.add('read'); else if (k === i - 1) w.classList.add('on'); });
+  }
+  function setLevel(k) {
+    if (k === level) return;
+    level = k; save(); paint();
+  }
+
+  // гаснет доля букв уровня, каждая на полсекунды; в паузе и после конца текста всё видно
+  function flicker() {
+    const now = performance.now();
+    for (const [ch, t] of gone) if (t <= now || paused || finished) { ch.classList.remove('g'); gone.delete(ch); }
+    if (paused || finished) return;
+    const want = d.goneCount(level, letters.length);
+    for (let n = 0; gone.size < want && n < 20; n++) {
+      const ch = letters[Math.floor(ctx.random() * letters.length)];
+      if (gone.has(ch)) continue;
+      ch.classList.add('g'); gone.set(ch, now + 350 + ctx.random() * 300);
+    }
+  }
+
+  function tick() {
+    timer = null;
+    if (paused || finished) return;
+    if (i >= words.length) return end();
+    if (i > 0) { words[i - 1].classList.remove('on'); words[i - 1].classList.add('read'); }
+    const w = words[i];
+    w.classList.add('on');
+    if (w.offsetTop - box.scrollTop > box.clientHeight * 0.6) box.scrollTop = w.offsetTop - box.clientHeight * 0.3;
+    i++;
+    timer = setTimeout(tick, wordDelayMs(tokens[i - 1], speed));
+  }
+
+  function end() {
+    finished = true; flicker();
+    if (words.length) words[words.length - 1].classList.remove('on');
+    const line = `${tokens.length} слов · ${d.SCRAMBLE[level].name} · ${speed} слов/мин`;
+    pauseB.hidden = true;
+    if (clock && !clock.over()) { res.textContent = `${line}. Следующий текст…`; nextT = setTimeout(() => (clock.over() ? stopAll(line) : page(ctx.more())), 1200); return; }
+    stopAll(line);
+  }
+  function stopAll(line) {
+    if (clock) clock.stop();
+    res.textContent = line;
+    doneB.hidden = false; doneB.focus();
+  }
+
+  function page(all) {
+    clearTimeout(timer); clearTimeout(nextT);
+    tokens = all.slice(0, 50); i = 0; finished = false; paused = false;
+    pauseB.hidden = false; pauseB.textContent = 'Пауза';
+    res.textContent = 'Успевай за подсветкой. Сложность и темп меняй на ходу';
+    box.scrollTop = 0;
+    paint();
+    timer = setTimeout(tick, 600);
+  }
+
+  pauseB.addEventListener('click', () => {
+    paused = !paused;
+    pauseB.textContent = paused ? 'Продолжить' : 'Пауза';
+    if (paused) { clearTimeout(timer); timer = null; flicker(); } else if (!timer) tick();
+  });
+  newB.addEventListener('click', () => { doneB.hidden = true; page(ctx.more()); });
+  doneB.addEventListener('click', () => ctx.onDone && ctx.onDone());
+  const onVis = () => { if (document.hidden && !paused && !finished) pauseB.click(); };
+  document.addEventListener('visibilitychange', onVis);
+  ctx.setStop(() => { finished = true; clearTimeout(timer); clearTimeout(nextT); clearInterval(flick); document.removeEventListener('visibilitychange', onVis); if (clock) clock.stop(); });
+  flick = setInterval(flicker, 120);
+  page(ctx.tokens);
+}
+
+export const DRILL_UI = { sight, flash, search, memory, flipped, scramble };

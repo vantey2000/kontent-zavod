@@ -290,6 +290,7 @@ const STEP = {
   column: { title: 'Колонка', hint: 'сверху вниз' },
   hopscotch: { title: 'Указка по точкам', hint: 'две-три остановки на строку' },
   flipped: { title: 'Перевёрнутый текст', hint: 'вверх ногами' },
+  scramble: { title: 'Кривые буквы', hint: 'зеркальные буквы' },
 };
 export const STEP_INFO = STEP;
 
@@ -308,7 +309,7 @@ export function dailySteps(day, paid) {
 // Своя тренировка (просьба Ивана 16.10.2026): человек отмечает упражнения и ставит каждому 1, 2, 3 или 5 минут.
 // Порядок в тренировке = порядок каталога: сначала разминка взгляда и памяти, потом чтение
 export const TRAIN_MINUTES = [1, 2, 3, 5];
-export const TRAIN_KINDS = ['schulte', 'schulte-letters', 'schulte-6', 'sight', 'flash', 'memory', 'search', 'reader', 'blocks', 'pointer', 'column', 'hopscotch', 'flipped'];
+export const TRAIN_KINDS = ['schulte', 'schulte-letters', 'schulte-6', 'sight', 'flash', 'memory', 'search', 'reader', 'blocks', 'pointer', 'column', 'hopscotch', 'flipped', 'scramble'];
 
 // Хранилище могли испортить: чужие упражнения, минуты не из набора и повторы выкидываем. Нет настройки = null
 export function normalizeTrain(t) {
