@@ -88,6 +88,13 @@ function fail(title, text) {
 
 const sleep = ms => new Promise(r => setTimeout(r, ms));
 
+/** запрос с потолком по времени: на мобильной сети с VPN повисший запрос держал страницу больше минуты (живой прогон 28.10: день был готов через 23 с, а показан через 115 с) */
+function fetchT(url, opt = {}, ms = 8000) {
+  const c = new AbortController();
+  const t = setTimeout(() => c.abort(), ms);
+  return fetch(url, { ...opt, signal: c.signal }).finally(() => clearTimeout(t));
+}
+
 async function poll(id) {
   const t0 = Date.now();
   let k = 0;
@@ -95,7 +102,7 @@ async function poll(id) {
   try {
     while (Date.now() - t0 < POLL_MAX_MS) {
       try {
-        const r = await fetch(`${API}/api/day/${encodeURIComponent(id)}`, { cache: 'no-store' });
+        const r = await fetchT(`${API}/api/day/${encodeURIComponent(id)}`, { cache: 'no-store' });
         if (r.status === 404) return 'gone';
         if (r.ok) {
           const j = await r.json();
@@ -138,8 +145,8 @@ async function submit(e) {
   const src = (location.hash.match(/^#([a-z0-9_-]{1,20})$/i) || [])[1] || null;
   $('go').disabled = true;
   try {
-    const r = await fetch(`${API}/api/day`, { method: 'POST', headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ birth, gender: state.gender, love: state.love, src }) });
+    const r = await fetchT(`${API}/api/day`, { method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ birth, gender: state.gender, love: state.love, src }) }, 15000);
     if (r.status === 429) { err.textContent = 'Слишком много попыток, попробуй через час'; return; }
     if (!r.ok) { err.textContent = 'Не получилось отправить, попробуй ещё раз'; return; }
     const { id } = await r.json();
