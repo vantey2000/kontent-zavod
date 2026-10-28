@@ -1,0 +1,197 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#0b1538">
+<title>Твой день по дате рождения</title>
+<meta name="description" content="Личный гороскоп на сегодня по дате рождения: настрой дня, любовь, работа и деньги, твой точный час и что тебя ждёт дальше">
+<meta property="og:title" content="Что сегодняшний день готовит именно тебе">
+<meta property="og:description" content="Бесплатно: твой день по дате рождения. Любовь, работа, твой точный час">
+<link rel="preload" href="fonts/jost-var-cyrillic.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="preload" href="fonts/cormorant-500-cyrillic.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="modulepreload" href="main.js">
+<style>
+@font-face{font-family:'Cormorant Garamond';font-style:italic;font-weight:500;font-display:swap;src:url(fonts/cormorant-i500-cyrillic.woff2) format('woff2');unicode-range:U+0301, U+0400-045F, U+0490-0491, U+04B0-04B1, U+2116}
+@font-face{font-family:'Cormorant Garamond';font-style:italic;font-weight:500;font-display:swap;src:url(fonts/cormorant-i500-latin.woff2) format('woff2');unicode-range:U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD}
+@font-face{font-family:'Cormorant Garamond';font-style:normal;font-weight:500;font-display:swap;src:url(fonts/cormorant-500-cyrillic.woff2) format('woff2');unicode-range:U+0301, U+0400-045F, U+0490-0491, U+04B0-04B1, U+2116}
+@font-face{font-family:'Cormorant Garamond';font-style:normal;font-weight:500;font-display:swap;src:url(fonts/cormorant-500-latin.woff2) format('woff2');unicode-range:U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD}
+@font-face{font-family:'Cormorant Garamond';font-style:normal;font-weight:600;font-display:swap;src:url(fonts/cormorant-500-cyrillic.woff2) format('woff2');unicode-range:U+0301, U+0400-045F, U+0490-0491, U+04B0-04B1, U+2116}
+@font-face{font-family:'Cormorant Garamond';font-style:normal;font-weight:600;font-display:swap;src:url(fonts/cormorant-500-latin.woff2) format('woff2');unicode-range:U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD}
+@font-face{font-family:'Jost';font-style:normal;font-weight:400;font-display:swap;src:url(fonts/jost-var-cyrillic.woff2) format('woff2');unicode-range:U+0301, U+0400-045F, U+0490-0491, U+04B0-04B1, U+2116}
+@font-face{font-family:'Jost';font-style:normal;font-weight:400;font-display:swap;src:url(fonts/jost-var-latin.woff2) format('woff2');unicode-range:U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD}
+@font-face{font-family:'Jost';font-style:normal;font-weight:500;font-display:swap;src:url(fonts/jost-var-cyrillic.woff2) format('woff2');unicode-range:U+0301, U+0400-045F, U+0490-0491, U+04B0-04B1, U+2116}
+@font-face{font-family:'Jost';font-style:normal;font-weight:500;font-display:swap;src:url(fonts/jost-var-latin.woff2) format('woff2');unicode-range:U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD}
+@font-face{font-family:'Jost';font-style:normal;font-weight:600;font-display:swap;src:url(fonts/jost-var-cyrillic.woff2) format('woff2');unicode-range:U+0301, U+0400-045F, U+0490-0491, U+04B0-04B1, U+2116}
+@font-face{font-family:'Jost';font-style:normal;font-weight:600;font-display:swap;src:url(fonts/jost-var-latin.woff2) format('woff2');unicode-range:U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD}
+/* «Ночное небо» как у /2027/ (design/a.html проекта гороскоп-2027): тёмно-синее небо, золото, Cormorant + Jost */
+:root{
+  --night:#050817;--navy:#0b1538;--gold:#d9b56c;--gold-hi:#f3dca0;--gold-lo:#a8823c;
+  --line:rgba(217,181,108,.42);--text:#f1ead9;--muted:#aab2d0;--field:rgba(9,16,46,.72);--card:rgba(12,22,60,.62);
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html{-webkit-text-size-adjust:100%}
+body{background:var(--night);color:var(--text);font-family:'Jost',system-ui,sans-serif;-webkit-font-smoothing:antialiased;overflow-x:hidden}
+.sky{position:relative;min-height:100svh;overflow:hidden;isolation:isolate;
+  background:radial-gradient(110% 55% at 50% 0%,#1d2f78 0%,rgba(19,33,90,.55) 38%,transparent 72%),
+    radial-gradient(70% 40% at 100% 100%,rgba(92,58,128,.30),transparent 70%),
+    linear-gradient(180deg,#0b1538 0%,#080e2b 55%,#050817 100%)}
+.stars{position:fixed;inset:0;width:100%;height:100%;z-index:-2;pointer-events:none}
+.stars circle{fill:#fff6e0;animation:twinkle 6s ease-in-out infinite}
+@keyframes twinkle{50%{opacity:.15}}
+.wheel{position:absolute;z-index:-1;width:560px;height:560px;left:50%;top:-388px;transform:translateX(-50%);pointer-events:none}
+.wheel svg{width:100%;height:100%;animation:spin 420s linear infinite}
+.wheel circle{fill:none;stroke:var(--gold)}
+@keyframes spin{to{transform:rotate(360deg)}}
+.wrap{position:relative;max-width:460px;margin:0 auto;padding:150px 20px 28px;text-align:center}
+.eyebrow{display:flex;flex-direction:column;align-items:center;gap:10px;font-size:12px;font-weight:500;letter-spacing:.16em;text-transform:uppercase;color:var(--gold);line-height:1.6;max-width:300px;margin:0 auto}
+.orn{display:flex;align-items:center;gap:10px}
+.orn i{display:block;width:34px;height:1px;background:linear-gradient(90deg,transparent,var(--gold))}
+.orn i:last-child{transform:scaleX(-1)}
+.orn svg{width:12px;height:12px;fill:var(--gold-hi)}
+h1{margin-top:18px;font-family:'Cormorant Garamond',Georgia,serif;font-weight:500;font-size:47px;line-height:1;letter-spacing:-.01em}
+h1 em{display:block;font-style:italic;background:linear-gradient(100deg,var(--gold-lo) 0%,var(--gold-hi) 45%,var(--gold) 70%,var(--gold-lo) 100%);-webkit-background-clip:text;background-clip:text;color:transparent;padding:0 .06em .04em}
+.lead{text-wrap:pretty;margin:16px auto 0;max-width:350px;font-size:16.5px;line-height:1.5;color:var(--muted)}
+.form{margin-top:26px}
+.fields{display:grid;grid-template-columns:.92fr 1.5fr 1.05fr;gap:8px}
+.field{position:relative;display:block}
+.field input,.field select{width:100%;height:60px;border-radius:14px;border:1px solid var(--line);background:var(--field);color:var(--text);font:500 18px/1 'Jost',sans-serif;text-align:center;outline:none;-webkit-appearance:none;appearance:none;transition:border-color .2s,box-shadow .2s}
+.field select{padding:0 26px 0 12px;text-align-last:center;cursor:pointer}
+.field select:invalid{color:#8f97b8}
+.field select option{color:#0b1538}
+.field input::placeholder{color:#8f97b8;opacity:1}
+.field input:focus,.field select:focus,.chip:focus-visible,.cta:focus-visible{border-color:var(--gold);box-shadow:0 0 0 3px rgba(217,181,108,.25)}
+.chev{position:absolute;right:10px;top:50%;width:12px;height:12px;margin-top:-6px;pointer-events:none;stroke:var(--gold);fill:none;stroke-width:1.6}
+.chips{display:flex;gap:8px;margin-top:8px}
+.chip{flex:1;min-width:0;height:48px;border-radius:12px;border:1px solid var(--line);background:var(--field);color:var(--muted);font:500 15px/1 'Jost',sans-serif;cursor:pointer;outline:none;transition:background .2s,color .2s,border-color .2s}
+.chip[aria-pressed="true"]{background:rgba(217,181,108,.16);border-color:var(--gold);color:var(--gold-hi)}
+.cta{position:relative;overflow:hidden;margin-top:12px;width:100%;height:62px;border:0;border-radius:14px;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:12px;font:600 18px/1 'Jost',sans-serif;letter-spacing:.02em;color:#0b1538;text-decoration:none;
+  background:linear-gradient(180deg,#f3dca0 0%,#d9b56c 55%,#b8913f 100%);box-shadow:0 10px 30px -10px rgba(217,181,108,.55),inset 0 1px 0 rgba(255,255,255,.5);transition:transform .15s}
+.cta svg{width:18px;height:18px;fill:#0b1538}
+.cta::after{content:"";position:absolute;top:0;bottom:0;width:40%;left:-60%;background:linear-gradient(100deg,transparent,rgba(255,255,255,.45),transparent);animation:shine 4.5s 1.4s ease-in-out infinite}
+@keyframes shine{0%{left:-60%}35%,100%{left:130%}}
+.cta:active{transform:scale(.985)}
+.cta[disabled]{opacity:.6;cursor:default}
+.note{margin-top:13px;font-size:13.5px;line-height:1.45;color:var(--muted)}
+.err{margin-top:12px;font-size:14.5px;line-height:1.45;color:#f3b9a0;min-height:1px}
+.sr-only{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+[hidden]{display:none!important}
+
+/* ожидание */
+.wait{padding-top:40px}
+.orbit{width:132px;height:132px;margin:0 auto;position:relative}
+.orbit::before,.orbit::after{content:"";position:absolute;inset:0;border-radius:50%;border:1px solid var(--line)}
+.orbit::after{inset:22px;border-style:dashed;opacity:.6;animation:spin 18s linear infinite reverse}
+.orbit i{position:absolute;left:50%;top:-5px;width:10px;height:10px;margin-left:-5px;border-radius:50%;background:var(--gold-hi);box-shadow:0 0 16px var(--gold);transform-origin:5px 71px;animation:spin 3.2s linear infinite}
+.orbit b{position:absolute;inset:50px;border-radius:50%;background:radial-gradient(circle at 35% 35%,#f3dca0,#a8823c 70%);box-shadow:0 0 30px rgba(217,181,108,.4)}
+.wait h2{margin-top:28px;font-family:'Cormorant Garamond',Georgia,serif;font-weight:500;font-size:32px;line-height:1.1}
+.step{margin-top:12px;color:var(--muted);font-size:15.5px;min-height:1.5em;transition:opacity .4s}
+
+/* результат */
+.day{margin-top:8px;text-align:left}
+.day-head{text-align:center;padding:6px 0 18px}
+.day-head .date{font-size:12.5px;font-weight:500;letter-spacing:.16em;text-transform:uppercase;color:var(--gold)}
+.day-head .sign{margin-top:10px;font-family:'Cormorant Garamond',Georgia,serif;font-size:40px;line-height:1}
+.mood{font-size:17px;line-height:1.55;color:var(--text);padding:0 2px 6px}
+.sec{margin-top:12px;padding:16px 16px 15px;border-radius:16px;background:var(--card);border:1px solid rgba(217,181,108,.22)}
+.sec h3{font:600 15px/1.3 'Jost',sans-serif;letter-spacing:.02em;color:var(--gold-hi);margin-bottom:8px}
+.sec p{font-size:16px;line-height:1.55;color:#e6dfcd}
+.sec p+p{margin-top:8px}
+.sub{margin-top:22px;padding:20px 18px;border-radius:18px;text-align:center;background:linear-gradient(180deg,rgba(29,47,120,.55),rgba(12,22,60,.7));border:1px solid var(--line)}
+.sub h3{font-family:'Cormorant Garamond',Georgia,serif;font-weight:500;font-size:28px;line-height:1.1}
+.sub p{margin-top:8px;color:var(--muted);font-size:15px;line-height:1.5}
+.again{margin-top:14px;background:none;border:0;color:var(--muted);font:500 14px/1.4 'Jost',sans-serif;text-decoration:underline;text-underline-offset:3px;cursor:pointer}
+.foot{max-width:460px;margin:0 auto;padding:26px 20px calc(28px + env(safe-area-inset-bottom));text-align:center;font-size:12.5px;line-height:1.6;color:#7f88aa}
+.foot a{color:#9aa3c4}
+.rise{opacity:0;transform:translateY(12px);animation:rise .8s cubic-bezier(.2,.7,.2,1) forwards}
+.d1{animation-delay:.05s}.d2{animation-delay:.15s}.d3{animation-delay:.28s}.d4{animation-delay:.4s}
+@keyframes rise{to{opacity:1;transform:none}}
+@media (min-width:960px){
+  .wrap{max-width:560px;padding-top:120px}
+  h1{font-size:68px}
+  .lead{max-width:460px;font-size:18px}
+}
+@media (prefers-reduced-motion:reduce){*,*::before,*::after{animation:none!important}.rise{opacity:1;transform:none}}
+</style>
+</head>
+<body>
+<svg class="stars" aria-hidden="true" id="stars"></svg>
+<main class="sky">
+  <div class="wheel" aria-hidden="true"><svg viewBox="0 0 600 600">
+    <circle cx="300" cy="300" r="296" stroke-opacity=".5"/><circle cx="300" cy="300" r="258" stroke-opacity=".7"/>
+    <circle cx="300" cy="300" r="250" stroke-opacity=".28" stroke-width=".7"/><circle cx="300" cy="300" r="200" stroke-opacity=".3" stroke-width=".7" stroke-dasharray="2 7"/>
+    <circle cx="300" cy="300" r="150" stroke-opacity=".28" stroke-width=".7"/>
+  </svg></div>
+
+  <div class="wrap">
+    <section id="screen-form">
+      <p class="eyebrow rise d1">
+        <span class="orn"><i></i><svg viewBox="0 0 12 12"><path d="M6 0Q6 6 12 6Q6 6 6 12Q6 6 0 6Q6 6 6 0Z"/></svg><i></i></span>
+        <span>Каждое утро по твоей дате рождения</span>
+      </p>
+      <h1 class="rise d2">Что сегодня готовит <em>именно тебе</em></h1>
+      <p class="lead rise d3">Введи дату рождения - узнаешь, что небо делает сегодня с тобой: любовь, работа, деньги и твой точный час</p>
+
+      <form class="form rise d4" id="form" novalidate>
+        <div class="fields">
+          <label class="field"><span class="sr-only">День</span>
+            <input id="d" type="text" inputmode="numeric" maxlength="2" placeholder="День" autocomplete="bday-day"></label>
+          <label class="field"><span class="sr-only">Месяц</span>
+            <select id="m" required autocomplete="bday-month">
+              <option value="" disabled selected>Месяц</option>
+              <option value="1">января</option><option value="2">февраля</option><option value="3">марта</option>
+              <option value="4">апреля</option><option value="5">мая</option><option value="6">июня</option>
+              <option value="7">июля</option><option value="8">августа</option><option value="9">сентября</option>
+              <option value="10">октября</option><option value="11">ноября</option><option value="12">декабря</option>
+            </select>
+            <svg class="chev" viewBox="0 0 12 12"><path d="M2 4.5 6 8.5 10 4.5"/></svg></label>
+          <label class="field"><span class="sr-only">Год</span>
+            <input id="y" type="text" inputmode="numeric" maxlength="4" placeholder="Год" autocomplete="bday-year"></label>
+        </div>
+        <div class="chips" role="group" aria-label="Род">
+          <button type="button" class="chip" data-g="f" aria-pressed="false">Я женщина</button>
+          <button type="button" class="chip" data-g="m" aria-pressed="false">Я мужчина</button>
+        </div>
+        <div class="chips" role="group" aria-label="В любви">
+          <button type="button" class="chip" data-l="free" aria-pressed="false">Свободна</button>
+          <button type="button" class="chip" data-l="pair" aria-pressed="false">В паре</button>
+          <button type="button" class="chip" data-l="complicated" aria-pressed="false">Всё сложно</button>
+        </div>
+        <button class="cta" type="submit" id="go">Узнать мой день
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 1.5Q12 12 22.5 12Q12 12 12 22.5Q12 12 1.5 12Q12 12 12 1.5Z"/></svg></button>
+        <p class="err" id="err" role="alert"></p>
+        <p class="note">Бесплатно и без регистрации</p>
+      </form>
+    </section>
+
+    <section id="screen-wait" class="wait" hidden aria-live="polite">
+      <div class="orbit" aria-hidden="true"><i></i><b></b></div>
+      <h2>Считаю твоё небо на сегодня</h2>
+      <p class="step" id="step">Ищу Луну в твоих домах</p>
+    </section>
+
+    <section id="screen-day" hidden>
+      <article class="day" id="day"></article>
+      <div class="sub">
+        <h3>Каждое утро в 7:00</h3>
+        <p>Твой день в Telegram, лично по дате рождения: любовь, работа, твой час и что впереди. 490 ₽ в месяц</p>
+        <a class="cta" id="pay" href="#">Получать каждое утро · 490 ₽</a>
+        <p class="note">Оплата откроется в Telegram-боте. Если касса не открывается, выключи VPN</p>
+      </div>
+      <button class="again" type="button" id="edit">Изменить дату рождения</button>
+    </section>
+
+    <section id="screen-fail" class="wait" hidden>
+      <h2 id="fail-title">Небо сегодня затянуло</h2>
+      <p class="step" id="fail-text">Попробуй через пару минут</p>
+      <button class="cta" type="button" id="retry">Попробовать ещё раз</button>
+    </section>
+  </div>
+</main>
+<footer class="foot">
+  Гороскоп носит развлекательный характер<br>
+  <a href="/privacy.html">Политика конфиденциальности</a>
+</footer>
+<script type="module" src="main.js"></script>
+</body>
+</html>
