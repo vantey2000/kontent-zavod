@@ -2,13 +2,13 @@
 // Ключ каждого продукта лежит в хранилище телефона под именем, которое читает админка самого продукта,
 // поэтому общая страница и встроенные в неё админки входят одним и тем же ключом
 export const PRODUCTS = [
-  { id: 'g27', tab: 'Гороскоп', name: 'Твой 2027', what: 'разбор года по дате рождения', admin: '/2027/admin/', store: 'g27_admin', api: 'https://goroskop-api.aivan-loginov.workers.dev' },
+  // 29.10: «Твой 2027» и «Натальная карта» убраны по слову Ивана (двери на паузе, продукты не работают), их страницы админок на сайте остались
+  { id: 'td', tab: 'Твой день', name: 'Твой день', what: 'гороскоп на каждый день, 490 ₽ в месяц', admin: '/admin/den/', store: 'td_admin', api: 'https://tvoy-den-api.aivan-loginov.workers.dev' },
   { id: 'kb', tab: 'Карусели', name: 'Конструктор каруселей', what: 'подписка 1 500 ₽ в месяц', admin: '/karusel/admin/', store: 'kb_admin', api: 'https://karusel-api.aivan-loginov.workers.dev' },
   { id: 'sk', tab: 'Скорочтение', name: 'Скорочтение', what: 'тренажёр, месяц и навсегда', admin: '/skorochtenie/admin/', store: 'sk_admin', api: 'https://skorochtenie-api.aivan-loginov.workers.dev' },
   { id: 'uq', tab: 'Рилсовая', name: 'Рилсовая', what: 'заголовки и уникализатор рилсов', admin: '/admin/rilsovaya/', store: 'uq_admin', api: 'https://uniq-api.aivan-loginov.workers.dev' },
   { id: 'kz', tab: 'Кортизол', name: 'Анти-Кортизол', what: 'протокол на 21 день', admin: '/admin/kortizol/', store: 'kz_admin', api: 'https://kortizol-api.aivan-loginov.workers.dev' },
-  { id: 'vsn', tab: 'Вы с ним', name: 'Вы с ним', what: 'совместимость по двум датам', admin: '/para/admin/', store: 'vsn_admin', api: 'https://para-api.aivan-loginov.workers.dev' },
-  { id: 'nat', tab: 'Натальная карта', name: 'Твоя натальная карта', what: 'полный разбор карты, 990 ₽', admin: '/natal/admin/', store: 'nat_admin', api: 'https://natal-api.aivan-loginov.workers.dev' }
+  { id: 'vsn', tab: 'Вы с ним', name: 'Вы с ним', what: 'совместимость по двум датам', admin: '/para/admin/', store: 'vsn_admin', api: 'https://para-api.aivan-loginov.workers.dev' }
 ];
 export const byId = id => PRODUCTS.find(p => p.id === id);
 

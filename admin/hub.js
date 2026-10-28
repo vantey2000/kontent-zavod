@@ -1,5 +1,5 @@
 // Общая админка ivan-loginov.ru/admin/ (26.10.2026): сводка денег по всем продуктам + админка каждого продукта во вкладке.
-// Вход одной ссылкой ...admin/#g27=…&kb=…&sk=…&uq=…&kz=…&vsn=…: ключи кладутся под имена админок продуктов, и встроенные админки входят сами
+// Вход одной ссылкой ...admin/#td=…&kb=…&sk=…&uq=…&kz=…&vsn=…: ключи кладутся под имена админок продуктов, и встроенные админки входят сами
 import { PRODUCTS, byId, isOwn, $, esc, rub, mskDay, time, money, store, api, DAY } from './lib.js';
 
 const KEY_RE = /^[A-Za-z0-9_-]{16,}$/;
@@ -18,18 +18,19 @@ store.set('nat.own', true);  // и натальная карта (её стра�
 const sum = (a, f) => a.reduce((s, x) => s + f(x), 0);
 /* цифры продукта: pays [{at, sum}] без своих оплат, facts [[подпись, число]], warn - о чём предупредить */
 const LOAD = {
-  async g27(p) {
+  async td(p) {   // «Твой день» (29.10): подписка 490 ₽ в месяц, оплаты первые и продления, свои (OWN_CHATS) не в выручке
+    const j = await api(p, '/api/admin/overview'), C = j.counters || {}, week = mskDay(Date.now() - 6 * DAY);
+    const visitors = sum((j.byday || []).filter(r => r.d >= week), r => r.visitors);
+    return { pays: (j.pays || []).filter(x => !x.own).map(x => ({ at: x.at, sum: x.sum })),
+      facts: [['подписчиков', C.active || 0], ['зашли за 7 дней', visitors], ['в бота', C.toBot || 0]],
+      warn: !j.sell ? 'оплата выключена' : '' };
+  },
+  async vsn(p) {   // «Вы с ним» (26.10): ответ overview как был у «Твоего 2027»
     const j = await api(p, '/api/admin/overview'), O = j.orders || [], now = Date.now();
     const pays = O.filter(o => o.paid && o.paid.via === 'kassa' && !o.own).map(o => ({ at: o.paid.at, sum: o.paid.sum }));
     const started = O.filter(o => now - o.at <= 3 * DAY && (!o.paid || o.paid.via === 'kassa')).length;
     return { pays, facts: [['купили', pays.length], ['начали оплату за 3 дня', started]],
       warn: !j.sell ? 'оплата выключена' : !j.lastNotify ? 'касса ещё не присылала уведомлений' : '' };
-  },
-  async vsn(p) {   // «Вы с ним» (26.10): тот же ответ overview, что у гороскопа
-    return LOAD.g27(p);
-  },
-  async nat(p) {   // «Твоя натальная карта» (26.10): тот же ответ overview, что у гороскопа
-    return LOAD.g27(p);
   },
   async kb(p) {
     let rows = [], cur = '', n = 0;
