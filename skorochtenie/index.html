@@ -440,11 +440,13 @@
       </div>
       <div class="card stack" id="acct-pw-box">
         <p id="acct-pw-text"><b>Последний шаг: придумай пароль.</b> Без него доступ останется только в этом браузере: в Safari, на компьютере или другом телефоне войти будет нечем. Входить будешь по почте и паролю</p>
+        <p id="acct-pw-new" hidden><b>Новый пароль.</b> Старый перестанет работать: в Safari, на компьютере или другом телефоне входи по почте и новому паролю</p>
         <div class="pw"><input class="field" id="acct-pw" type="password" autocomplete="new-password" minlength="8" placeholder="Пароль, от 8 знаков"><button type="button" class="pw-show" data-pw="acct-pw" aria-pressed="false" aria-label="Показать пароль">Показать</button></div>
         <button class="btn ghost" id="b-acct-pw">Сохранить пароль</button>
         <p class="err" id="acct-pw-err" role="alert" hidden></p>
       </div>
       <p class="muted small" id="acct-pw-done" hidden>Пароль задан. В Safari, на компьютере или другом телефоне открой <span style="white-space: nowrap">ivan-loginov.ru/skorochtenie/#voyti</span> и войди по почте и паролю</p>
+      <button class="link" id="b-acct-pw-change" style="justify-self: start; color: var(--muted); font-weight: 400" hidden>Забыл пароль? Задать новый</button>
       <p class="small" id="acct-inapp" hidden><b>Сейчас приложение открыто внутри Instagram.</b> Safari и компьютер для него - другие браузеры: там нужно один раз войти по почте и паролю</p>
       <div class="card stack" id="acct-up" hidden>
         <p><b>Навсегда за <span id="acct-up-price"></span></b></p>

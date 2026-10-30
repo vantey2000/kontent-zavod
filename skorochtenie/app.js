@@ -553,9 +553,7 @@ function showAcct(fresh = false) {
   $('acct-title').textContent = fresh ? 'Доступ открыт' : a.life ? 'Доступ' : 'Подписка';
   $('acct-line').textContent = c.accessLine(a, fmtDate);
   $('acct-email').textContent = state.auth ? `Почта: ${state.auth.email}` : '';
-  const pw = !!(state.auth && state.auth.pw);
-  $('acct-pw-box').hidden = pw || !state.auth;
-  $('acct-pw-done').hidden = !pw;
+  pwForm();
   // 18.10.2026: покупательница вошла по ссылке в браузере Instagram, задала пароль и написала «в браузере не работает» -
   // открыла Safari и ждала, что вход уже там. Внутри Instagram прямо говорим, что Safari - другой браузер
   // ?. - страница из кэша (до 10 минут после выкладки) может быть ещё без этой строки
@@ -569,13 +567,25 @@ function showAcct(fresh = false) {
   $('acct-up-price').textContent = c.formatRub(c.CONFIG.priceLife);
   $('b-acct-home').textContent = state.tests.length ? 'К тренировке' : 'Пройти тест';
   if ($('acct-test-note')) $('acct-test-note').hidden = !!state.tests.length;   // без теста кнопка «Пройти тест» не похожа на вход в тренажёр
-  // пароль не задан - главная кнопка «Сохранить пароль»: 18.10 трое из четырёх оплативших ушли «К тренировке» без пароля
-  // и остались без входа с другого телефона и из другого браузера (Instagram -> Safari)
-  const ask = !pw && !!state.auth;
-  $('b-acct-pw').className = ask ? 'btn' : 'btn ghost';
-  $('b-acct-home').className = ask ? 'btn ghost' : 'btn';
   show('acct');
 }
+// Блок пароля на экране подписки. change - «Забыл пароль? Задать новый»: 30.10.2026 покупательница задала пароль при оплате
+// и забыла его, вошла по ссылке из link.sh, а у кого пароль уже задан, поле было скрыто - новый задать было негде
+// и в другом браузере опять вход только через поддержку. Сервер /api/password перезаписывает старый пароль
+function pwForm(change = false) {
+  const pw = !!(state.auth && state.auth.pw);
+  const edit = !!state.auth && (!pw || change);
+  $('acct-pw-box').hidden = !edit;
+  $('acct-pw-done').hidden = !pw || change;
+  // ?. - страница из кэша (до 10 минут после выкладки) может быть ещё без этих строк
+  if ($('b-acct-pw-change')) $('b-acct-pw-change').hidden = !pw || change;
+  if ($('acct-pw-new')) { $('acct-pw-new').hidden = !(pw && change); $('acct-pw-text').hidden = pw && change; }
+  // пароль не задан - главная кнопка «Сохранить пароль»: 18.10 трое из четырёх оплативших ушли «К тренировке» без пароля
+  // и остались без входа с другого телефона и из другого браузера (Instagram -> Safari)
+  $('b-acct-pw').className = edit ? 'btn' : 'btn ghost';
+  $('b-acct-home').className = edit ? 'btn ghost' : 'btn';
+}
+$('b-acct-pw-change')?.addEventListener('click', () => { pwForm(true); $('acct-pw').focus(); });
 $('b-acct-back').addEventListener('click', homeOrStart);
 $('b-acct-up').addEventListener('click', () => showPay('acct', 'up'));
 $('b-acct-home').addEventListener('click', homeOrStart);
