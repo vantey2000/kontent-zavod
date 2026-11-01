@@ -232,7 +232,9 @@
   .gbtns{display:flex;gap:10px;margin-top:4px}
   .gbtns .btn{flex:1}
   .gwide{display:block;width:100%;text-align:center;text-decoration:none;margin-top:10px}
-  .btn.off{opacity:.45;pointer-events:none}
+  /* без галочки кнопка бледная, но нажимается: клик подсвечивает галочку (1.11.2026 человек не понял, почему кнопка «не работает») */
+  .btn.off{opacity:.55}
+  .gcheck.need{outline:2px solid var(--accent);outline-offset:6px;border-radius:6px}
   .gerr{display:none;margin-top:12px;font-size:13px;line-height:1.45;background:#3a1f1f;border:1px solid #6b3434;color:#f0c4c4;border-radius:10px;padding:10px 12px}
   .gnote{font-size:12.5px;color:var(--muted);line-height:1.5;margin-top:14px}
   .gnote a,.gcheck a,.glegal a{color:var(--accent)}
@@ -250,6 +252,8 @@
   .substat{font-size:12px;color:var(--muted);line-height:1.45;margin:-10px 0 16px}
   .substat b{color:var(--ink);font-weight:600}
   .substat button{background:none;border:0;color:var(--muted);font-family:inherit;font-size:12px;text-decoration:underline;cursor:pointer;padding:0;margin-left:6px}
+  /* в пробном режиме оплату искали и не находили (1.11.2026): ссылка подписки - заметная золотая */
+  .substat #subbuy{color:var(--accent);font-weight:700;text-decoration:none;border:1px solid rgba(201,179,126,.55);border-radius:999px;padding:2px 10px;margin-left:8px}
   #moreov,#refov{z-index:300}
   .refstats{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:16px 0 4px}
   .refstats div{border:1px solid var(--line);border-radius:10px;padding:10px 12px}
@@ -314,8 +318,9 @@
       <div class="gmail">Кабинет: <b id="gpaymail"></b></div>
       <p class="glead" id="gpaylead">Оформи подписку - конструктор откроется сразу после оплаты, со всеми твоими фото и шаблонами</p>
       <div class="gprice"><b>1 500 ₽</b><span>в месяц. Списание раз в месяц, отменить можно в любой момент</span></div>
-      <label class="gcheck"><input type="checkbox" id="gagree"><span>Принимаю <a href="oferta.html" target="_blank">условия оферты</a> и соглашаюсь на автоматическое списание 1 500 ₽ каждые 30 дней до отмены подписки</span></label>
+      <label class="gcheck" id="gagreerow"><input type="checkbox" id="gagree"><span>Принимаю <a href="oferta.html" target="_blank">условия оферты</a> и соглашаюсь на автоматическое списание 1 500 ₽ каждые 30 дней до отмены подписки</span></label>
       <a class="btn gwide off" id="gpaybtn" href="#">Оформить подписку</a>
+      <p class="gnote gcenter" style="margin-top:8px">Если ссылка на оплату не открывается, выключи VPN</p>
       <button class="btn ghost gwide" id="gpaid">Я уже оплатил - проверить</button>
       <button class="btn ghost gwide" id="gpayback" hidden>Вернуться в конструктор</button>
       <div class="gerr" id="gpayerr"></div>
@@ -702,7 +707,7 @@
    Код конструктора в репо сайта не лежит - его отдаёт karusel-api (/api/app) только кабинету с подпиской.
    Он исполняется и сразу убирается из страницы: «Сохранить страницу» не даёт рабочей копии */
 (function(){
-  const API='https://karusel-api.aivan-loginov.workers.dev', BUILD='814875d3ab';
+  const API='https://karusel-api.aivan-loginov.workers.dev', BUILD='cdfd96bd57';
   const SITE='https://ivan-loginov.ru';
   // витрина «Гайды и курсы Ивана» (16.10.2026, слово Ивана): курсы - только флагман, программы - скорочтение,
   // гайды - только «Распаковка в Claude». Мини-курс и остальные гайды убраны
@@ -795,13 +800,16 @@
     $('gpaybtn').href='#'; syncPayBtn(); err('gpayerr','');
     show('pay');
   }
-  function syncPayBtn(){ $('gpaybtn').classList.toggle('off', !$('gagree').checked); }
+  function syncPayBtn(){ const ok=$('gagree').checked; $('gpaybtn').classList.toggle('off', !ok); if(ok){ $('gagreerow').classList.remove('need'); err('gpayerr',''); } }
   // ссылку на оплату собирает касса по запросу сервера (почта кабинета + подписка) - в момент нажатия,
   // чтобы касса не копила брошенные счета от тех, кто просто посмотрел экран оплаты
   let paying=false;
   async function goPay(e){
     e.preventDefault();
-    if(!$('gagree').checked) return err('gpayerr','Отметь согласие с условиями подписки');
+    if(!$('gagree').checked){
+      const row=$('gagreerow'); row.classList.add('need'); row.scrollIntoView({block:'center',behavior:'smooth'});
+      return err('gpayerr','Сначала поставь галочку согласия с условиями подписки - она над кнопкой');
+    }
     if(paying) return;
     paying=true; err('gpayerr',''); const b=$('gpaybtn'), label=b.textContent; b.textContent='Открываю оплату…';
     const rc=refCode();
