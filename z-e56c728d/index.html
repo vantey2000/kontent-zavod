@@ -4,16 +4,21 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="robots" content="noindex, nofollow">
-<meta name="theme-color" content="#120c0f">
+<meta name="theme-color" content="#17171a">
 <title>Рилсовая - заголовок для рилса</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Golos+Text:wght@500;600;700&family=Rubik:wght@700;900&display=swap">
+<!-- шрифт интерфейса лежит рядом, как у Карусельной (03.11): внешняя ссылка на Google Fonts держала показ страницы до 30 с под VPN -->
+<link rel="preload" href="fonts/montserrat-cyr.woff2" as="font" type="font/woff2" crossorigin>
 <style>
-:root { --bg: #120c0f; --panel: #1c1418; --line: #33252c; --fg: #f6ecf1; --muted: #b49ea9; --accent: #ff7aa6; --accent-ink: #2a0614; --warn: #ff5a6a; --ok: #6fe0a6; --yellow: #ffd600; color-scheme: dark; }
+@font-face { font-family: "Montserrat UI"; font-style: normal; font-weight: 400 800; font-display: swap; src: url(fonts/montserrat-cyr.woff2) format("woff2"); unicode-range: U+0301,U+0400-045F,U+0490-0491,U+04B0-04B1,U+2116; }
+@font-face { font-family: "Montserrat UI"; font-style: normal; font-weight: 400 800; font-display: swap; src: url(fonts/montserrat-lat.woff2) format("woff2"); unicode-range: U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD; }
+/* тёмно-золотой стиль как у Карусельной (03.11): графит, золото, тёмный текст на золоте */
+:root { --bg: #17171a; --panel: #202024; --line: #2e2e34; --fg: #ededf0; --muted: #9a9aa2; --accent: #C9B37E; --accent-ink: #1a1a1a; --warn: #ff6b6b; --ok: #6fe0a6; --yellow: #C9B37E; --field: #161619; color-scheme: dark; }
 * { box-sizing: border-box; }
 [hidden] { display: none !important; }
-html, body { margin: 0; height: 100%; background: var(--bg); color: var(--fg); font: 500 15px/1.4 "Golos Text", system-ui, -apple-system, sans-serif; -webkit-tap-highlight-color: transparent; }
+html, body { margin: 0; height: 100%; background: var(--bg); color: var(--fg); font: 500 15px/1.4 "Montserrat UI", system-ui, -apple-system, sans-serif; -webkit-tap-highlight-color: transparent; }
+body { background: radial-gradient(900px 420px at 50% -140px, rgba(201, 179, 126, .13), transparent 70%) no-repeat, var(--bg); }
 button, input, textarea, select { font: inherit; color: inherit; }
 .app { display: grid; grid-template-columns: minmax(0, 1fr); min-height: 100%; padding: env(safe-area-inset-top, 0px) max(12px, env(safe-area-inset-right, 0px)) calc(12px + env(safe-area-inset-bottom, 0px)) max(12px, env(safe-area-inset-left, 0px)); gap: 10px; max-width: 1100px; margin: 0 auto; }
 @media (min-width: 900px) { .app { grid-template-columns: minmax(0, 420px) minmax(0, 1fr); align-items: start; padding-top: 20px; } .stagecol { position: sticky; top: 16px; } }
@@ -36,32 +41,35 @@ header h1 { font-size: 17px; margin: 0; font-weight: 700; }
 .stage canvas { position: relative; z-index: 1; width: 100%; height: 100%; display: block; }
 .stage .vsrc { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; pointer-events: none; }
 .stage .vtap { position: absolute; z-index: 2; left: 50%; top: 50%; transform: translate(-50%, -50%); }
-.toggles { display: flex; gap: 6px; justify-content: center; overflow-x: auto; }
-.toggles .chip { flex: none; font-size: 12px; padding: 6px 10px; }
+.toggles { display: flex; gap: 4px; justify-content: flex-start; overflow-x: auto; }
+/* по центру, пока помещается; не помещается - ряд листается с первой плашки, а не обрезается слева (Montserrat шире Golos, 03.11) */
+.stagecol > .toggles > :first-child { margin-left: auto; } .stagecol > .toggles > :last-child { margin-right: auto; }
+.toggles .chip { flex: none; font-size: 11.5px; padding: 6px 8px; }
+@media (max-width: 360px) { .hbtns .btn { font-size: 13.5px; padding: 10px 8px; } }
 .chip { border: 1px solid var(--line); background: var(--panel); border-radius: 999px; padding: 7px 11px; font-size: 13px; font-weight: 600; cursor: pointer; }
-.chip[aria-pressed="true"] { background: var(--yellow); color: #1a1400; border-color: var(--yellow); }
+.chip[aria-pressed="true"] { background: var(--yellow); color: var(--accent-ink); border-color: var(--yellow); }
 .status { text-align: center; font-size: 13px; color: var(--muted); min-height: 18px; }
 .status.bad { color: var(--warn); } .status.good { color: var(--ok); }
 .panel { background: var(--panel); border: 1px solid var(--line); border-radius: 16px; padding: 10px; display: grid; gap: 10px; min-width: 0; }
 .seg { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 4px; }
 @media (min-width: 520px) { .seg { grid-template-columns: repeat(6, minmax(0, 1fr)); } }
-.seg button { border: 0; border-radius: 10px; padding: 9px 4px; background: #261b20; font-size: 13px; font-weight: 600; cursor: pointer; }
-.seg button[aria-selected="true"] { background: var(--fg); color: var(--bg); }
+.seg button { border: 1px solid var(--line); border-radius: 10px; padding: 9px 4px; background: var(--field); color: var(--muted); font-size: 13px; font-weight: 600; cursor: pointer; }
+.seg button[aria-selected="true"] { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); font-weight: 700; }
 .tab { display: grid; gap: 10px; min-width: 0; }
 .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(96px, 1fr)); gap: 8px; }
-.card { border: 2px solid transparent; background: #0f0a0c; border-radius: 12px; padding: 4px; cursor: pointer; display: grid; gap: 4px; text-align: center; font-size: 12px; font-weight: 600; }
-.card canvas { width: 100%; aspect-ratio: 3 / 2; display: block; border-radius: 8px; background: #2a1e24; }
+.card { border: 2px solid transparent; background: var(--field); border-radius: 12px; padding: 4px; cursor: pointer; display: grid; gap: 4px; text-align: center; font-size: 12px; font-weight: 600; }
+.card canvas { width: 100%; aspect-ratio: 3 / 2; display: block; border-radius: 8px; background: #26262b; }
 .card[aria-pressed="true"] { border-color: var(--accent); }
 .mitem { position: relative; display: grid; min-width: 0; }
-.card img { width: 100%; aspect-ratio: 3 / 2; display: block; border-radius: 8px; background: #2a1e24; object-fit: contain; }
+.card img { width: 100%; aspect-ratio: 3 / 2; display: block; border-radius: 8px; background: #26262b; object-fit: contain; }
 .mitem .card span { overflow-wrap: anywhere; }
 .madd { border: 2px dashed var(--line); color: var(--accent); }
-.madd b { display: grid; place-items: center; aspect-ratio: 3 / 2; border-radius: 8px; background: #1a1216; font-size: 34px; line-height: 1; }
-.mdel { position: absolute; top: -10px; right: -10px; min-width: 26px; height: 26px; padding: 0 8px; border: 2px solid var(--panel); border-radius: 999px; background: #3a2a32; font-size: 15px; line-height: 1; cursor: pointer; }   /* на углу плитки, картинку не закрывает */
+.madd b { display: grid; place-items: center; aspect-ratio: 3 / 2; border-radius: 8px; background: #19191c; font-size: 34px; line-height: 1; }
+.mdel { position: absolute; top: -10px; right: -10px; min-width: 26px; height: 26px; padding: 0 8px; border: 2px solid var(--panel); border-radius: 999px; background: #3a3a42; font-size: 15px; line-height: 1; cursor: pointer; }   /* на углу плитки, картинку не закрывает */
 .mdel.sure { background: var(--warn); color: #fff; font-size: 12px; font-weight: 700; }
 .mdel:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 #mineHint.good { color: var(--ok); } #mineHint.bad { color: var(--warn); }
-textarea { width: 100%; resize: vertical; min-height: 110px; border-radius: 12px; border: 1px solid var(--line); background: #0f0a0c; padding: 10px; font-weight: 700; font-size: 16px; line-height: 1.35; }
+textarea { width: 100%; resize: vertical; min-height: 110px; border-radius: 12px; border: 1px solid var(--line); background: var(--field); padding: 10px; font-weight: 700; font-size: 16px; line-height: 1.35; }
 .split { display: grid; gap: 8px; }
 .splitn { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; }
 .splitn .chip { padding: 9px 0; text-align: center; }
@@ -69,12 +77,12 @@ label.row { display: grid; gap: 6px; font-size: 13px; color: var(--muted); }
 input[type=range] { width: 100%; accent-color: var(--accent); }
 .fgroup h3 { margin: 4px 0 6px; font-size: 12px; letter-spacing: .05em; text-transform: uppercase; color: var(--muted); }
 .flist { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 6px; }
-.fbtn { border: 2px solid var(--line); background: #0f0a0c; border-radius: 10px; padding: 8px 10px; text-align: left; cursor: pointer; display: grid; gap: 2px; min-width: 0; }
+.fbtn { border: 2px solid var(--line); background: var(--field); border-radius: 10px; padding: 8px 10px; text-align: left; cursor: pointer; display: grid; gap: 2px; min-width: 0; }
 .fbtn .s { font-size: 22px; line-height: 1.15; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .fbtn .n { font-size: 11px; color: var(--muted); }
 .fbtn[aria-pressed="true"] { border-color: var(--accent); }
 .pals { display: grid; grid-template-columns: repeat(auto-fill, minmax(92px, 1fr)); gap: 6px; }
-.pal { border: 2px solid var(--line); background: #0f0a0c; border-radius: 10px; padding: 8px; cursor: pointer; display: grid; gap: 6px; font-size: 12px; font-weight: 600; }
+.pal { border: 2px solid var(--line); background: var(--field); border-radius: 10px; padding: 8px; cursor: pointer; display: grid; gap: 6px; font-size: 12px; font-weight: 600; }
 .pal i { display: block; height: 22px; border-radius: 6px; }
 .pal[aria-pressed="true"] { border-color: var(--accent); }
 .custom { display: flex; gap: 12px; flex-wrap: wrap; align-items: center; font-size: 13px; color: var(--muted); }
@@ -85,7 +93,7 @@ input[type=range] { width: 100%; accent-color: var(--accent); }
 .anims { display: grid; grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); gap: 6px; }
 .out { display: grid; gap: 6px; position: sticky; bottom: calc(8px + env(safe-area-inset-bottom, 0px)); z-index: 5; background: var(--panel); border: 1px solid var(--line); border-radius: 16px; padding: 10px; box-shadow: 0 -10px 30px rgba(0,0,0,.45); }
 @media (min-width: 900px) { .out { grid-column: 2; position: static; box-shadow: none; } }
-.bar { height: 8px; border-radius: 99px; background: #2a1e24; overflow: hidden; }
+.bar { height: 8px; border-radius: 99px; background: #26262b; overflow: hidden; }
 .bar i { display: block; height: 100%; width: 0; background: var(--accent); transition: width .15s; }
 .done { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
 .hint { font-size: 12px; color: var(--muted); margin: 0; }
@@ -101,13 +109,13 @@ input[type=range] { width: 100%; accent-color: var(--accent); }
 .promo:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 @media (min-width: 900px) { .app:not(.uqmode) > .foot { grid-column: 2; } }
 @media (max-width: 520px) { header { flex-wrap: wrap; } header .htitle { flex: 1 1 100%; } .hbtns { flex: 1 1 100%; } .hbtns .btn { flex: 1; text-align: center; } }
-#uqOpen[aria-pressed="true"] { background: var(--fg); color: var(--bg); border-color: var(--fg); }
+#uqOpen[aria-pressed="true"] { background: transparent; color: var(--accent); border-color: var(--accent); }
 .uqp { background: var(--panel); border: 1px solid var(--line); border-radius: 16px; padding: 10px; display: grid; gap: 10px; min-width: 0; }
 .uq { grid-column: 1 / -1; display: grid; gap: 10px; width: 100%; max-width: 760px; margin: 0 auto; min-width: 0; }
 .app:not(.uqmode) > .uq, .app.uqmode > .stagecol, .app.uqmode > .panel, .app.uqmode > .out, .app.uqmode .upl { display: none; }
 .uqurl { display: flex; gap: 8px; min-width: 0; }
 .uqurl input { flex: 1; min-width: 0; }
-input[type=url] { border-radius: 12px; border: 1px solid var(--line); background: #0f0a0c; padding: 10px; font-size: 16px; }
+input[type=url] { border-radius: 12px; border: 1px solid var(--line); background: var(--field); padding: 10px; font-size: 16px; }
 .uq textarea { font-weight: 500; }
 .btn.small { font-size: 13px; padding: 8px 12px; justify-self: start; }
 .pcts { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 6px; }
@@ -115,13 +123,13 @@ input[type=url] { border-radius: 12px; border: 1px solid var(--line); background
 .voices { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 6px; }
 @media (min-width: 520px) { .voices { grid-template-columns: repeat(4, minmax(0, 1fr)); } }
 .voices .chip { padding: 9px 4px; text-align: center; }
-.res { white-space: pre-wrap; overflow-wrap: anywhere; background: #0f0a0c; border: 1px solid var(--line); border-radius: 12px; padding: 10px; line-height: 1.55; font-size: 16px; min-height: 110px; }
-.res mark { color: inherit; background: rgba(255, 214, 0, .2); border-bottom: 2px solid var(--yellow); border-radius: 3px; cursor: pointer; }
+.res { white-space: pre-wrap; overflow-wrap: anywhere; background: var(--field); border: 1px solid var(--line); border-radius: 12px; padding: 10px; line-height: 1.55; font-size: 16px; min-height: 110px; }
+.res mark { color: inherit; background: rgba(201, 179, 126, .22); border-bottom: 2px solid var(--yellow); border-radius: 3px; cursor: pointer; }
 .res mark.back { background: none; border-bottom: 1px dashed var(--muted); }
 .uqwin { position: relative; min-width: 0; }
 .uqwin textarea { display: block; }
-.uqload { position: absolute; inset: 0; display: grid; place-content: center; justify-items: center; gap: 8px; padding: 10px; border-radius: 12px; background: rgba(15, 10, 12, .92); text-align: center; }
-.uqload b { font: 900 30px/1 Rubik, "Golos Text", sans-serif; color: var(--yellow); font-variant-numeric: tabular-nums; }
+.uqload { position: absolute; inset: 0; display: grid; place-content: center; justify-items: center; gap: 8px; padding: 10px; border-radius: 12px; background: rgba(22, 22, 25, .92); text-align: center; }
+.uqload b { font: 800 30px/1 "Montserrat UI", sans-serif; color: var(--yellow); font-variant-numeric: tabular-nums; }
 .uqload .bar { width: min(260px, 64vw); }
 .uqload .bar i { background: var(--yellow); }
 .uqload span { font-size: 13px; color: var(--fg); }

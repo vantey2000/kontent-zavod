@@ -798,7 +798,7 @@ function zoneCheck(rects) {
 }
 
 function pill(x, text, tx, ty, color) {
-  x.font = '600 26px "Golos Text", system-ui, sans-serif';
+  x.font = '600 26px "Montserrat UI", system-ui, sans-serif';
   const w = x.measureText(text).width + 24;
   x.fillStyle = color; x.beginPath();
   if (x.roundRect) x.roundRect(tx, ty, w, 40, 20); else x.rect(tx, ty, w, 40);
@@ -1153,7 +1153,7 @@ function buildFonts() {
     list.forEach(([f, w]) => {
       const b = document.createElement('button'); b.type = 'button'; b.className = 'fbtn'; b.setAttribute('data-font', f);
       const s = document.createElement('span'); s.className = 's'; s.textContent = 'Заголовок';
-      s.style.fontFamily = `"П-${f}", "Golos Text", sans-serif`; s.style.fontWeight = w;
+      s.style.fontFamily = `"П-${f}", "Montserrat UI", sans-serif`; s.style.fontWeight = w;
       const n = document.createElement('span'); n.className = 'n'; n.textContent = f;
       b.append(s, n); l.appendChild(b);
       b.addEventListener('click', () => { S.font = f; press(box, 'data-font', f); persist(); rebuild(0); });
