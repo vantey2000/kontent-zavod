@@ -1279,7 +1279,7 @@ function buildFile() {
   $('file').addEventListener('change', () => {
     const f = $('file').files[0]; if (!f) return;
     $('file').value = '';                                    // тот же файл можно выбрать ещё раз
-    showErr(''); hideDone(); hasVideo = false; vidWait = 'Открываю видео…';
+    showErr(''); note(''); hideDone(); hasVideo = false; vidWait = 'Открываю видео…';
     const old = video.src;
     video.src = URL.createObjectURL(f);
     if (old.startsWith('blob:')) URL.revokeObjectURL(old);
@@ -1292,6 +1292,8 @@ function buildFile() {
     clearTimeout(tapTimer); vidWait = ''; $('vTap').hidden = true;
     if (!video.videoWidth) { video.pause(); return showErr(BAD_VIDEO); }   // звук открылся, картинка нет (HEVC в Chrome)
     hasVideo = true; S.tIn = 0; S.tOut = null; syncTime(); hideDone();
+    // обрезки нет (решение Ивана 30.10), но длинную подложку загружали трое (Варвара, Эльвира, Ира): подсказка, как обрезать
+    if (isFinite(video.duration) && video.duration > 15) note(`Видео ${Math.round(video.duration)} с, ролик соберётся на всю длину. Для рилса хватит 7-10 с: обрежь в «Фото» → «Править» и загрузи этот кусок`);
     if (paused) video.pause(); else video.play().catch(() => {});
   };
   video.addEventListener('loadeddata', ready); video.addEventListener('canplay', ready);
@@ -1309,6 +1311,13 @@ function buildFile() {
 let outFile = null;
 function hideDone() { outFile = null; $('done').hidden = true; $('make').hidden = false; }
 function showErr(t) { const e = $('outErr'); e.textContent = t; e.hidden = !t; }
+function note(t) { const e = $('outNote'); if (!e) return; e.textContent = t; e.hidden = !t; }
+
+// айфон: по ссылке «Скачать» Safari кладёт ролик в «Файлы» → «Загрузки», Telegram просто показывает видео, в галерею он не попадает
+// (запись экрана Иры 30.10). В галерею ведёт только меню телефона «Сохранить видео», поэтому там кнопка «В галерею» открывает его
+const IOS = /iP(hone|ad|od)/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+const canFile = (f) => { try { return !!(navigator.canShare && navigator.canShare({ files: [f] })); } catch (e) { return false; } };
+const IOS_SHARE = IOS && canFile(new File([new Uint8Array(1)], 'a.mp4', { type: 'video/mp4' }));
 
 async function make() {
   if (!hasVideo) { armVideo(); return $('file').click(); }   // без видео «Собрать» сразу открывает выбор ролика (27.10: под кнопкой ни строчки)
@@ -1329,27 +1338,44 @@ async function make() {
   }
 }
 
+let copyBlocks = false;   // меню не открылось сразу после копирования: дальше делимся без копирования
 async function share() {
   if (!outFile) return;
+  showErr('');
+  // текст под рилс Инстаграм из меню телефона не берёт (Ира 30.10): копируем его ДО меню, пока жив жест нажатия, после await его бы не стало
+  const t = !copyBlocks && typeof uqOutText === 'function' ? uqOutText() : '';
+  const said = 'Текст под рилс скопирован: в Инстаграме вставь его в подпись';
+  const copied = !!t && uqCopyOld(t);
+  note(copied ? said : '');
+  if (t && !copied && navigator.clipboard) navigator.clipboard.writeText(t).then(() => note(said), () => {});
   try {
-    if (navigator.canShare && navigator.canShare({ files: [outFile] })) await navigator.share({ files: [outFile], title: 'Рилсовая' });
+    if (canFile(outFile)) await navigator.share({ files: [outFile], title: 'Рилсовая' });
     else showErr('На этом устройстве «Поделиться» недоступно. Нажми «Скачать» или открой страницу с телефона');
   } catch (e) {
-    if (e && e.name === 'NotAllowedError') showErr('Видео готово, нажми «Поделиться» ещё раз');
+    if (e && e.name === 'NotAllowedError') { if (copied) copyBlocks = true; showErr('Видео готово, нажми «Поделиться» ещё раз'); }
   }
 }
 
-function save() {
+async function save() {
   if (!outFile) return;
+  showErr('');
+  if (IOS && canFile(outFile)) {
+    note('В меню телефона выбери «Сохранить видео»: ролик ляжет в галерею');
+    try { await navigator.share({ files: [outFile] }); }
+    catch (e) { if (e && e.name === 'NotAllowedError') showErr('Видео готово, нажми «В галерею» ещё раз'); }
+    return;
+  }
   const a = document.createElement('a');
   a.href = URL.createObjectURL(outFile); a.download = outFile.name;
   document.body.appendChild(a); a.click(); a.remove();
   setTimeout(() => URL.revokeObjectURL(a.href), 60000);
+  if (IOS) note('Ролик в «Файлы» → «Загрузки». Чтобы он падал сразу в галерею, открой страницу в Safari');
 }
 
 (async function init() {
   buildTabs(); buildText(); buildColors(); buildHalo(); buildAnims(); buildTime(); buildDrag(); buildFile(); buildFonts();
   $('make').addEventListener('click', make); $('share').addEventListener('click', share); $('save').addEventListener('click', save);
+  if (IOS_SHARE) $('save').textContent = 'В галерею';
   // шрифт догрузился позже сборки заголовка: перерисовать
   if (document.fonts && document.fonts.addEventListener) document.fonts.addEventListener('loadingdone', (e) => {
     const cur = S.font || look().font;
@@ -1554,11 +1580,12 @@ const UNIQ = (() => {
   const voiceOk = (a, b) => !!String(b || '').trim() && (a.match(/\d+/g) || []).join() === (b.match(/\d+/g) || []).join() && pct(a, b) <= 50;
 
   // текст из переведённых кусков: всё между кусками и пробелы по краям куска остаются как были
-  function splice(text, list, outs) {
+  // ok = годен ли кусок; перевод на русский меняет всё, ему достаточно непустого куска
+  function splice(text, list, outs, ok = voiceOk) {
     let out = '', pos = 0;
     list.forEach((c, i) => {
       const lead = c.text.match(/^\s*/)[0], tail = c.text.match(/\s*$/)[0];
-      out += text.slice(pos, c.s) + (voiceOk(c.text, outs[i]) ? lead + outs[i].trim() + tail : c.text);
+      out += text.slice(pos, c.s) + (ok(c.text, outs[i]) ? lead + String(outs[i]).trim() + tail : c.text);
       pos = c.e;
     });
     return out + text.slice(pos);
@@ -1585,7 +1612,82 @@ const UNIQ = (() => {
     return lines.join('\n').trim();
   }
 
-  return { words, matched, pct, chunks, locate, guard, spread, pool, pick, build, voiceOk, splice, dashes, unwrap, trimTags };
+  // доля латинских букв: английский текст уникализатор портит русскими кусками (скрин Китии 28.10), его сначала переводим
+  function latin(t) {
+    const all = String(t || '').match(/\p{L}/gu) || [];
+    return all.length ? all.filter((c) => /[A-Za-z]/.test(c)).length / all.length : 0;
+  }
+
+  // заголовок с обложки против подписи: нейросеть путает букву («НЕЗАТУЖНИМИ» вместо «незамужними», скрин Насти 29.10).
+  // Слово, которого нет в подписи, берётся из подписи, если там ровно одно слово той же длины с одной другой буквой
+  // не в двух последних (окончания не трогаем: «привычка» и «привычки» - разные формы, а не ошибка). Плюс пробел после прилипшей запятой
+  function fixTitle(title, caption) {
+    const t = String(title || '').replace(/([,;!?])(?=\p{L})/gu, '$1 ');
+    const byLen = new Map();
+    for (const w of new Set(words(caption))) {
+      if (w.length < 5 || !/^\p{L}+$/u.test(w)) continue;
+      if (!byLen.has(w.length)) byLen.set(w.length, []);
+      byLen.get(w.length).push(w);
+    }
+    if (!byLen.size) return t;
+    const capSet = new Set(words(caption));
+    return t.replace(/\p{L}+/gu, (w) => {
+      const lw = w.toLowerCase();
+      if (lw.length < 5 || capSet.has(lw)) return w;
+      const near = (byLen.get(lw.length) || []).filter((c) => {
+        let d = 0, at = -1;
+        for (let i = 0; i < c.length; i++) if (c[i] !== lw[i]) { d++; at = i; }
+        return d === 1 && at < lw.length - 2;
+      });
+      if (near.length !== 1) return w;
+      const c = near[0];
+      if (w === w.toUpperCase()) return c.toUpperCase();
+      return w[0] === w[0].toUpperCase() ? c[0].toUpperCase() + c.slice(1) : c;
+    });
+  }
+
+  // чужой ник с призывом в подписи донора («Подпишись @anitaneust», скрин Насти 29.10): короткая строка с @ником уходит целиком,
+  // длинная фраза с упоминанием остаётся (там ник часть мысли); почта не ник
+  const NICK = /(^|[^\p{L}\p{N}_.@])@[A-Za-z0-9_.]{2,30}/u;
+  function dropForeign(t) {
+    let n = 0;
+    const lines = String(t || '').split('\n').filter((l) => {
+      if (l.trim().length <= 160 && NICK.test(l)) { n++; return false; }
+      return true;
+    });
+    return { text: lines.join('\n').replace(/\n{3,}/g, '\n\n').trim(), n };
+  }
+
+  // пост целиком (склад ТОП-карусели: первый абзац - заголовок, чаще с «:» в конце; или заголовок, строка «Читай описание 👇», текст).
+  // strict = вставка в поле текста: первый абзац должен быть похож на заголовок. null = не похоже на пост
+  const READ_ON = /^\s*(👇\s*)?читай(те)?\s+(в\s+)?описани/i;
+  function splitPost(t, strict) {
+    const s = String(t || '').replace(/\r/g, '').trim();
+    const lines = s.split('\n');
+    const ro = lines.findIndex((l, i) => i > 0 && i < 6 && READ_ON.test(l));
+    let title, text;
+    if (ro > 0) { title = lines.slice(0, ro).join('\n').trim(); text = lines.slice(ro + 1).join('\n').trim(); }
+    else {
+      const m = s.match(/^([\s\S]*?)\n[ \t]*\n([\s\S]+)$/);
+      if (!m) return null;
+      title = m[1].trim(); text = m[2].trim();
+      if (strict && !/[:…!?]$/.test(title) && !/(^|[^\p{L}])\p{Lu}{4,}(?!\p{L})/u.test(title)) return null;
+    }
+    if (!title || title.length > 300 || title.split('\n').length > 6 || text.length < 80) return null;
+    return { title, text };
+  }
+
+  // мои фразы (просьбы Т. Елисеенко, Галины, Насти 29-31.10): своё начало и конец текста, без повтора, если уже стоят
+  function withPhrases(t, head, tail) {
+    let s = String(t || '').trim();
+    const h = String(head || '').trim(), e = String(tail || '').trim();
+    if (!s) return '';
+    if (h && !s.startsWith(h)) s = h + '\n\n' + s;
+    if (e && !s.endsWith(e)) s = s + '\n\n' + e;
+    return s;
+  }
+
+  return { words, matched, pct, chunks, locate, guard, spread, pool, pick, build, voiceOk, splice, dashes, unwrap, trimTags, latin, fixTitle, dropForeign, splitPost, withPhrases };
 })();
 
 // экран уникализатора: ссылка → текст донора → в каждом окошке (заголовок, текст) плашка N% → результат с подсветкой
@@ -1606,9 +1708,13 @@ const UQ_ERR = {
 };
 const UQ_VOICES = [['o', 'Как в оригинале'], ['m', 'От мужчины'], ['f', 'От женщины'], ['n', 'Со стороны']];
 const UQ_VOICE_NAME = { m: 'от мужского лица', f: 'от женского лица', n: 'со стороны' };
-const UQ = { voice: 'o', dash: true, B: {} };          // B.title, B.text = окошки (uqBox)
+// обращение к читателю (Татьяна 29.10: «перевод с ты на вы»): после лица, до правок, как лицо в процент не входит
+const UQ_ADDRS = [['o', 'Как есть'], ['ty', 'На «ты»'], ['vy', 'На «вы»']];
+const UQ_ADDR_NAME = { ty: 'на «ты»', vy: 'на «вы»' };
+const UQ = { voice: 'o', addr: 'o', dash: true, B: {} };          // B.title, B.text = окошки (uqBox)
 try {
   const w = localStorage.getItem('uq-voice'); if (UQ_VOICES.some(([id]) => id === w)) UQ.voice = w;
+  const a = localStorage.getItem('uq-addr'); if (UQ_ADDRS.some(([id]) => id === a)) UQ.addr = a;
   if (localStorage.getItem('uq-dash') === '0') UQ.dash = false;
 } catch (e) {}
 
@@ -1691,8 +1797,8 @@ const uqMax = (F) => UNIQ.build(F.src, F.pool, new Set(F.pool.map((_, i) => i)))
 const uqTarget = (B, F) => Math.max(0, B.pct - F.basePct);
 
 // весь текст в нужное лицо по кускам; негодный перевод куска (потерял число, переписал больше половины) = оригинал куска
-async function uqVoice(B, text, who, g) {
-  const ch = UNIQ.chunks(text), P = uqStage(B, 'Перевожу ' + UQ_VOICE_NAME[who], 0, 35, ch.map((c) => c.text));
+async function uqVoice(B, text, who, g, lo = 0, hi = 35, label = 'Перевожу ' + UQ_VOICE_NAME[who]) {
+  const ch = UNIQ.chunks(text), P = uqStage(B, label, lo, hi, ch.map((c) => c.text));
   const outs = await uqMap(ch, 4, (c) => uqCall('/voice', { text: c.text, voice: who, g }).then((r) => { P.done += uqEta(c.text); return r.text; }));
   return UNIQ.splice(text, ch, outs);
 }
@@ -1731,15 +1837,23 @@ function uqRun(B, nextVariant) {
   if (B.busy) { B.pending = nextVariant || B.pending === 'next' ? 'next' : 'same'; uqBoxSt(B, 'Пересоберу сразу после текущей обработки…'); return; }
   const raw = B.area.value.trim();
   if (!raw) return uqBoxSt(B, B.key === 'title' ? 'Сначала впиши заголовок или забери его по ссылке' : 'Сначала вставь текст или забери его по ссылке', 'err');
+  // английский текст уникализатор портит русскими кусками (скрин Китии 28.10): сначала перевод
+  if (UNIQ.latin(raw) > 0.5) {
+    B.pct = 0; press(B.pcts, 'data-pct', ''); B.tr.hidden = false;
+    return uqBoxSt(B, 'Текст на английском, а уникализатор пишет по-русски. Нажми «Перевести на русский», потом процент', 'err');
+  }
   if (nextVariant) B.v = (B.v + 1) % 25;
   const g = uqGid(raw);
   return uqWork(B, async (stale) => {
     const orig = UQ.dash ? UNIQ.dashes(raw) : raw;   // тире меняются до правок: доля слов от них не растёт
-    const voice = UQ.voice, src = voice !== 'o' ? await uqVoice(B, orig, voice, g) : orig;
+    const voice = UQ.voice, addr = UQ.addr, both = voice !== 'o' && addr !== 'o';
+    let src = voice !== 'o' ? await uqVoice(B, orig, voice, g, 0, both ? 18 : 35) : orig;
     if (stale()) return;
-    const located = await uqEdits(B, src, B.v, 'Подбираю правки', voice !== 'o' ? 35 : 0, 88, g);
+    if (addr !== 'o') src = await uqVoice(B, src, addr, g, both ? 18 : 0, 35, 'Меняю обращение ' + UQ_ADDR_NAME[addr]);
     if (stale()) return;
-    const F = { raw, orig, src, g, basePct: UNIQ.pct(orig, src), voice, located, pool: UNIQ.pool(src, located), off: new Set(), v: B.v };
+    const located = await uqEdits(B, src, B.v, 'Подбираю правки', voice !== 'o' || addr !== 'o' ? 35 : 0, 88, g);
+    if (stale()) return;
+    const F = { raw, orig, src, g, basePct: UNIQ.pct(orig, src), voice, addr, located, pool: UNIQ.pool(src, located), off: new Set(), v: B.v };
     await uqTopUp(B, F, 88, stale);
     if (!stale()) B.F = F;
   });
@@ -1757,7 +1871,8 @@ function uqPick(B, p) {
 const uqFmt = (x) => x.toFixed(1).replace('.', ',');
 function uqRender(B) {
   const F = B.F;
-  B.area.hidden = !!F; B.res.hidden = !F; B.again.hidden = !F;
+  B.area.hidden = !!F; B.res.hidden = !F; B.again.hidden = !F; B.edit.hidden = !F;
+  B.tr.hidden = !!F || UNIQ.latin(B.area.value) <= 0.5;
   if (!F) return;
   F.res = UNIQ.build(F.src, F.pool, UNIQ.pick(F.src, F.pool, uqTarget(B, F)), F.off);
   F.res.pct = UNIQ.pct(F.orig, F.res.text);
@@ -1774,7 +1889,12 @@ function uqRender(B) {
   }
   const long = UNIQ.words(F.src).length >= 60;       // в коротком заголовке каждое слово = большой шаг доли, подсказка там шум
   const say = [`Изменено ${uqFmt(F.res.pct)}% слов`];
-  if (F.voice !== 'o') say.push(F.basePct > 0.05 ? `Из них ${uqFmt(F.basePct)}% - перевод ${UQ_VOICE_NAME[F.voice]}, он не подсвечен` : 'Рассказчика «я» в тексте нет, лицо менять не пришлось');
+  const tr = [F.voice !== 'o' && 'перевод ' + UQ_VOICE_NAME[F.voice], F.addr !== 'o' && 'обращение ' + UQ_ADDR_NAME[F.addr]].filter(Boolean);
+  if (tr.length) {
+    say.push(F.basePct > 0.05 ? `Из них ${uqFmt(F.basePct)}% - ${tr.join(' и ')}, это не подсвечено`
+      : F.addr === 'o' ? 'Рассказчика «я» в тексте нет, лицо менять не пришлось'
+      : F.voice === 'o' ? 'Обращения к читателю в тексте нет, менять не пришлось' : 'Ни рассказчика «я», ни обращения в тексте нет, менять не пришлось');
+  }
   if (!F.pool.length) say.push('Правок для этого текста не нашлось, нажми «Другой вариант»');
   else if (long && F.res.pct + 2 < B.pct) say.push('Больше правок в этом варианте нет, нажми «Другой вариант»');
   if (F.res.parts.some((p) => p.i !== undefined)) say.push('Подсвечено изменённое: нажми на кусок, чтобы вернуть оригинал');
@@ -1801,12 +1921,63 @@ function uqCopyOld(t) {
 
 async function uqCopy(B, btn) {
   if (B.busy) return uqBoxSt(B, 'Подожди: текст ещё уникализируется');   // иначе скопировался бы исходник или прошлый вариант
-  const t = B.F && B.F.res ? B.F.res.text : B.area.value.trim();
+  const t0 = B.F && B.F.res ? B.F.res.text : B.area.value.trim();
+  const t = B.key === 'text' ? uqPhrases(t0) : t0;
   if (!t) return uqBoxSt(B, 'Копировать пока нечего', 'err');
   // буфер обмена бывает недоступен или висит (встроенные браузеры): через секунду запасной способ; «Скопировано» только по факту
   const ok = await Promise.race([navigator.clipboard ? navigator.clipboard.writeText(t).then(() => true, () => false) : false, new Promise((r) => setTimeout(() => r(false), 1000))]) || uqCopyOld(t);
   if (!ok) return uqBoxSt(B, 'Браузер не дал скопировать. Удерживай палец на тексте, выдели его и скопируй через меню телефона', 'err');
   btn.textContent = 'Скопировано'; clearTimeout(btn.back); btn.back = setTimeout(() => { btn.textContent = 'Скопировать'; }, 1500);
+}
+
+// мои фразы (просьбы Т. Елисеенко, Галины, Насти 29-31.10): своё начало и конец текста при «Скопировать» и «Поделиться»
+const uqPhrases = (t) => UNIQ.withPhrases(t, $('uqHead').value, $('uqTail').value);
+// текст под рилс для «Поделиться» ролика (11-app-main.js): результат окошка текста или поле, с моими фразами; пока идёт обработка - ничего
+function uqOutText() {
+  const B = UQ.B.text;
+  if (!B || B.busy) return '';
+  return uqPhrases(B.F && B.F.res ? B.F.res.text : B.area.value.trim());
+}
+
+// «Править» (Татьяна 29.10): результат снова становится полем, процент дальше уникализирует уже этот вариант
+function uqEditRes(B) {
+  if (B.busy || !B.F || !B.F.res) return;
+  const t = B.F.res.text;
+  uqReset(B); B.area.value = t; uqDraft(); uqRender(B);
+  B.area.focus();
+  uqBoxSt(B, 'Правь прямо в поле. Нажмёшь процент - уникализирую уже этот вариант');
+}
+
+// перевод на русский (Оксана 28.10: рилсы американских блогеров): шаг до уникализации, результат встаёт в поле как новый оригинал
+async function uqTranslate(B) {
+  if (B.busy) return;
+  const raw = B.area.value.trim();
+  if (!raw) return;
+  const g = uqGid(raw);
+  let out = '';
+  await uqWork(B, async (stale) => {
+    const ch = UNIQ.chunks(raw), P = uqStage(B, 'Перевожу на русский', 0, 99, ch.map((c) => c.text));
+    const outs = await uqMap(ch, 4, (c) => uqCall('/voice', { text: c.text, voice: 'ru', g }).then((r) => { P.done += uqEta(c.text); return r.text; }));
+    if (!stale()) out = UNIQ.splice(raw, ch, outs, (a, b) => !!String(b || '').trim());
+  });
+  if (!out) return;
+  B.area.value = out; uqDraft(); uqRender(B);
+  if (B.pct) return uqRun(B, false);                 // процент нажали во время перевода: сразу уникализируем перевод
+  uqBoxSt(B, 'Перевёл на русский. Проверь текст и нажми процент', 'good');
+}
+
+// пост целиком одной вставкой (Ира 28.10: за заголовком и текстом ходила в Telegram дважды): первый абзац - заголовок, остальное - текст.
+// В поле заголовка раскладывается любой такой пост, в поле текста - только когда заголовок пуст и первый абзац похож на заголовок
+function uqPaste(B, e) {
+  const T = UQ.B.title, t = (e.clipboardData && e.clipboardData.getData('text/plain')) || '';
+  const p = B.key === 'title' ? UNIQ.splitPost(t) : (!T.F && !T.area.value.trim() ? UNIQ.splitPost(t, true) : null);
+  if (!p) return;
+  e.preventDefault();
+  for (const X of Object.values(UQ.B)) uqReset(X);
+  $('uqTitleBox').hidden = false; $('uqTextLabel').textContent = 'Текст';
+  $('uqTitle').value = p.title; $('uqText').value = p.text; uqDraft();
+  for (const X of Object.values(UQ.B)) uqRender(X);
+  uqBoxSt(T, 'Разложил пост: первый абзац - заголовок, остальное ушло в «Текст»', 'good');
 }
 
 async function uqFetch() {
@@ -1819,11 +1990,13 @@ async function uqFetch() {
     uqReset(UQ.B.title); uqReset(UQ.B.text);
     if (p.kind === 'reel') {
       $('uqTitleBox').hidden = false; $('uqTextLabel').textContent = 'Текст под рилсом';
-      $('uqText').value = UNIQ.trimTags(p.caption); $('uqTitle').value = '';
+      const dc = UNIQ.dropForeign(UNIQ.trimTags(p.caption));   // «Подпишись @чужой_ник» (скрин Насти 29.10)
+      $('uqText').value = dc.text; $('uqTitle').value = '';
       uqSt('uqFetchSt', 'Читаю заголовок с обложки…');
       const o = p.cover ? await uqCall('/ocr', { src: p.cover, mode: 'title' }).catch(() => ({ text: '' })) : { text: '' };
-      $('uqTitle').value = o.text;
-      uqSt('uqFetchSt', o.text ? 'Готово: заголовок и текст под рилсом' : 'Текст забран. На обложке заголовок не нашёлся: загрузи скрин кадра с заголовком', o.text ? 'good' : '');
+      $('uqTitle').value = UNIQ.fixTitle(o.text, p.caption);   // «НЕЗАТУЖНИМИ» → как в подписи (скрин Насти 29.10)
+      const more = (dc.n ? '. Строку с чужим ником убрал' : '') + (UNIQ.latin(dc.text) > 0.5 ? '. Текст на английском: нажми «Перевести на русский»' : '');
+      uqSt('uqFetchSt', (o.text ? 'Готово: заголовок и текст под рилсом' : 'Текст забран. На обложке заголовок не нашёлся: загрузи скрин кадра с заголовком') + more, o.text ? 'good' : '');
     } else {
       $('uqTitleBox').hidden = true; $('uqTextLabel').textContent = 'Текст со слайдов'; $('uqTitle').value = '';
       let done = 0, lost = 0;
@@ -1835,6 +2008,7 @@ async function uqFetch() {
       uqSt('uqFetchSt', lost ? `Готово, но ${lost} из ${p.slides.length} слайдов не прочитались: допиши их текст руками` : `Готово: текст ${p.slides.length} слайдов`, lost ? 'err' : 'good');
     }
     uqDraft();
+    for (const X of Object.values(UQ.B)) uqRender(X);   // кнопка перевода у английского текста
   } catch (e) { uqSt('uqFetchSt', uqMsg(e), 'err'); }
   $('uqFetch').disabled = false;
 }
@@ -1856,6 +2030,12 @@ async function uqShot() {
   } catch (e) { uqBoxSt(B, uqMsg(e), 'err'); }
 }
 
+function uqTitleToVideo(t) {
+  S.text = t.split('\n').map((s) => s.trim()).filter(Boolean).join('\n');
+  $('txt').value = S.text; persist(); rebuild(0); hideDone();
+  uqMode(false);                                      // строку статуса редактора каждый кадр пишут рамки: подтверждение = заголовок в превью
+}
+
 function uqMode(on) {
   document.querySelector('.app').classList.toggle('uqmode', on);
   $('uqOpen').setAttribute('aria-pressed', String(on)); $('uqOpen').textContent = on ? '← К ролику' : 'Уникализатор';
@@ -1866,7 +2046,7 @@ function uqMode(on) {
 function uqBox(key) {
   const root = document.querySelector(`[data-box="${key}"]`), q = (s) => root.querySelector(s);
   const B = { key, area: q('textarea'), res: q('.res'), load: q('.uqload'), st: q('.uqst'), pcts: q('.pcts'), again: q('.uqagain'),
-    pct: 0, v: 0, F: null, busy: false, pending: null, gen: 0, shown: 0 };
+    edit: q('.uqedit'), tr: q('.uqtr'), pct: 0, v: 0, F: null, busy: false, pending: null, gen: 0, shown: 0 };
   B.hint0 = B.st.textContent;
   UQ_PCTS.forEach((p) => {
     const b = document.createElement('button');
@@ -1877,6 +2057,10 @@ function uqBox(key) {
   q('.uqcopy').addEventListener('click', (e) => uqCopy(B, e.currentTarget));
   q('.uqclear').addEventListener('click', () => { B.area.value = ''; uqReset(B); uqDraft(); });
   B.again.addEventListener('click', () => uqRun(B, true));
+  B.edit.addEventListener('click', () => uqEditRes(B));
+  B.tr.addEventListener('click', () => uqTranslate(B));
+  B.area.addEventListener('paste', (e) => uqPaste(B, e));
+  B.area.addEventListener('input', () => { if (!B.F) B.tr.hidden = UNIQ.latin(B.area.value) <= 0.5; });
   return B;
 }
 
@@ -1896,6 +2080,30 @@ function uqBox(key) {
     vbox.appendChild(b);
   });
   press(vbox, 'data-voice', UQ.voice);
+  const abox = $('uqAddr');
+  UQ_ADDRS.forEach(([id, name]) => {
+    const b = document.createElement('button');
+    b.type = 'button'; b.className = 'chip'; b.textContent = name; b.setAttribute('data-addr', id);
+    b.addEventListener('click', () => {
+      if (UQ.addr === id) return;
+      UQ.addr = id; press(abox, 'data-addr', id); try { localStorage.setItem('uq-addr', id); } catch (e) {}
+      rerun();
+    });
+    abox.appendChild(b);
+  });
+  press(abox, 'data-addr', UQ.addr);
+  try {
+    const ph = JSON.parse(localStorage.getItem('uq-ph') || 'null');
+    if (ph) { $('uqHead').value = ph.h || ''; $('uqTail').value = ph.t || ''; $('uqPh').open = !!(ph.h || ph.t); }
+  } catch (e) {}
+  ['uqHead', 'uqTail'].forEach((id) => $(id).addEventListener('input', () => {
+    try { localStorage.setItem('uq-ph', JSON.stringify({ h: $('uqHead').value, t: $('uqTail').value })); } catch (e) {}
+  }));
+  $('uqUrlClear').addEventListener('click', () => { $('uqUrl').value = ''; uqSt('uqFetchSt', 'Или вставь свой текст в поля ниже'); $('uqUrl').focus(); });
+  $('uqNext').addEventListener('click', () => {
+    const B = UQ.B.title, t = $('uqTitleBox').hidden || B.busy ? '' : B.F && B.F.res ? B.F.res.text : B.area.value.trim();
+    if (t) uqTitleToVideo(t); else uqMode(false);
+  });
   $('uqDash').setAttribute('aria-pressed', String(UQ.dash));
   $('uqDash').addEventListener('click', () => {
     UQ.dash = !UQ.dash; $('uqDash').setAttribute('aria-pressed', String(UQ.dash)); try { localStorage.setItem('uq-dash', UQ.dash ? '1' : '0'); } catch (e) {}
@@ -1909,10 +2117,9 @@ function uqBox(key) {
   $('uqToVideo').addEventListener('click', () => {
     const B = UQ.B.title, t = B.F && B.F.res ? B.F.res.text : B.area.value.trim();
     if (!t) return uqBoxSt(B, 'Сначала впиши заголовок или забери его по ссылке', 'err');
-    S.text = t.split('\n').map((s) => s.trim()).filter(Boolean).join('\n');
-    $('txt').value = S.text; persist(); rebuild(0); hideDone();
-    uqMode(false);                                    // строку статуса редактора каждый кадр пишут рамки: подтверждение = заголовок в превью
+    uqTitleToVideo(t);
   });
+  for (const B of Object.values(UQ.B)) uqRender(B);   // черновик на английском: сразу кнопка перевода
 })();
 // доступ (24.10.2026): вход через Telegram-бота, 3 бесплатные генерации, подписка 2 000 ₽ (воркер uniq-api: api.js, acc.js)
 // генерация = собранное видео или уникализация одного окошка; повтор того же текста или ролика бесплатен (номер g)

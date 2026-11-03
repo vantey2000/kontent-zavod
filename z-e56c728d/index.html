@@ -100,7 +100,7 @@ input[type=range] { width: 100%; accent-color: var(--accent); }
 .promo i { grid-column: 2; grid-row: 1 / span 2; font-style: normal; font-size: 22px; color: var(--accent); }
 .promo:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 @media (min-width: 900px) { .app:not(.uqmode) > .foot { grid-column: 2; } }
-@media (max-width: 520px) { header { flex-wrap: wrap; } header h1 { flex: 1 1 100%; } .hbtns { flex: 1 1 100%; } .hbtns .btn { flex: 1; text-align: center; } }
+@media (max-width: 520px) { header { flex-wrap: wrap; } header .htitle { flex: 1 1 100%; } .hbtns { flex: 1 1 100%; } .hbtns .btn { flex: 1; text-align: center; } }
 #uqOpen[aria-pressed="true"] { background: var(--fg); color: var(--bg); border-color: var(--fg); }
 .uqp { background: var(--panel); border: 1px solid var(--line); border-radius: 16px; padding: 10px; display: grid; gap: 10px; min-width: 0; }
 .uq { grid-column: 1 / -1; display: grid; gap: 10px; width: 100%; max-width: 760px; margin: 0 auto; min-width: 0; }
@@ -125,13 +125,25 @@ input[type=url] { border-radius: 12px; border: 1px solid var(--line); background
 .uqload .bar { width: min(260px, 64vw); }
 .uqload .bar i { background: var(--yellow); }
 .uqload span { font-size: 13px; color: var(--fg); }
-.uqagain[hidden] + #uqToVideo, .done > .uqagain:last-child { grid-column: 1 / -1; }
+#uqToVideo { grid-column: 1 / -1; }
+/* 03.11 по отзывам тестеров */
+.htitle { display: grid; gap: 1px; }
+.howto { font-size: 12px; color: var(--muted); text-decoration: underline; text-underline-offset: 2px; }
+.howto:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.xbtn { flex: none; padding: 8px 12px; font-size: 20px; line-height: 1; }
+.voices.addr { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+.mineph summary { cursor: pointer; font-size: 13px; font-weight: 600; color: var(--muted); padding: 4px 0; }
+.minephb { display: grid; gap: 8px; margin-top: 8px; }
+.minephb textarea { min-height: 0; }
+.uqnext { width: 100%; }
+.onote { text-align: center; }
 </style>
 </head>
 <body>
 <div class="app">
   <header>
-    <h1>Рилсовая</h1>
+    <!-- «Как пользоваться» (03.11): Кития просила инструкцию, Зухра не смогла собрать рилс сама; новая вкладка, чтобы не терять ролик -->
+    <div class="htitle"><h1>Рилсовая</h1><a class="howto" id="howto" href="https://ivan-loginov.ru/n-2f254e947957/" target="_blank" rel="noopener">Как пользоваться</a></div>
     <div class="hbtns">
       <button class="btn" id="uqOpen" type="button" aria-pressed="false">Уникализатор</button>
       <label class="btn primary upl" for="file">Загрузить видео</label>
@@ -144,6 +156,7 @@ input[type=url] { border-radius: 12px; border: 1px solid var(--line); background
       <label class="row" for="uqUrl">Ссылка на чужой рилс или карусель</label>
       <div class="uqurl">
         <input id="uqUrl" type="url" inputmode="url" autocomplete="off">
+        <button class="btn xbtn" id="uqUrlClear" type="button" aria-label="Очистить ссылку">×</button>
         <button class="btn primary" id="uqFetch" type="button">Забрать текст</button>
       </div>
       <p class="hint" id="uqFetchSt" role="status">Или вставь свой текст в поля ниже</p>
@@ -152,6 +165,8 @@ input[type=url] { border-radius: 12px; border: 1px solid var(--line); background
     <div class="uqp">
       <div class="row">От чьего лица</div>
       <div class="voices" id="uqVoices" role="group" aria-label="От чьего лица"></div>
+      <div class="row">Обращение к читателю</div>
+      <div class="voices addr" id="uqAddr" role="group" aria-label="Обращение к читателю"></div>
       <div class="toggles" style="justify-content:flex-start"><button class="chip" id="uqDash" type="button" aria-pressed="true">Длинное тире «—» → короткое «-»</button></div>
     </div>
 
@@ -163,6 +178,7 @@ input[type=url] { border-radius: 12px; border: 1px solid var(--line); background
         <div class="res" hidden></div>
         <div class="uqload" hidden role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-label="Уникализация"><b>0%</b><div class="bar"><i></i></div><span></span></div>
       </div>
+      <button class="btn small uqtr" type="button" hidden>Перевести на русский</button>
       <div class="row">Насколько изменить заголовок</div>
       <div class="pcts" role="group" aria-label="Насколько изменить заголовок"></div>
       <p class="hint uqst" role="status">Нажми процент: заголовок уникализируется прямо здесь</p>
@@ -170,6 +186,7 @@ input[type=url] { border-radius: 12px; border: 1px solid var(--line); background
         <button class="btn primary uqcopy" type="button">Скопировать</button>
         <button class="btn uqclear" type="button">Очистить</button>
         <button class="btn uqagain" type="button" hidden>Другой вариант</button>
+        <button class="btn uqedit" type="button" hidden>Править</button>
         <button class="btn" id="uqToVideo" type="button">В заголовок ролика</button>
       </div>
       <label class="btn small" for="uqShot">Загрузить скрин кадра с заголовком</label>
@@ -183,6 +200,7 @@ input[type=url] { border-radius: 12px; border: 1px solid var(--line); background
         <div class="res" hidden></div>
         <div class="uqload" hidden role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-label="Уникализация"><b>0%</b><div class="bar"><i></i></div><span></span></div>
       </div>
+      <button class="btn small uqtr" type="button" hidden>Перевести на русский</button>
       <div class="row">Насколько изменить текст</div>
       <div class="pcts" role="group" aria-label="Насколько изменить текст"></div>
       <p class="hint uqst" role="status">Нажми процент: текст уникализируется прямо здесь</p>
@@ -190,8 +208,23 @@ input[type=url] { border-radius: 12px; border: 1px solid var(--line); background
         <button class="btn primary uqcopy" type="button">Скопировать</button>
         <button class="btn uqclear" type="button">Очистить</button>
         <button class="btn uqagain" type="button" hidden>Другой вариант</button>
+        <button class="btn uqedit" type="button" hidden>Править</button>
       </div>
+      <!-- мои фразы (03.11, просьбы Т. Елисеенко, Галины, Насти): добавляются при «Скопировать» и «Поделиться» готового ролика -->
+      <details class="mineph" id="uqPh">
+        <summary>Мои фразы: свой призыв, ник, мост</summary>
+        <div class="minephb">
+          <label class="row" for="uqHead">В начало текста</label>
+          <textarea id="uqHead" rows="2" placeholder="Например: Сохрани, чтобы не потерять"></textarea>
+          <label class="row" for="uqTail">В конец текста</label>
+          <textarea id="uqTail" rows="3" placeholder="Например: Подпишись @твой_ник, здесь ещё больше полезного"></textarea>
+          <p class="hint">Добавляются сами, когда жмёшь «Скопировать» здесь или «Поделиться» у готового ролика</p>
+        </div>
+      </details>
     </div>
+
+    <!-- 03.11: Ира застряла здесь и решила, что выложить нельзя; кнопка ставит заголовок на видео и ведёт к сборке -->
+    <button class="btn primary uqnext" id="uqNext" type="button">Дальше: собрать ролик →</button>
   </section>
 
   <div class="stagecol">
@@ -258,11 +291,16 @@ input[type=url] { border-radius: 12px; border: 1px solid var(--line); background
     </div>
 
     <div class="tab" data-pane="color" hidden>
-      <div class="pals" id="pals"></div>
-      <div class="custom">
-        <label><span id="cLn">Светлые строки</span> <input type="color" id="cL" value="#f29bbb"></label>
-        <label><span id="cDn">Тёмные строки</span> <input type="color" id="cD" value="#8a0f33"></label>
+      <!-- свой цвет первым (03.11): Ира и Галина не нашли его под готовыми сочетаниями -->
+      <div class="fgroup">
+        <h3>Свой цвет</h3>
+        <div class="custom">
+          <label><span id="cLn">Светлые строки</span> <input type="color" id="cL" value="#f29bbb"></label>
+          <label><span id="cDn">Тёмные строки</span> <input type="color" id="cD" value="#8a0f33"></label>
+        </div>
+        <p class="hint">Нажми на образец цвета и выбери любой</p>
       </div>
+      <div class="fgroup"><h3>Готовые сочетания</h3><div class="pals" id="pals"></div></div>
     </div>
 
     <div class="tab" data-pane="anim" hidden><div class="anims" id="anims"></div></div>
@@ -282,6 +320,7 @@ input[type=url] { border-radius: 12px; border: 1px solid var(--line); background
       <button class="btn primary" id="share" type="button">Поделиться</button>
       <button class="btn" id="save" type="button">Скачать</button>
     </div>
+    <p class="hint onote" id="outNote" hidden></p>
     <p class="err" id="outErr" hidden></p>
   </div>
 
