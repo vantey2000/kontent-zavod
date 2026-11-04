@@ -1,0 +1,263 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="robots" content="noindex, nofollow">
+<meta name="theme-color" content="#faf7f2">
+<title>План Натальи</title>
+<style>
+  :root {
+    --bg: #faf7f2; --card: #ffffff; --ink: #1d1b19; --muted: #6b655d; --line: #ebe4d9;
+    --accent: #c2410c; --accent-soft: #fff1e8; --calm: #0f5c4d; --calm-soft: #e8f4ef;
+    --warn: #9f1239; --warn-soft: #fdecef; --chip: #f3efe8; --shadow: 0 1px 2px rgba(60,40,20,.06), 0 6px 24px rgba(60,40,20,.06);
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #141312; --card: #1d1b19; --ink: #f2eee8; --muted: #a59d92; --line: #2e2a26;
+      --accent: #fb923c; --accent-soft: #2a1c12; --calm: #5fd0b0; --calm-soft: #12241f;
+      --warn: #fb7185; --warn-soft: #2a1418; --chip: #26231f; --shadow: none;
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg: #141312; --card: #1d1b19; --ink: #f2eee8; --muted: #a59d92; --line: #2e2a26;
+    --accent: #fb923c; --accent-soft: #2a1c12; --calm: #5fd0b0; --calm-soft: #12241f;
+    --warn: #fb7185; --warn-soft: #2a1418; --chip: #26231f; --shadow: none;
+  }
+  * { box-sizing: border-box; }
+  html { -webkit-text-size-adjust: 100%; scroll-behavior: smooth; }
+  body { margin: 0; background: var(--bg); color: var(--ink);
+    font: 17px/1.55 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif; }
+  .wrap { max-width: 640px; margin: 0 auto; padding: 20px 16px 56px; }
+  a { color: var(--calm); text-underline-offset: 3px; }
+  b, strong { font-weight: 650; }
+
+  .hero { padding: 18px 0 8px; }
+  .kicker { font-size: 13px; letter-spacing: 1.4px; text-transform: uppercase; color: var(--muted); margin-bottom: 10px; }
+  h1 { font-family: Georgia, "Noto Serif", "Times New Roman", serif; font-weight: 700; font-size: 34px; line-height: 1.12;
+    letter-spacing: -0.4px; margin: 0 0 14px; }
+  h1 em { font-style: normal; color: var(--accent); }
+  .lead { font-size: 18px; margin: 0 0 18px; }
+
+  .stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin: 0 0 22px; }
+  .stat { background: var(--card); border: 1px solid var(--line); border-radius: 14px; padding: 12px 10px; box-shadow: var(--shadow); }
+  .stat .v { font-family: Georgia, "Noto Serif", serif; font-weight: 700; font-size: 22px; line-height: 1.1; color: var(--accent); white-space: nowrap; }
+  .stat .l { font-size: 12.5px; line-height: 1.3; color: var(--muted); margin-top: 4px; }
+
+  .toc { display: flex; gap: 8px; overflow-x: auto; padding: 2px 0 12px; margin: 0 0 8px; scrollbar-width: none; }
+  .toc::-webkit-scrollbar { display: none; }
+  .toc a { flex: 0 0 auto; text-decoration: none; color: var(--ink); background: var(--chip); border-radius: 999px;
+    padding: 7px 13px; font-size: 14px; }
+
+  section { background: var(--card); border: 1px solid var(--line); border-radius: 18px; padding: 20px 18px 8px;
+    margin: 0 0 16px; box-shadow: var(--shadow); scroll-margin-top: 12px; }
+  h2 { font-size: 22px; line-height: 1.2; margin: 0 0 12px; letter-spacing: -0.2px; display: flex; gap: 10px; align-items: baseline; }
+  h2 .n { flex: 0 0 auto; display: inline-flex; align-items: center; justify-content: center; width: 30px; height: 30px;
+    border-radius: 50%; background: var(--accent); color: #fff; font-size: 15px; font-weight: 700; transform: translateY(-2px); }
+  h3 { font-size: 17px; margin: 18px 0 8px; }
+  p { margin: 0 0 12px; }
+  ul, ol { margin: 0 0 12px; padding-left: 22px; }
+  li { margin: 0 0 8px; }
+  li::marker { color: var(--accent); font-weight: 700; }
+
+  .steps { list-style: none; padding: 0; counter-reset: s; }
+  .steps > li { counter-increment: s; position: relative; padding-left: 36px; margin-bottom: 12px; }
+  .steps > li::before { content: counter(s); position: absolute; left: 0; top: 1px; width: 24px; height: 24px; border-radius: 50%;
+    background: var(--accent-soft); color: var(--accent); font-size: 13px; font-weight: 700; text-align: center; line-height: 24px; }
+
+  .check { display: flex; gap: 12px; align-items: flex-start; padding: 12px 0; border-bottom: 1px solid var(--line); cursor: pointer; }
+  .check:last-child { border-bottom: 0; }
+  .check input { appearance: none; -webkit-appearance: none; flex: 0 0 auto; width: 26px; height: 26px; margin: 0;
+    border: 2px solid var(--accent); border-radius: 8px; display: grid; place-content: center; cursor: pointer; background: var(--card); }
+  .check input::after { content: ""; width: 12px; height: 7px; border: solid #fff; border-width: 0 0 3px 3px; transform: rotate(-45deg) translate(1px, -1px); opacity: 0; }
+  .check input:checked { background: var(--accent); }
+  .check input:checked::after { opacity: 1; }
+  .check .tx { flex: 1; }
+  .check .tx b { display: block; }
+  .check .tx span { display: block; font-size: 15px; color: var(--muted); }
+  .check input:checked + .tx b { text-decoration: line-through; text-decoration-color: var(--accent); color: var(--muted); }
+  .progress { font-size: 14px; color: var(--muted); margin: 4px 0 14px; }
+  .bar { height: 6px; background: var(--chip); border-radius: 99px; overflow: hidden; margin-top: 6px; }
+  .bar i { display: block; height: 100%; width: 0; background: var(--accent); border-radius: 99px; transition: width .3s; }
+
+  .box { border-radius: 14px; padding: 14px 15px; margin: 0 0 14px; font-size: 16px; }
+  .box .t { font-weight: 700; margin-bottom: 5px; }
+  .box p:last-child, .box ul:last-child { margin-bottom: 0; }
+  .box.accent { background: var(--accent-soft); } .box.accent .t { color: var(--accent); }
+  .box.calm { background: var(--calm-soft); } .box.calm .t { color: var(--calm); }
+  .box.warn { background: var(--warn-soft); } .box.warn .t { color: var(--warn); }
+
+  .ladder { width: 100%; border-collapse: collapse; margin: 4px 0 14px; font-size: 16px; }
+  .ladder th, .ladder td { padding: 9px 4px; border-bottom: 1px solid var(--line); text-align: center; }
+  .ladder th { font-size: 11px; text-transform: uppercase; letter-spacing: .2px; color: var(--muted); font-weight: 600; }
+  .ladder td:first-child, .ladder th:first-child { text-align: left; }
+  .ladder td.d { white-space: nowrap; }
+  .ladder td.d small { color: var(--muted); font-size: 13px; }
+  .ladder tr.today td { background: var(--accent-soft); font-weight: 700; }
+  .ladder tr.today td.d::after { content: "сегодня"; display: table; margin-top: 3px; font-size: 11px; font-weight: 700;
+    color: #fff; background: var(--accent); border-radius: 99px; padding: 1px 7px; }
+  .ladder tr.past td { color: var(--muted); }
+
+  .btn { display: inline-flex; align-items: center; gap: 8px; text-decoration: none; background: var(--accent); color: #fff;
+    border: 0; border-radius: 12px; padding: 12px 16px; font: inherit; font-weight: 650; font-size: 16px; cursor: pointer; margin: 2px 0 14px; }
+  .btn.ghost { background: var(--chip); color: var(--ink); }
+
+  .copy { position: relative; background: var(--chip); border-radius: 12px; margin: 0 0 14px; }
+  .copy pre { margin: 0; padding: 13px 14px 50px; white-space: pre-wrap; word-break: break-word;
+    font: 14.5px/1.5 ui-monospace, "SF Mono", Menlo, Consolas, monospace; color: var(--ink); max-height: 340px; overflow: auto; }
+  .copy.short pre { padding-bottom: 50px; max-height: none; }
+  .copy button { position: absolute; right: 8px; bottom: 8px; border: 0; border-radius: 9px; padding: 7px 12px;
+    background: var(--accent); color: #fff; font: 600 14px/1.2 -apple-system, Roboto, sans-serif; cursor: pointer; }
+  .copy button.ok { background: var(--calm); }
+
+  details { border: 1px solid var(--line); border-radius: 14px; margin: 0 0 14px; }
+  details > summary { cursor: pointer; padding: 13px 15px; font-weight: 650; list-style: none; display: flex; justify-content: space-between; gap: 10px; }
+  details > summary::-webkit-details-marker { display: none; }
+  details > summary::after { content: "+"; color: var(--accent); font-size: 22px; line-height: 1; }
+  details[open] > summary::after { content: "−"; }
+  details > .in { padding: 0 15px 4px; }
+
+  .vid { display: flex; gap: 12px; align-items: flex-start; padding: 10px 0; border-bottom: 1px solid var(--line); }
+  .vid:last-child { border-bottom: 0; }
+  .vid .ic { flex: 0 0 auto; width: 38px; height: 38px; border-radius: 10px; background: var(--accent-soft); color: var(--accent);
+    display: grid; place-content: center; font-size: 15px; }
+  .vid .m { font-size: 14px; color: var(--muted); }
+
+  .sign { text-align: center; color: var(--muted); font-size: 14px; margin-top: 26px; }
+  .sign b { color: var(--ink); }
+  @media (max-width: 380px) { h1 { font-size: 29px; } .stat .v { font-size: 19px; } .ladder { font-size: 15px; } }
+</style>
+</head>
+<body>
+<div class="wrap">
+<header class="hero">
+  <div class="kicker">Взрывные алгоритмы · созвон 04.11</div>
+  <h1>Наталья, твой план <em>после созвона</em></h1>
+  <p class="lead">Ты идёшь по стратегии: 5,2 млн просмотров и 5 200 подписчиков. Следующий шаг - карусели: убираем пёстрые и делаем спокойные, чтобы их читали. Плюс прогрев ленты каждый день, сторителлинг о себе и первые экспертные посты</p>
+  <div class="stats"><div class="stat"><div class="v">5,2 млн</div><div class="l">просмотров уже набрала</div></div><div class="stat"><div class="v">5 200</div><div class="l">подписчиков</div></div><div class="stat"><div class="v">в 8 раз</div><div class="l">карусели лучше рилсов приводят подписчиков</div></div></div>
+</header>
+
+<nav class="toc" aria-label="Разделы"><a href="#pervym">Первым делом</a><a href="#karuseli">Карусели</a><a href="#norma">Норма</a><a href="#progrev">Прогрев</a><a href="#obomne">Обо мне</a><a href="#konsult">Консультации</a><a href="#lyudi">Комментарии</a><a href="#svyaz">Связь</a></nav>
+
+<section id="pervym">
+  <h2><span class="n">1</span>В выходные первым делом</h2>
+  <div class="progress"><span id="pr-t">Отмечайте галочками, что сделали</span><div class="bar"><i id="pr-b"></i></div></div>
+<label class="check"><input type="checkbox" data-k="t1"><span class="tx"><b>Убрать пёстрые карусели</b><span>с инфографикой, стрелочками и вырезками больше не делаем, <a href="#karuseli">почему - в разделе 2</a></span></span></label><label class="check"><input type="checkbox" data-k="t2"><span class="tx"><b>Найти один спокойный фон для средних слайдов</b><span>бежевый, коричневый, кирпичная стена или спокойный узор. Нашла один - и берёшь его каждый раз</span></span></label><label class="check"><input type="checkbox" data-k="t3"><span class="tx"><b>Сделать в ChatGPT одну пробную фотку 4:5</b><span>посмотреть, как ложится, <a href="#karuseli">в разделе 2</a></span></span></label><label class="check"><input type="checkbox" data-k="t4"><span class="tx"><b>Собрать 3 карусели уже в спокойном виде</b><span>и дальше каждый день так</span></span></label><label class="check"><input type="checkbox" data-k="t5"><span class="tx"><b>Прогреть ленту</b><span>лайкать рилсы в нашем формате, <a href="#progrev">в разделе 4</a></span></span></label><label class="check"><input type="checkbox" data-k="t6"><span class="tx"><b>Зайти в Информер 4 потока и всё перечитать</b><span>там главное по курсу и ссылка на Рилсовую</span></span></label>
+<h3>Следом</h3><label class="check"><input type="checkbox" data-k="t7"><span class="tx"><b>Сторителлинг «Обо мне» на 7-12 слайдов</b><span>в том же чате, где делала распаковку, <a href="#obomne">в разделе 5</a></span></span></label><label class="check"><input type="checkbox" data-k="t8"><span class="tx"><b>Сторис «Обо мне» в актуальное</b><span>чтобы человек зашёл на страницу и сразу с тобой познакомился</span></span></label><label class="check"><input type="checkbox" data-k="t9"><span class="tx"><b>Каждый день 1 рилс и 1 карусель на свою экспертную тему</b><span>темы берёшь из распаковки</span></span></label><label class="check"><input type="checkbox" data-k="t10"><span class="tx"><b>Готова к конструктору - пиши мне</b><span>открою 30 дней бесплатно, <a href="#karuseli">в разделе 2</a></span></span></label>
+</section>
+
+<section id="karuseli">
+  <h2><span class="n">2</span>Карусели - главное сейчас</h2>
+<p>Карусели делаются в <b>3 раза быстрее</b> рилсов, а подписчиков приводят в <b>8 раз лучше</b>. Сейчас у тебя почти все больше тысячи просмотров, есть и по две тысячи - но это ещё не залёт. Залёт - это хотя бы от пары тысяч лайков, как у твоей карусели на 279 тыс. просмотров. Поэтому наша задача - сделать карусели нужного качества, чтобы они начали залетать</p>
+<div class="box warn"><div class="t">Пёстрые убираем совсем</div><p>Инфографика, красное, стрелочки, вырезки, всё разбросано по слайду - для нашего формата это мешает. Сразу переходи на спокойные и запускай те же 3 в день</p></div>
+<div class="box calm"><div class="t">Почему так</div><p>Наши карусели - это истории, нейроописание, их читают. Когда человек читает, у него работает воображение. А тут дополнительные раздражители: красное, пёстрое, стрелочки. Это только отвлекает, и человеку проще пролистнуть карусель и смотреть другое. Инфографика хорошо заходит в экспертных каруселях с шагами, а в наших историях она мешает. Я это тестировал сам, у других учеников то же самое</p></div>
+<h3>Как делаем</h3>
+<ol class="steps"><li>На <b>первом и последнем</b> слайде - твоё фото</li><li>На всех средних - один и тот же спокойный фон, не пёстрый. Главное, чтобы он не перетягивал внимание на себя</li><li>Насыщенность фото около <b>50%</b>, как у меня: не чёрно-белое и не на все 100, чтобы не забирало внимание</li><li>Фото генерируешь в ChatGPT. Формат <b>4:5</b> - вертикальный, как пост в ленте. Сделай одну пробную и посмотри, как ляжет</li><li>Это тест: у нас всё время тесты, смотрим, что залетает именно у тебя</li></ol>
+<div class="box accent"><div class="t">Дальше</div><p>Когда спокойные карусели начнут залетать, наращиваем их количество до 10 в день, как рилсы</p></div>
+<div class="box calm"><div class="t">Конструктор</div><p>Один раз потратить время и разобраться, зато потом всё на автомате и уходит минута. Когда будешь готова сесть за него, напиши мне - открою 30 дней бесплатно с этого дня</p></div>
+<a class="btn ghost" href="https://ivan-loginov.ru/karusel/">Конструктор каруселей →</a>
+</section>
+
+<section id="norma">
+  <h2><span class="n">3</span>Норма на каждый день</h2>
+<ul><li><b>10</b> рилсов в ленту</li><li><b>10</b> пробных</li><li><b>3</b> карусели, уже спокойные</li><li>плюс <b>1 рилс и 1 карусель</b> на свою экспертную тему - о том, что потом будешь продавать</li></ul>
+<p>Всё внимание на один аккаунт, остальные не ведём - всё правильно</p>
+<div class="box calm"><div class="t">Ты идёшь по статистике</div><p>5,2 млн просмотров и 5 200 подписчиков - это нормально, в среднем так и идёт. Всё по стратегии. А то, что на одних роликах подписок больше, чем лайков, зависит от темы: полезные темы сохраняют и потом подписываются</p></div>
+</section>
+
+<section id="progrev">
+  <h2><span class="n">4</span>Прогрев ленты</h2>
+<div class="box warn"><div class="t">Это не разовое задание</div><p>Прогревать ленту надо <b>постоянно</b>. Это мы нашли ещё одну утечку: ты росла без прогрева, а с прогревом скорость будет совсем другая</p></div>
+<ol class="steps"><li>Заходишь в рилсы и лайкаешь только наш формат, нейроописания</li><li>Надо, чтобы у тебя вся лента была только из них</li><li>Попался рилс, который тебе интересен и который ты тоже хотела бы сделать - копируешь ссылку на него</li><li>Вставляешь ссылку в Рилсовую: она сама вытащит заголовок и текст</li><li>Там же уникализируешь текст, ставишь свою видеоподложку и заголовок, шрифты подбираешь какие нравятся</li><li>И прямо оттуда выкладываешь</li></ol>
+<p>Рилсовая пока бесплатная. Как ей пользоваться, со скринами - <a href="https://ivan-loginov.ru/n-2f254e947957/">здесь</a></p>
+<a class="btn" href="https://ivan-loginov.ru/z-e56c728d/">Открыть Рилсовую →</a>
+<a class="btn ghost" href="https://t.me/c/4424375890/3">Информер 4 потока →</a>
+</section>
+
+<section id="obomne">
+  <h2><span class="n">5</span>Сторителлинг о себе</h2>
+<p>Делаем обязательно в ближайшее время. Человек зашёл на страницу и сразу с тобой познакомился: знает, кто ты и чем можешь быть полезна</p>
+<ol class="steps"><li>Открываешь тот же чат, где делала распаковку, и пишешь там</li><li>Карусель «Обо мне»: от <b>7 до 12</b> слайдов, в среднем 10. Пять мало, пятнадцать много</li><li>Внутри: кто ты, чем занимаешься, какое образование, чем можешь быть полезна</li><li>Закрепляешь её в профиле</li><li>Плюс ряд сторис «Обо мне» в актуальное: можно текстом, можно записать видео, а лучше миксовать</li></ol>
+<div class="copy short"><pre id="c1">Напиши сторителлинг обо мне для карусели «Обо мне» в Инстаграм по моей распаковке выше: кто я, чем занимаюсь, моё образование, чем я могу быть полезна. 10 слайдов, распиши по слайдам: первый слайд, второй и так далее</pre><button type="button" data-copy="c1">Скопировать</button></div>
+<p>Темы для экспертных рилсов и каруселей тоже оттуда: перечитай распаковку и выбирай</p>
+</section>
+
+<section id="konsult">
+  <h2><span class="n">6</span>Когда пишут за советом</h2>
+<div class="box warn"><div class="t">Бесплатные советы не раздаём</div><p>Первые два-три предложения в ответ можно бесплатно, чтобы человека прогреть. Дальше - консультация за <b>5 000 ₽</b>. Не 3 и не 2 тысячи: по рынку это от 3 до 5 тысяч, 10 уже многовато, а 5 нормально</p></div>
+<div class="copy short"><pre id="c2">Если хотите, чтобы я разобрала именно вашу ситуацию, я даю консультации. Консультация стоит 5 000 ₽, на ней мы с вами проработаем вашу ситуацию</pre><button type="button" data-copy="c2">Скопировать</button></div>
+<h3>Как подготовиться</h3>
+<ol class="steps"><li>Сразу попроси у человека побольше вводных: чего он хочет, предысторию</li><li>Всё, что он прислал, скидываешь в чат с Claude или ChatGPT</li><li>Просишь пошаговый план консультации, запрос ниже</li><li>Садишься, читаешь, готовишься</li><li>На консультации держишь окошко рядом: у тебя перед глазами вся карта, что рассказывать</li></ol>
+<div class="copy short"><pre id="c3">Я хочу провести консультацию с человеком. Вот его данные: (вставь всё, что он прислал). Распиши мне пошаговый план консультации: что ему рассказывать и в каких блоках</pre><button type="button" data-copy="c3">Скопировать</button></div>
+<div class="box calm"><div class="t">Психологом быть не обязательно</div><p>Получается не хуже, чем у психологов. У меня ученица так же: написал мужчина про проблемы с женой, она взяла 5 000, расписала ему план на месяц, как восстановить отношения. Он остался доволен и хочет ещё</p></div>
+<div class="box accent"><div class="t">Расклады</div><p>Расклады тоже делай с помощью нейросети: всё гораздо быстрее, время экономит</p></div>
+</section>
+
+<section id="lyudi">
+  <h2><span class="n">7</span>Комментарии и люди</h2>
+<ul><li>Отвечать на комментарии в начале - правильно и важно, так рилсы летят быстрее</li><li>Хейтер гадит под постами - блокируй: нет тела - нет дела</li><li>Блогер бесит - отпишись</li></ul>
+<div class="box accent"><div class="t">Говорящая голова</div><p>Если тебе это близко, рилсы с говорящей головой потом можно миксовать: они лучше прогревают аудиторию. Но сначала базовый минимум, дальше смотри по своему времени</p></div>
+</section>
+
+<section id="svyaz">
+  <h2><span class="n">8</span>Связь</h2>
+<p>Любой вопрос - сразу пиши, даже если кажется, что спрашивать нечего. Самый плохой вопрос - незаданный</p>
+<p>После больницы спишемся и созвонимся. Я за тобой слежу 😉</p>
+</section>
+
+<p class="sign">Жду твои первые спокойные карусели 🚀<br><b>Иван Логинов</b> · Взрывные алгоритмы</p>
+</div>
+
+<script>
+(function () {
+  var KEY = "plan-shamannat-0411";
+  var state = {};
+  try { state = JSON.parse(localStorage.getItem(KEY) || "{}") || {}; } catch (e) { state = {}; }
+  var boxes = Array.prototype.slice.call(document.querySelectorAll(".check input"));
+  function paint() {
+    var done = boxes.filter(function (b) { return b.checked; }).length;
+    if (!boxes.length) return;
+    document.getElementById("pr-b").style.width = (done / boxes.length * 100) + "%";
+    document.getElementById("pr-t").textContent = done === 0 ? "Отмечайте галочками, что сделали"
+      : done === boxes.length ? "Всё сделано, вы огонь 🔥" : "Сделано " + done + " из " + boxes.length;
+  }
+  boxes.forEach(function (b) {
+    b.checked = !!state[b.dataset.k];
+    b.addEventListener("change", function () {
+      state[b.dataset.k] = b.checked;
+      try { localStorage.setItem(KEY, JSON.stringify(state)); } catch (e) {}
+      paint();
+    });
+  });
+  paint();
+
+  var d = new Date();
+  var today = d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0") + "-" + String(d.getDate()).padStart(2, "0");
+  document.querySelectorAll(".ladder tbody tr").forEach(function (tr) {
+    if (tr.dataset.d === today) tr.classList.add("today");
+    else if (tr.dataset.d < today) tr.classList.add("past");
+  });
+
+  function fallbackCopy(text) {
+    var ta = document.createElement("textarea");
+    ta.value = text; ta.setAttribute("readonly", ""); ta.style.position = "fixed"; ta.style.opacity = "0";
+    document.body.appendChild(ta); ta.select();
+    try { document.execCommand("copy"); } catch (e) {}
+    document.body.removeChild(ta);
+  }
+  document.querySelectorAll("[data-copy]").forEach(function (btn) {
+    btn.addEventListener("click", function () {
+      var text = document.getElementById(btn.dataset.copy).textContent;
+      var ok = function () {
+        btn.textContent = "Скопировано ✓"; btn.classList.add("ok");
+        setTimeout(function () { btn.textContent = "Скопировать"; btn.classList.remove("ok"); }, 1800);
+      };
+      if (navigator.clipboard && window.isSecureContext) {
+        navigator.clipboard.writeText(text).then(ok, function () { fallbackCopy(text); ok(); });
+      } else { fallbackCopy(text); ok(); }
+    });
+  });
+})();
+</script>
+</body>
+</html>
