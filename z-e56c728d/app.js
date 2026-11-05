@@ -1030,7 +1030,17 @@ video.muted = true; video.playsInline = true; video.loop = true; video.preload =
 video.setAttribute('playsinline', ''); video.setAttribute('muted', ''); video.setAttribute('aria-hidden', 'true');
 // айфон не грузит и не играет видео вне страницы и невидимое, поэтому оно лежит на сцене под холстом
 video.className = 'vsrc'; $('stage').prepend(video);
-const demo = new Image(); demo.src = 'demo.jpg';
+// фон до загрузки своего видео: нейтральный градиент кодом (05.11 фото Ивана убрано по его просьбе)
+const demo = document.createElement('canvas'); demo.width = 1080; demo.height = 1920;
+(() => {
+  const x = demo.getContext('2d');
+  const g = x.createLinearGradient(0, 0, 0, 1920);
+  g.addColorStop(0, '#ebe3d4'); g.addColorStop(0.42, '#cdc1ab'); g.addColorStop(0.75, '#8a7f6f'); g.addColorStop(1, '#3d3832');
+  x.fillStyle = g; x.fillRect(0, 0, 1080, 1920);
+  const r = x.createRadialGradient(540, 820, 150, 540, 960, 1300);
+  r.addColorStop(0, 'rgba(255,255,255,0.16)'); r.addColorStop(1, 'rgba(0,0,0,0.3)');
+  x.fillStyle = r; x.fillRect(0, 0, 1080, 1920);
+})();
 let hasVideo = false, exporting = false, paused = false, L = null, snapGuide = false, vidWait = '';
 let lastStatus = '', fakeStart = performance.now(), atlasWarn = '';
 
@@ -1048,7 +1058,7 @@ function cover(x, src, sw, sh) {
 // один кадр: фон + заголовок в момент time (секунды ролика)
 function paint(x, time) {
   if (hasVideo) cover(x, video, video.videoWidth, video.videoHeight);
-  else cover(x, demo, demo.naturalWidth, demo.naturalHeight);
+  else x.drawImage(demo, 0, 0);
   if (!L || time < S.tIn || time > tOut()) return;
   const left = tOut() < dur() - 0.05 ? tOut() - time : null;
   ENGINE.draw(x, L, { cx: S.cx, cy: S.cy, scale: S.scale, anim: S.anim, t: time - S.tIn, left });
@@ -1381,7 +1391,6 @@ async function save() {
     const cur = S.font || look().font;
     if ((e.fontfaces || []).some(f => f.family.replace(/["']/g, '') === cur)) rebuild(60);
   });
-  await demo.decode().catch(() => null);
   await ENGINE.atlasIndex();
   rebuild(0);
   requestAnimationFrame(loop);
