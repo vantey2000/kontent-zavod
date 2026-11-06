@@ -93,7 +93,8 @@ function card(p, s) {
   else body = m3(money(s.data.pays)) + '<div class="facts">' + s.data.facts.map(f => '<span>' + esc(f[0]) + ' <b>' + esc(f[1]) + '</b></span>').join('') + '</div>'
     + (s.data.warn ? '<div class="st warn">' + esc(s.data.warn) + '</div>' : '');
   return '<div class="pcard" data-p="' + p.id + '"><div class="ph"><b>' + esc(p.name) + '</b><span>' + esc(p.what) + '</span></div>' + body
-    + '<button class="btn ghost sm go" data-open="' + p.id + '">Открыть админку</button></div>';
+    + '<div class="gos"><button class="btn ghost sm go" data-open="' + p.id + '">Открыть админку</button>'
+    + (p.act && s.data ? '<button class="btn sm go" data-act="' + p.id + '">' + esc(p.act[0]) + '</button>' : '') + '</div></div>';
 }
 
 function render() {
@@ -108,15 +109,19 @@ function render() {
 }
 
 /* вкладки: админка продукта грузится при первом открытии и остаётся живой при переключении */
-function openTab(id) {
+// hash - куда сразу перейти внутри админки продукта (например #podarok у конструктора)
+function openTab(id, hash) {
   const p = byId(id);
   tab = p ? id : 'sum';
   document.querySelectorAll('#tabs [data-tab]').forEach(b => b.classList.toggle('on', b.dataset.tab === tab));
   if (p && !$('main').querySelector('[data-pane="' + id + '"]')) {
     const pane = document.createElement('section');
     pane.className = 'pane'; pane.dataset.pane = id;
-    pane.innerHTML = '<iframe title="Админка: ' + esc(p.name) + '" src="' + esc(p.admin) + '"></iframe>';
+    pane.innerHTML = '<iframe title="Админка: ' + esc(p.name) + '" src="' + esc(p.admin + (hash ? '#' + hash : '')) + '"></iframe>';
     $('main').append(pane);
+  } else if (p && hash) {
+    const fr = $('main').querySelector('[data-pane="' + id + '"] iframe');
+    try { fr.contentWindow.location.hash = hash; } catch { fr.src = p.admin + '#' + hash; }
   }
   document.querySelectorAll('.pane').forEach(x => { x.hidden = x.dataset.pane !== tab; });
   history.replaceState(null, '', location.pathname + (p ? '#' + id : ''));
@@ -127,6 +132,8 @@ $('tabs').addEventListener('click', e => { const b = e.target.closest('[data-tab
 $('cards').addEventListener('click', e => {
   const o = e.target.closest('[data-open]');
   if (o) return openTab(o.dataset.open);
+  const a = e.target.closest('[data-act]');
+  if (a) return openTab(a.dataset.act, byId(a.dataset.act).act[1]);
   const s = e.target.closest('[data-save]');
   if (!s) return;
   const p = byId(s.dataset.save), v = $('cards').querySelector('[data-key="' + p.id + '"]').value.trim();

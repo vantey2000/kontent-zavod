@@ -46,7 +46,7 @@ function render(j) {
     + (Object.keys(by).sort().reverse().map(k => '<tr><td class="day">' + dDay(k) + '</td>' + STEPS.map(s => '<td class="n">' + (by[k][s[0]] || 0) + '</td>').join('') + '</tr>').join('')
       || '<tr><td colspan="6" class="hint">За 30 дней событий нет</td></tr>');
   $('paylist').innerHTML = '<tr><th>Дата</th><th>Тариф</th><th>Почта</th><th class="n">Сумма</th></tr>'
-    + (P2.map(p => '<tr><td class="day">' + d(p.at) + '</td><td>' + esc(TIER[p.tier] || p.tier) + '</td><td>' + esc(p.email) + (p.own ? ' <span class="own">свой</span>' : '') + '</td><td class="n">' + rub(p.sum) + '</td></tr>').join('')
+    + (P2.map(p => '<tr><td class="day">' + d(p.at) + '</td><td>' + esc(TIER[p.tier] || p.tier) + '</td><td class="mail">' + esc(p.email) + (p.own ? ' <span class="own">свой</span>' : '') + '</td><td class="n">' + rub(p.sum) + '</td></tr>').join('')
       || '<tr><td colspan="4" class="hint">Оплат пока нет</td></tr>');
 }
 

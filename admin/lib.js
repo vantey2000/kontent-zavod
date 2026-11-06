@@ -4,7 +4,8 @@
 export const PRODUCTS = [
   // 29.10: «Твой 2027» и «Натальная карта» убраны по слову Ивана (двери на паузе, продукты не работают), их страницы админок на сайте остались
   { id: 'td', tab: 'Твой день', name: 'Твой день', what: 'гороскоп на каждый день, 490 ₽ в месяц', admin: '/admin/den/', store: 'td_admin', api: 'https://tvoy-den-api.aivan-loginov.workers.dev' },
-  { id: 'kb', tab: 'Карусели', name: 'Конструктор каруселей', what: 'подписка 1 500 ₽ в месяц', admin: '/karusel/admin/', store: 'kb_admin', api: 'https://karusel-api.aivan-loginov.workers.dev' },
+  { id: 'kb', tab: 'Карусели', name: 'Конструктор каруселей', what: 'подписка 1 500 ₽ в месяц', admin: '/karusel/admin/', store: 'kb_admin', api: 'https://karusel-api.aivan-loginov.workers.dev',
+    act: ['Подарить доступ', 'podarok'] },   // 6.11.2026: кнопка на карточке открывает вкладку сразу на форме подарка
   { id: 'sk', tab: 'Скорочтение', name: 'Скорочтение', what: 'тренажёр, месяц и навсегда', admin: '/skorochtenie/admin/', store: 'sk_admin', api: 'https://skorochtenie-api.aivan-loginov.workers.dev' },
   { id: 'uq', tab: 'Рилсовая', name: 'Рилсовая', what: 'заголовки и уникализатор рилсов', admin: '/admin/rilsovaya/', store: 'uq_admin', api: 'https://uniq-api.aivan-loginov.workers.dev' },
   { id: 'kz', tab: 'Кортизол', name: 'Анти-Кортизол', what: 'протокол на 21 день', admin: '/admin/kortizol/', store: 'kz_admin', api: 'https://kortizol-api.aivan-loginov.workers.dev' },
