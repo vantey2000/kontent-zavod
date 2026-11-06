@@ -19,8 +19,15 @@
   .btn{background:var(--gold);color:#151515;border:0;border-radius:10px;font-family:inherit;font-weight:700;font-size:13px;padding:10px 14px;cursor:pointer}
   .btn.ghost{background:transparent;color:var(--gold);border:1px solid var(--line)}
   .btn.sm{padding:7px 10px;font-size:12px}
-  input,select{background:#161619;border:1px solid var(--line);border-radius:10px;color:var(--ink);font-family:inherit;font-size:16px;padding:10px 12px;outline:none;width:100%}
-  input:focus,select:focus{border-color:var(--gold)}
+  input,select,textarea{background:#161619;border:1px solid var(--line);border-radius:10px;color:var(--ink);font-family:inherit;font-size:16px;padding:10px 12px;outline:none;width:100%}
+  input:focus,select:focus,textarea:focus{border-color:var(--gold)}
+  textarea{resize:vertical;line-height:1.45;font-size:15px}
+  .gnow{font-size:13px;color:#c9c9d0;margin-top:8px;line-height:1.5}
+  .gnow .after{color:var(--gold);font-weight:700}
+  .gnow .warn{color:var(--red)}
+  .gok{font-weight:700;font-size:14px;margin:12px 0 4px}
+  .gmsg{margin-top:6px}
+  .btn:disabled{opacity:.45;cursor:default}
   .cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:8px;margin-bottom:18px}
   .card{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:12px 14px}
   .card b{display:block;font-size:22px;font-weight:800}
@@ -98,10 +105,10 @@
     <div class="cards" id="cards"></div>
     <div class="tabs" id="tabs">
       <button data-t="users" class="on">Участники</button>
+      <button data-t="grant">Подарить доступ</button>
       <button data-t="stats">Статистика</button>
       <button data-t="pays">Оплаты</button>
       <button data-t="ref">Рефералка</button>
-      <button data-t="grant">Выдать доступ</button>
     </div>
 
     <section data-s="users">
@@ -132,19 +139,26 @@
 
     <section data-s="grant" hidden>
       <div class="box">
-        <h3>Бесплатный доступ</h3>
-        <div class="grid2">
-          <input type="text" id="gemail" placeholder="почта кабинета" inputmode="email">
+        <h3>Подарить доступ к конструктору</h3>
+        <input type="text" id="gemail" list="gemails" placeholder="почта человека" inputmode="email" autocomplete="off" autocapitalize="off" spellcheck="false">
+        <datalist id="gemails"></datalist>
+        <div class="gnow" id="gnow"></div>
+        <div class="grid2" style="margin-top:8px">
           <select id="gdays"><option value="30">на 30 дней</option><option value="90">на 90 дней</option><option value="365">на год</option><option value="forever">навсегда</option></select>
+          <input type="text" id="gnote" placeholder="заметка для себя: за что">
         </div>
-        <input type="text" id="gnote" placeholder="заметка для себя: за что подарок" style="margin-top:8px">
         <div style="display:flex;gap:8px;margin-top:10px;flex-wrap:wrap">
-          <button class="btn" id="gdo">Выдать доступ</button>
-          <button class="btn ghost" id="gundo">Забрать подарок</button>
+          <button class="btn" id="gdo">Подарить доступ</button>
+          <button class="btn ghost" id="gundo" hidden>Забрать подарок</button>
         </div>
-        <div class="hint">Подарок не трогает оплаченную подписку. Почта - та, на которую заведён кабинет (можно выдать и до регистрации)</div>
         <div class="err" id="gerr"></div>
-        <div class="hint ok" id="gok"></div>
+        <div class="gok ok" id="gok" hidden></div>
+        <div id="gmsgbox" hidden>
+          <div class="hint">Человеку само ничего не приходит. Отправь ему это сообщение (текст можно поправить):</div>
+          <textarea id="gmsg" class="gmsg" rows="5"></textarea>
+          <button class="btn sm" id="gcopy" style="margin-top:8px">Скопировать сообщение</button>
+        </div>
+        <div class="hint" style="margin-top:12px">Подарок прибавляется к оплаченному сроку или прошлому подарку. Выдать можно и до регистрации: доступ включится, когда человек создаст кабинет на эту почту</div>
       </div>
     </section>
   </div>
@@ -219,7 +233,9 @@
   }
 
   const vis=()=>rows.filter(r=>$('showtest').checked||!r.test);
-  function render(){ renderCards(); renderUsers(); renderStats(); renderPays(); renderRef(); }
+  function render(){ renderCards(); renderUsers(); renderStats(); renderPays(); renderRef();
+    $('gemails').innerHTML=rows.filter(r=>!r.test).map(r=>'<option value="'+esc(r.email)+'">').join('');   // подсказка почт в форме подарка
+    paintGift(); }
 
   function renderStats(){
     const R=vis().filter(r=>r.cabinet), now=Date.now(), w=now-7*864e5;
@@ -319,12 +335,13 @@
       return '<div class="row" data-e="'+esc(r.email)+'"><div class="h"><span class="em">'+esc(r.email)+'</span><span class="badge b-'+r.status+'">'+ST[r.status]+(when?' · '+when:'')+'</span></div>'
         +'<div class="meta"><span>'+(r.cabinet?'кабинет с '+d(r.created):'оплата без кабинета')+'</span><span>активность '+d(r.lastActive)+'</span><span>каруселей '+(r.carousels||0)+'</span><span>фото '+r.photos+'</span>'
         +(r.paid?'<span>оплачено '+rub(r.paid)+' ('+r.pays.length+')</span>':'')+(r.refBy?'<span>пригласил '+esc(r.refBy)+'</span>':'')+(r.invited?'<span>привёл '+r.invited+'</span>':'')
-        +(r.cabinet?'<button class="btn ghost sm cabbtn" data-cab="'+esc(r.email)+'">Открыть кабинет · фото '+r.photos+'</button>':'')+'</div>'
+        +'<span class="rowbtns" style="margin-left:auto;display:flex;gap:6px;flex-wrap:wrap">'
+        +(r.cabinet?'<button class="btn ghost sm" data-cab="'+esc(r.email)+'">Открыть кабинет · фото '+r.photos+'</button>':'')
+        +'<button class="btn sm" data-gift="'+esc(r.email)+'">Подарить доступ</button></span></div>'
         +'<div class="more">'
         +(r.pays.length?'<div><b>Оплаты:</b> '+r.pays.slice().sort((a,b)=>b.at-a.at).map(p=>d(p.at)+' '+rub(p.sum)).join(', ')+'</div>':'<div>Оплат не было</div>')
         +(r.gift?'<div style="margin-top:4px"><b>Подарок:</b> '+(r.gift.forever?'навсегда':'до '+d(r.gift.until))+(r.gift.note?' · '+esc(r.gift.note):'')+'</div>':'')
         +(r.ref.accrued||r.invited?'<div style="margin-top:4px"><b>Рефералка:</b> привёл '+r.invited+', начислено '+rub(r.ref.accrued)+', выплачено '+rub(r.ref.paid)+', ждёт выплаты '+rub(r.ref.pending)+'</div>':'')
-        +'<div class="acts"><button class="btn sm" data-g="30">+30 дней</button><button class="btn ghost sm" data-g="forever">навсегда</button>'+(r.gift?'<button class="btn ghost sm" data-g="revoke">забрать подарок</button>':'')+'</div>'
         +'</div></div>';
     }).join('')||'<div class="hint">Никого не нашлось</div>';
   }
@@ -356,16 +373,122 @@
     return r.t;
   }
 
-  $('users').addEventListener('click',async e=>{
+  $('users').addEventListener('click',e=>{
     const row=e.target.closest('.row'); if(!row) return;
     const cb=e.target.closest('[data-cab]'); if(cb) return openCab(cb.dataset.cab);
-    const g=e.target.closest('[data-g]');
-    if(!g){ if(e.target.closest('.h')) row.classList.toggle('open'); return; }
-    const email=row.dataset.e, what=g.dataset.g;
-    const label=what==='revoke'?'Забрать подарок у '+email+'?':(what==='forever'?'Выдать '+email+' доступ навсегда?':'Выдать '+email+' доступ на '+what+' дней?');
-    if(!confirm(label)) return;
-    try{ await grant(email,what,'из админки'); await load(); }catch(ex){ alert('Не получилось: '+ex.message); }
+    const gb=e.target.closest('[data-gift]'); if(gb) return openGift(gb.dataset.gift);
+    if(e.target.closest('.h')) row.classList.toggle('open');
   });
+
+  /* ---------- подарить доступ (6.11.2026) ----------
+     Одна форма на всё: вкладка, кнопка в строке участника и кнопка на карточке в общей админке /admin/ (адрес ...#podarok).
+     Без системных окон confirm/alert: во встроенной вкладке и браузерах внутри приложений они молча не открываются */
+  const dl=ms=>{ const o={day:'numeric',month:'long',timeZone:'Europe/Moscow'}; if(new Date(ms).getFullYear()!==new Date().getFullYear()) o.year='numeric'; return new Date(ms).toLocaleDateString('ru-RU',o); };
+  const DAYS_TXT={'30':'на 30 дней','90':'на 90 дней','365':'на год'};
+  const okEmail=e=>/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(e);
+  const gEmail=()=>$('gemail').value.trim().toLowerCase().replace(/^mailto:\s*/,'');
+  let gAcc=null, gSeq=0, gTimer=0, undoArm=0;
+
+  function showTab(t){
+    tab=t;
+    document.querySelectorAll('#tabs button').forEach(x=>x.classList.toggle('on',x.dataset.t===t));
+    document.querySelectorAll('section[data-s]').forEach(s=>s.hidden=s.dataset.s!==t);
+  }
+  function clearGiftResult(){ $('gok').hidden=true; $('gmsgbox').hidden=true; err('gerr',''); }
+  function openGift(email){
+    showTab('grant'); clearGiftResult();
+    if(email!=null) $('gemail').value=email;
+    window.scrollTo(0,0);
+    if(!$('gemail').value) $('gemail').focus();
+    checkGift();
+  }
+  async function checkGift(){
+    const email=gEmail(), my=++gSeq; gAcc=null; paintGift();
+    if(!okEmail(email)) return;
+    $('gnow').textContent='смотрю, какой доступ сейчас…';
+    try{
+      const r=await api('/api/admin/access?email='+encodeURIComponent(email));
+      if(my!==gSeq) return;
+      if(r.status!==200||!r.j) throw new Error(r.t||('ошибка '+r.status));
+      gAcc=r.j; paintGift();
+    }catch(e){ if(my===gSeq) $('gnow').textContent='Не получилось проверить доступ: '+e.message; }
+  }
+  function paintGift(){
+    const email=gEmail();
+    $('gundo').hidden=!(gAcc&&gAcc.g);
+    $('gdo').disabled=false;
+    if(!gAcc||gAcc.email!==email){ $('gnow').innerHTML=okEmail(email)||!email?'':'<span class="warn">Проверь почту</span>'; return; }
+    const a=gAcc.access, row=rows.find(r=>r.email===email), what=$('gdays').value, L=[];
+    if(!row||!row.cabinet) L.push('Кабинета на эту почту пока нет: доступ включится, когда человек его создаст');
+    if(a.forever) L.push('Сейчас: подарок навсегда');
+    else if(a.paid&&a.renews) L.push('Сейчас: платит сам'+(a.next?', следующее списание '+dl(Date.parse(a.next+'T12:00:00+03:00')):'')+', доступ до '+dl(a.until));
+    else if(a.paid) L.push('Сейчас: доступ до '+dl(a.until)+(a.gift?' (подарок)':a.stopped?' (подписку отменил)':''));
+    else L.push('Сейчас: доступа нет'+(a.until?', срок вышел '+dl(a.until):''));
+    if(!$('gok').hidden){ $('gnow').innerHTML=L.map(esc).join('<br>'); return; }   // подарок только что выдан или забран: без прогноза следующего, чтобы не путать
+    let after;
+    if(a.forever){ after='<span class="warn">Уже навсегда. Чтобы поменять, сначала забери подарок</span>'; $('gdo').disabled=true; }
+    else after='<span class="after">После подарка: '+(what==='forever'?'навсегда':'до '+dl(Math.max(Date.now(),+a.until||0)+Number(what)*864e5))+'</span>';
+    L.push(after);
+    if(a.renews) L.push('<span class="warn">Он платит сам: касса продолжит списывать 1 500 ₽ каждый месяц, пока он не отменит подписку в конструкторе</span>');
+    $('gnow').innerHTML=L.map(x=>/^</.test(x)?x:esc(x)).join('<br>');
+  }
+  function giftMessage(email,what,before,a){
+    const row=rows.find(r=>r.email===email), cab=!!(row&&row.cabinet);
+    const ext=before&&before.paid&&!before.forever&&what!=='forever';
+    let m='Привет! ';
+    if(what==='forever') m+='Подарил тебе доступ к конструктору каруселей навсегда';
+    else if(ext) m+='Продлил тебе доступ к конструктору каруселей в подарок, ещё '+(DAYS_TXT[what]||'на '+what+' дней')+'. Теперь он открыт до '+dl(a.until);
+    else m+='Подарил тебе доступ к конструктору каруселей '+(DAYS_TXT[what]||'на '+what+' дней')+', до '+dl(a.until);
+    m+=cab?'\n\nЗаходи под своей почтой '+email+': https://ivan-loginov.ru/karusel/'
+      :'\n\nЗайди на https://ivan-loginov.ru/karusel/ и создай кабинет на почту '+email+' - доступ включится сам';
+    return m;
+  }
+  $('gemail').addEventListener('input',()=>{ clearGiftResult(); clearTimeout(gTimer); gAcc=null; paintGift(); gTimer=setTimeout(checkGift,450); });
+  $('gdays').addEventListener('change',()=>{ clearGiftResult(); paintGift(); });
+  $('gdo').onclick=async()=>{
+    clearGiftResult();
+    const email=gEmail(); if(!okEmail(email)) return err('gerr','Проверь почту');
+    const what=$('gdays').value, before=gAcc&&gAcc.email===email?gAcc.access:null;
+    $('gdo').disabled=true; $('gdo').textContent='Дарю…';
+    try{
+      await grant(email,what,$('gnote').value.trim()||'из админки');
+      const r=await api('/api/admin/access?email='+encodeURIComponent(email));   // проверяем, что доступ правда открылся
+      const a=r.j&&r.j.access;
+      if(!a||!a.paid) throw new Error('сервер ответил, но доступ не открылся. Обнови страницу и проверь');
+      gAcc=r.j; paintGift();
+      $('gok').textContent='Готово: у '+email+' доступ '+(a.forever?'навсегда':'до '+dl(a.until)); $('gok').hidden=false;
+      $('gmsg').value=giftMessage(email,what,before,a); $('gmsgbox').hidden=false;
+      $('gnote').value='';
+      load();
+    }catch(ex){ err('gerr','Не получилось: '+(ex.message==='already forever'?'у человека уже подарок навсегда':ex.message)); }
+    finally{ $('gdo').textContent='Подарить доступ'; paintGift(); }
+  };
+  $('gundo').onclick=async()=>{
+    const email=gEmail(); if(!okEmail(email)) return err('gerr','Проверь почту');
+    if(Date.now()-undoArm>4000){   // защита от случайного нажатия: второе нажатие в течение 4 секунд
+      undoArm=Date.now(); $('gundo').textContent='Точно забрать? Нажми ещё раз';
+      setTimeout(()=>{ if(Date.now()-undoArm>=4000) $('gundo').textContent='Забрать подарок'; },4100);
+      return;
+    }
+    undoArm=0; $('gundo').textContent='Забрать подарок'; clearGiftResult();
+    try{ await grant(email,'revoke'); $('gok').textContent='Подарок забран у '+email; $('gok').hidden=false; await checkGift(); load(); }
+    catch(ex){ err('gerr','Не получилось: '+ex.message); }
+  };
+  $('gcopy').onclick=async()=>{
+    const t=$('gmsg').value; let done=false;
+    try{ await navigator.clipboard.writeText(t); done=true; }catch(e){}
+    if(!done){ const ta=$('gmsg'); ta.focus(); ta.select(); try{ ta.setSelectionRange(0,t.length); done=document.execCommand('copy'); }catch(e){} }
+    $('gcopy').textContent=done?'Скопировано ✓':'Текст выделен: нажми «Скопировать»';
+    setTimeout(()=>{ $('gcopy').textContent='Скопировать сообщение'; },2500);
+  };
+  // кнопка «Подарить доступ» в общей админке открывает эту страницу с адресом ...#podarok
+  function giftFromHash(){
+    if(!/^#podarok/.test(location.hash)) return;
+    const m=location.hash.match(/^#podarok=(.+)$/);
+    history.replaceState(null,'',location.pathname+location.search);
+    if(KEY) openGift(m?decodeURIComponent(m[1]):null);
+  }
+  window.addEventListener('hashchange',giftFromHash);
   $('refopen').addEventListener('click',async e=>{
     const b=e.target.closest('[data-paid]'); if(!b) return;
     const note=prompt('Перевёл '+rub(b.dataset.amt)+' на '+b.dataset.paid+'. Заметка (дата, банк):','СБП '+new Date().toLocaleDateString('ru-RU'));
@@ -377,21 +500,13 @@
   $('filters').addEventListener('click',e=>{ const f=e.target.closest('[data-f]'); if(!f) return; filter=f.dataset.f; renderUsers(); });
   $('q').addEventListener('input',renderUsers);
   $('showtest').addEventListener('change',render);
-  $('tabs').addEventListener('click',e=>{ const b=e.target.closest('[data-t]'); if(!b) return; tab=b.dataset.t;
-    document.querySelectorAll('#tabs button').forEach(x=>x.classList.toggle('on',x===b));
-    document.querySelectorAll('section[data-s]').forEach(s=>s.hidden=s.dataset.s!==tab); });
-  $('gdo').onclick=async()=>{ err('gerr',''); $('gok').textContent='';
-    const email=$('gemail').value.trim().toLowerCase(); if(!/^\S+@\S+\.\S+$/.test(email)) return err('gerr','Проверь почту');
-    try{ $('gok').textContent=await grant(email,$('gdays').value,$('gnote').value.trim()); load(); }catch(ex){ err('gerr',ex.message); } };
-  $('gundo').onclick=async()=>{ err('gerr',''); $('gok').textContent='';
-    const email=$('gemail').value.trim().toLowerCase(); if(!/^\S+@\S+\.\S+$/.test(email)) return err('gerr','Проверь почту');
-    try{ $('gok').textContent=await grant(email,'revoke'); load(); }catch(ex){ err('gerr',ex.message); } };
+  $('tabs').addEventListener('click',e=>{ const b=e.target.closest('[data-t]'); if(!b) return; showTab(b.dataset.t); if(tab==='grant'&&!$('gemail').value) $('gemail').focus(); });
   $('reload').onclick=load;
   $('logout').onclick=()=>{ try{ localStorage.removeItem('kb_admin'); }catch(e){} KEY=''; showLogin(''); };
   $('keysave').onclick=()=>{ const k=$('keyin').value.trim(); if(!k) return; KEY=k; try{ localStorage.setItem('kb_admin',k); }catch(e){} start(); };
 
   function showLogin(msg){ $('app').hidden=true; $('login').hidden=false; err('loginerr',msg); }
-  function start(){ if(!KEY) return showLogin(''); $('login').hidden=true; $('app').hidden=false; load(); }
+  function start(){ if(!KEY) return showLogin(''); $('login').hidden=true; $('app').hidden=false; giftFromHash(); load(); }
   start();
 })();
 </script>
