@@ -235,7 +235,8 @@
   const vis=()=>rows.filter(r=>$('showtest').checked||!r.test);
   function render(){ renderCards(); renderUsers(); renderStats(); renderPays(); renderRef();
     $('gemails').innerHTML=rows.filter(r=>!r.test).map(r=>'<option value="'+esc(r.email)+'">').join('');   // подсказка почт в форме подарка
-    paintGift(); }
+    paintGift();
+    if(giftPin){ giftPin=false; if(tab==='grant') $('tabs').scrollIntoView({block:'start'}); } }
 
   function renderStats(){
     const R=vis().filter(r=>r.cabinet), now=Date.now(), w=now-7*864e5;
@@ -387,7 +388,7 @@
   const DAYS_TXT={'30':'на 30 дней','90':'на 90 дней','365':'на год'};
   const okEmail=e=>/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(e);
   const gEmail=()=>$('gemail').value.trim().toLowerCase().replace(/^mailto:\s*/,'');
-  let gAcc=null, gSeq=0, gTimer=0, undoArm=0;
+  let gAcc=null, gSeq=0, gTimer=0, undoArm=0, giftPin=false;
 
   function showTab(t){
     tab=t;
@@ -398,8 +399,9 @@
   function openGift(email){
     showTab('grant'); clearGiftResult();
     if(email!=null) $('gemail').value=email;
-    window.scrollTo(0,0);
-    if(!$('gemail').value) $('gemail').focus();
+    $('tabs').scrollIntoView({block:'start'});   // форма сразу перед глазами, а не под карточками с цифрами
+    giftPin=!rows.length;   // данные ещё грузятся: карточки появятся сверху и столкнут форму вниз, после загрузки вернём её
+    if(!$('gemail').value) $('gemail').focus({preventScroll:true});
     checkGift();
   }
   async function checkGift(){
