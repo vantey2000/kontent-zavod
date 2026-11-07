@@ -344,7 +344,7 @@
       const when=r.status==='paying'&&r.next?'списание '+d(Date.parse(r.next+'T12:00:00')):(r.forever?'без срока':(r.until?'до '+d(r.until):''));
       return '<div class="row" data-e="'+esc(r.email)+'"><div class="h"><span class="em">'+esc(r.email)+'</span><span class="badge b-'+r.status+'">'+ST[r.status]+(when?' · '+when:'')+'</span></div>'
         +'<div class="meta"><span>'+(r.cabinet?'кабинет с '+d(r.created):'оплата без кабинета')+'</span><span>активность '+d(r.lastActive)+'</span><span>каруселей '+(r.carousels||0)+'</span><span>фото '+r.photos+'</span>'
-        +(r.paid?'<span>оплачено '+rub(r.paid)+' ('+r.pays.length+')</span>':'')+(r.refBy?'<span>пригласил '+esc(r.refBy)+'</span>':'')+(r.invited?'<span>привёл '+r.invited+'</span>':'')
+        +(r.paid?'<span>оплачено '+rub(r.paid)+' ('+r.pays.length+')</span>':'')+(r.refBy?'<span>пригласил '+esc(r.refBy)+(r.refSrc==='net'?' (по сети: ссылку открыл в другом браузере)':r.refSrc==='admin'?' (привязан вручную)':'')+'</span>':'')+(r.invited?'<span>привёл '+r.invited+'</span>':'')
         +'<span class="rowbtns" style="margin-left:auto;display:flex;gap:6px;flex-wrap:wrap">'
         +(r.cabinet?'<button class="btn ghost sm" data-cab="'+esc(r.email)+'">Открыть кабинет · фото '+r.photos+'</button>':'')
         +'<button class="btn sm" data-gift="'+esc(r.email)+'">Подарить доступ</button></span></div>'
