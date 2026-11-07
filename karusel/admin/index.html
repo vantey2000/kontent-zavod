@@ -134,7 +134,7 @@
     <section data-s="ref" hidden>
       <div class="box"><h3>Ждут выплату</h3><div id="refopen"></div></div>
       <div class="box"><h3>Кто приводит людей</h3><table id="reftable"></table>
-        <div class="hint">Начисление становится доступным к выводу через 14 дней после оплаты друга. «Перевёл» отмечает выплату, у человека она уйдёт в «выплачено»</div></div>
+        <div class="hint">Начисление становится доступным к выводу через 3 дня после оплаты друга. «Перевёл» отмечает выплату, у человека она уйдёт в «выплачено»</div></div>
       <div class="box"><h3>Друг оплатил, а начисления нет</h3>
         <div class="grid2">
           <input type="text" id="rafriend" list="gemails" placeholder="почта друга (кто оплатил)" inputmode="email" autocomplete="off" autocapitalize="off" spellcheck="false">
@@ -143,7 +143,7 @@
         <button class="btn" id="rado" style="margin-top:10px">Привязать к пригласившему</button>
         <div class="err" id="raerr"></div>
         <div class="gok ok" id="raok" hidden></div>
-        <div class="hint" style="margin-top:12px">Оплаты друга, которые уже прошли, начислятся сразу, с датой оплаты: к выводу через 14 дней после неё. Дальше каждое продление друга начисляется само. Друга, уже привязанного к другому человеку, перепривязать нельзя</div></div>
+        <div class="hint" style="margin-top:12px">Оплаты друга, которые уже прошли, начислятся сразу, с датой оплаты: к выводу через 3 дня после неё. Дальше каждое продление друга начисляется само. Друга, уже привязанного к другому человеку, перепривязать нельзя</div></div>
     </section>
 
     <section data-s="grant" hidden>
@@ -372,7 +372,7 @@
       +'<div class="meta"><span>куда: '+esc(x.dest)+'</span><span>запрос '+d(x.requestedAt)+'</span></div>'
       +'<div class="acts" style="margin-top:8px"><button class="btn sm" data-paid="'+esc(x.email)+'" data-amt="'+x.toPay+'">Перевёл '+rub(x.toPay)+'</button></div></div>').join(''):'<div class="hint">Запросов на выплату нет</div>';
     const R=vis().filter(r=>r.invited||r.ref.accrued).sort((a,b)=>b.ref.accrued-a.ref.accrued);
-    $('reftable').innerHTML='<tr><th>Кто</th><th class="num">Привёл</th><th class="num">Оплат</th><th class="num">Начислено</th><th class="num">Выплачено</th><th class="num">Ждут 14 дн</th></tr>'
+    $('reftable').innerHTML='<tr><th>Кто</th><th class="num">Привёл</th><th class="num">Оплат</th><th class="num">Начислено</th><th class="num">Выплачено</th><th class="num">Ждут 3 дня</th></tr>'
       +(R.map(r=>'<tr><td>'+esc(r.email)+'</td><td class="num">'+r.invited+'</td><td class="num">'+r.ref.payments+'</td><td class="num">'+rub(r.ref.accrued)+'</td><td class="num">'+rub(r.ref.paid)+'</td><td class="num">'+rub(r.ref.hold)+'</td></tr>').join('')||'<tr><td colspan="6" class="hint">Пока никто никого не привёл</td></tr>');
   }
 

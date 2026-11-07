@@ -690,7 +690,7 @@
     <div class="gbtns"><button class="btn" id="refcopy">Скопировать</button><button class="btn ghost" id="refshare">Поделиться</button></div>
     <div class="refstats" id="refstats"></div>
     <h3>Вывести деньги</h3>
-    <p class="hint" id="refhold">Начисление можно вывести через 14 дней после оплаты друга, от 500 ₽. Иван переводит по СБП и отмечает выплату здесь</p>
+    <p class="hint" id="refhold">Начисление можно вывести через 3 дня после оплаты друга, от 500 ₽. Иван переводит по СБП и отмечает выплату здесь</p>
     <div class="field" style="margin-top:12px">
       <label>Куда перевести</label>
       <input type="text" id="refdest" placeholder="Телефон для СБП и банк: +7 900 000-00-00, Т-Банк">
@@ -707,7 +707,7 @@
    Код конструктора в репо сайта не лежит - его отдаёт karusel-api (/api/app) только кабинету с подпиской.
    Он исполняется и сразу убирается из страницы: «Сохранить страницу» не даёт рабочей копии */
 (function(){
-  const API='https://karusel-api.aivan-loginov.workers.dev', BUILD='e8b1a588cc';
+  const API='https://karusel-api.aivan-loginov.workers.dev', BUILD='271f171758';
   const SITE='https://ivan-loginov.ru';
   // витрина «Гайды и курсы Ивана» (16.10.2026, слово Ивана): курсы - только флагман, программы - скорочтение,
   // гайды - только «Распаковка в Claude». Мини-курс и остальные гайды убраны
@@ -945,6 +945,7 @@
   const rub=n=>(Number(n)||0).toLocaleString('ru-RU')+' ₽';
   const esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
   let refLink='';
+  const dney=n=>n+' '+(n%10===1&&n%100!==11?'день':(n%10>=2&&n%10<=4&&(n%100<12||n%100>14)?'дня':'дней'));
   async function openRef(){
     $('refov').classList.add('open'); err('referr','');
     $('refstats').innerHTML='<div><b>…</b><span>загружаю</span></div>';
@@ -953,10 +954,10 @@
     const i=r.j; refLink=i.link||'';
     $('reflink').value=refLink||'Ссылка появится, когда открыт доступ к конструктору';
     document.querySelectorAll('.refpay').forEach(x=>x.textContent=rub(i.pay));
-    $('refhold').textContent='Начисление можно вывести через '+i.holdDays+' дней после оплаты друга, от '+rub(i.min)+'. Иван переводит по СБП и отмечает выплату здесь';
+    $('refhold').textContent='Начисление можно вывести через '+dney(i.holdDays)+' после оплаты друга, от '+rub(i.min)+'. Иван переводит по СБП и отмечает выплату здесь';
     const cell=(v,t,c)=>'<div'+(c?' class="gold"':'')+'><b>'+v+'</b><span>'+t+'</span></div>';
     $('refstats').innerHTML=cell(i.invited,'пришли по ссылке')+cell(i.payments,'оплат друзей')+cell(rub(i.accrued),'начислено')
-      +cell(rub(i.withdrawable),'можно вывести',1)+cell(rub(i.hold),'ждут 14 дней')+cell(rub(i.pending),'в обработке')+cell(rub(i.paid),'выплачено');
+      +cell(rub(i.withdrawable),'можно вывести',1)+cell(rub(i.hold),'ждут '+dney(i.holdDays))+cell(rub(i.pending),'в обработке')+cell(rub(i.paid),'выплачено');
     $('refout').textContent=i.withdrawable>=i.min?'Запросить выплату '+rub(i.withdrawable):'Запросить выплату';
     $('refout').classList.toggle('off',!(i.withdrawable>=i.min));
     $('reflast').innerHTML=(i.last||[]).length?'<div class="reflast">'+i.last.map(x=>fmtDate(x.at)+' · '+esc(x.from)+' · +'+rub(x.sum)).join('<br>')+'</div>':'';
