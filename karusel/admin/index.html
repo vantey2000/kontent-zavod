@@ -135,6 +135,15 @@
       <div class="box"><h3>Ждут выплату</h3><div id="refopen"></div></div>
       <div class="box"><h3>Кто приводит людей</h3><table id="reftable"></table>
         <div class="hint">Начисление становится доступным к выводу через 14 дней после оплаты друга. «Перевёл» отмечает выплату, у человека она уйдёт в «выплачено»</div></div>
+      <div class="box"><h3>Друг оплатил, а начисления нет</h3>
+        <div class="grid2">
+          <input type="text" id="rafriend" list="gemails" placeholder="почта друга (кто оплатил)" inputmode="email" autocomplete="off" autocapitalize="off" spellcheck="false">
+          <input type="text" id="raby" list="gemails" placeholder="почта или код пригласившего" autocomplete="off" autocapitalize="off" spellcheck="false">
+        </div>
+        <button class="btn" id="rado" style="margin-top:10px">Привязать к пригласившему</button>
+        <div class="err" id="raerr"></div>
+        <div class="gok ok" id="raok" hidden></div>
+        <div class="hint" style="margin-top:12px">Оплаты друга, которые уже прошли, начислятся сразу, с датой оплаты: к выводу через 14 дней после неё. Дальше каждое продление друга начисляется само. Друга, уже привязанного к другому человеку, перепривязать нельзя</div></div>
     </section>
 
     <section data-s="grant" hidden>
@@ -491,6 +500,22 @@
     if(KEY) openGift(m?decodeURIComponent(m[1]):null);
   }
   window.addEventListener('hashchange',giftFromHash);
+  // 7.11.2026: ручная привязка, если друг завёл кабинет или оплатил не там, где открыл ссылку
+  $('rado').addEventListener('click',async()=>{
+    const friend=$('rafriend').value.trim(), by=$('raby').value.trim();
+    err('raerr',''); $('raok').hidden=true;
+    if(!friend||!by) return err('raerr','Впиши почту друга и почту или код того, кто его пригласил');
+    const b=$('rado'); b.disabled=true;
+    const r=await api('/api/admin/ref-attach',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({friend,by})});
+    b.disabled=false;
+    if(r.status!==200||!r.j) return err('raerr',(r.j&&r.j.error)||('Не получилось: '+r.t));
+    const x=r.j;
+    $('raok').textContent=(x.already?'Уже был привязан к ':'Привязал к ')+x.by+'. '
+      +(x.added?'Начислено '+rub(x.sum)+' за '+x.added+' '+(x.added%10===1&&x.added%100!==11?'оплату':(x.added%10>=2&&x.added%10<=4&&(x.added%100<12||x.added%100>14)?'оплаты':'оплат'))+'.':(x.payments?'Его оплаты уже были начислены.':'Оплат у друга пока нет, начислится с первой.'))
+      +' У пригласившего всего начислено '+rub(x.balance.accrued);
+    $('raok').hidden=false;
+    await load();
+  });
   $('refopen').addEventListener('click',async e=>{
     const b=e.target.closest('[data-paid]'); if(!b) return;
     const note=prompt('Перевёл '+rub(b.dataset.amt)+' на '+b.dataset.paid+'. Заметка (дата, банк):','СБП '+new Date().toLocaleDateString('ru-RU'));

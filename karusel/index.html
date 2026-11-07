@@ -707,7 +707,7 @@
    Код конструктора в репо сайта не лежит - его отдаёт karusel-api (/api/app) только кабинету с подпиской.
    Он исполняется и сразу убирается из страницы: «Сохранить страницу» не даёт рабочей копии */
 (function(){
-  const API='https://karusel-api.aivan-loginov.workers.dev', BUILD='cdfd96bd57';
+  const API='https://karusel-api.aivan-loginov.workers.dev', BUILD='e8b1a588cc';
   const SITE='https://ivan-loginov.ru';
   // витрина «Гайды и курсы Ивана» (16.10.2026, слово Ивана): курсы - только флагман, программы - скорочтение,
   // гайды - только «Распаковка в Claude». Мини-курс и остальные гайды убраны
@@ -732,11 +732,16 @@
     if(!token&&/^[\w.-]{20,600}$/.test(kt)&&/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(ke)) saveAuth(kt,ke);
     history.replaceState(null,'',location.pathname+location.search);
   }
-  // пришёл по ссылке друга: код помним 60 дней, из адреса убираем
-  if(/^[A-Za-z0-9]{6,12}$/.test(params.get('ref')||'')){
-    try{ localStorage.setItem('kb_ref',JSON.stringify({c:params.get('ref').toLowerCase(),at:Date.now()})); }catch(e){}
-    params.delete('ref'); const q=params.toString(); history.replaceState(null,'',location.pathname+(q?'?'+q:''));
+  // пришёл по ссылке друга: код помним 60 дней. Из адреса НЕ убираем (7.11.2026): «Открыть в Safari» из Телеграма
+  // и копия адреса должны унести код с собой. Сервер фоном запоминает переход для этой сети на сутки -
+  // на случай, если кабинет заведут или оплатят в другом браузере (друг Сергея Ламоткина, 5.11)
+  const REF_IN=(params.get('ref')||'').trim();
+  if(/^[A-Za-z0-9]{6,12}$/.test(REF_IN)){
+    try{ localStorage.setItem('kb_ref',JSON.stringify({c:REF_IN.toLowerCase(),at:Date.now()})); }catch(e){}
+    const hit=()=>{ try{ fetch(API+'/api/ref/hit?c='+encodeURIComponent(REF_IN.toLowerCase()),{cache:'no-store',keepalive:true}).catch(()=>{}); }catch(e){} };
+    if(document.readyState==='complete') setTimeout(hit,0); else addEventListener('load',()=>setTimeout(hit,0),{once:true});
   }
+  const refQ=()=>{ const r=new URLSearchParams(location.search).get('ref'); return r?'?ref='+encodeURIComponent(r):''; };
   function refCode(){ try{ const r=JSON.parse(localStorage.getItem('kb_ref')||'null'); if(r&&r.c&&Date.now()-r.at<60*864e5) return r.c; }catch(e){} return ''; }
 
   function show(v){
@@ -850,12 +855,12 @@
       // страница из кэша старее кода на сервере: один раз перезагрузиться за свежей разметкой
       const b=r.headers.get('X-App-Build')||'';
       let reloaded=false; try{ reloaded=sessionStorage.getItem('kb_reload')===b; }catch(e){}
-      if(b&&b!==BUILD&&!reloaded){ lim.done(); try{ sessionStorage.setItem('kb_reload',b); }catch(e){} location.replace(location.pathname+'?v='+encodeURIComponent(b)); return; }
+      if(b&&b!==BUILD&&!reloaded){ lim.done(); try{ sessionStorage.setItem('kb_reload',b); }catch(e){} location.replace(location.pathname+'?v='+encodeURIComponent(b)+refQ().replace('?','&')); return; }
       code=await r.text();
     }
     catch(e){ lim.done(); return loadFail(e&&e.name==='AbortError'?SLOW:'Нет связи с сервером - проверь интернет и обнови страницу'); }
     lim.done();
-    if(params.has('paid')||params.has('v')) history.replaceState(null,'',location.pathname);
+    if(params.has('paid')||params.has('v')) history.replaceState(null,'',location.pathname+refQ());
     setSubStat();
     document.body.classList.remove('gated');
     const s=document.createElement('script');
