@@ -234,6 +234,7 @@
   .gwide{display:block;width:100%;text-align:center;text-decoration:none;margin-top:10px}
   /* без галочки кнопка бледная, но нажимается: клик подсвечивает галочку (1.11.2026 человек не понял, почему кнопка «не работает») */
   .btn.off{opacity:.55}
+  .gcheck.gbonus{color:var(--ink);font-size:13.5px}
   .gcheck.need{outline:2px solid var(--accent);outline-offset:6px;border-radius:6px}
   .gerr{display:none;margin-top:12px;font-size:13px;line-height:1.45;background:#3a1f1f;border:1px solid #6b3434;color:#f0c4c4;border-radius:10px;padding:10px 12px}
   .gnote{font-size:12.5px;color:var(--muted);line-height:1.5;margin-top:14px}
@@ -318,6 +319,7 @@
       <div class="gmail">Кабинет: <b id="gpaymail"></b></div>
       <p class="glead" id="gpaylead">Оформи подписку - конструктор откроется сразу после оплаты, со всеми твоими фото и шаблонами</p>
       <div class="gprice"><b>1 500 ₽</b><span>в месяц. Списание раз в месяц, отменить можно в любой момент</span></div>
+      <label class="gcheck gbonus" id="gbonusrow" hidden><input type="checkbox" id="gbonus" checked><span id="gbonustxt"></span></label>
       <label class="gcheck" id="gagreerow"><input type="checkbox" id="gagree"><span>Принимаю <a href="oferta.html" target="_blank">условия оферты</a> и соглашаюсь на автоматическое списание 1 500 ₽ каждые 30 дней до отмены подписки</span></label>
       <a class="btn gwide off" id="gpaybtn" href="#">Оформить подписку</a>
       <p class="gnote gcenter" style="margin-top:8px">Если ссылка на оплату не открывается, выключи VPN</p>
@@ -689,6 +691,10 @@
     </div>
     <div class="gbtns"><button class="btn" id="refcopy">Скопировать</button><button class="btn ghost" id="refshare">Поделиться</button></div>
     <div class="refstats" id="refstats"></div>
+    <h3>Оплатить подписку бонусами</h3>
+    <p class="hint" id="refspendtxt">Начисления можно не выводить, а оплатить ими свою подписку</p>
+    <button class="btn gwide" id="refspend" hidden>Оплатить бонусами</button>
+    <div class="gerr" id="refspenderr"></div>
     <h3>Вывести деньги</h3>
     <p class="hint" id="refhold">Начисление можно вывести через 3 дня после оплаты друга, от 500 ₽. Иван переводит по СБП и отмечает выплату здесь</p>
     <div class="field" style="margin-top:12px">
@@ -707,7 +713,7 @@
    Код конструктора в репо сайта не лежит - его отдаёт karusel-api (/api/app) только кабинету с подпиской.
    Он исполняется и сразу убирается из страницы: «Сохранить страницу» не даёт рабочей копии */
 (function(){
-  const API='https://karusel-api.aivan-loginov.workers.dev', BUILD='271f171758';
+  const API='https://karusel-api.aivan-loginov.workers.dev', BUILD='2703bf5092';
   const SITE='https://ivan-loginov.ru';
   // витрина «Гайды и курсы Ивана» (16.10.2026, слово Ивана): курсы - только флагман, программы - скорочтение,
   // гайды - только «Распаковка в Claude». Мини-курс и остальные гайды убраны
@@ -802,10 +808,17 @@
       $('gpaylead').textContent='Ты собрал '+me.trial.limit+' каруселей бесплатно. Оформи подписку - конструктор откроется сразу после оплаты, со всеми твоими фото и шаблонами';
     }
     $('gpayback').hidden=!(appLoaded&&me&&me.trial&&me.trial.left>0);
+    // бонусы за друзей в первый платёж (7.11.2026): галочка стоит сразу, снять можно
+    const bn=me&&me.bonus;
+    $('gbonusrow').hidden=!(bn&&bn.amount>0);
+    if(bn&&bn.amount>0) $('gbonustxt').innerHTML='Списать бонусы за друзей: <b>−'+rubs(bn.amount)+'</b>. Первый месяц - <b>'+rubs(bn.price-bn.amount)+'</b>, дальше '+rubs(bn.price)+' в месяц';
     $('gpaybtn').href='#'; syncPayBtn(); err('gpayerr','');
     show('pay');
   }
-  function syncPayBtn(){ const ok=$('gagree').checked; $('gpaybtn').classList.toggle('off', !ok); if(ok){ $('gagreerow').classList.remove('need'); err('gpayerr',''); } }
+  const rubs=n=>(Number(n)||0).toLocaleString('ru-RU')+'\u00a0₽';
+  const bonusOn=()=>{ const bn=me&&me.bonus; return !!(bn&&bn.amount>0&&!$('gbonusrow').hidden&&$('gbonus').checked); };
+  function syncPayBtn(){ const ok=$('gagree').checked; $('gpaybtn').classList.toggle('off', !ok); if(ok){ $('gagreerow').classList.remove('need'); err('gpayerr',''); }
+    if(!paying) $('gpaybtn').textContent=bonusOn()?'Оформить подписку за '+rubs(me.bonus.price-me.bonus.amount):'Оформить подписку'; }
   // ссылку на оплату собирает касса по запросу сервера (почта кабинета + подписка) - в момент нажатия,
   // чтобы касса не копила брошенные счета от тех, кто просто посмотрел экран оплаты
   let paying=false;
@@ -817,8 +830,10 @@
     }
     if(paying) return;
     paying=true; err('gpayerr',''); const b=$('gpaybtn'), label=b.textContent; b.textContent='Открываю оплату…';
-    const rc=refCode();
-    const r=await call('/api/paylink'+(rc?'?ref='+encodeURIComponent(rc):''));
+    const rc=refCode(), q=[];
+    if(rc) q.push('ref='+encodeURIComponent(rc));
+    if(bonusOn()) q.push('bonus=1');
+    const r=await call('/api/paylink'+(q.length?'?'+q.join('&'):''));
     if(r.status===200&&r.j.url){ location.href=r.j.url; return; }
     paying=false; b.textContent=label;
     err('gpayerr',(r.j&&r.j.error)||'Касса не ответила - попробуй ещё раз через минуту');
@@ -942,7 +957,7 @@
   }
 
   /* ---------- рефералка ---------- */
-  const rub=n=>(Number(n)||0).toLocaleString('ru-RU')+' ₽';
+  const rub=n=>(Number(n)||0).toLocaleString('ru-RU')+'\u00a0₽';
   const esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
   let refLink='';
   const dney=n=>n+' '+(n%10===1&&n%100!==11?'день':(n%10>=2&&n%10<=4&&(n%100<12||n%100>14)?'дня':'дней'));
@@ -957,10 +972,38 @@
     $('refhold').textContent='Начисление можно вывести через '+dney(i.holdDays)+' после оплаты друга, от '+rub(i.min)+'. Иван переводит по СБП и отмечает выплату здесь';
     const cell=(v,t,c)=>'<div'+(c?' class="gold"':'')+'><b>'+v+'</b><span>'+t+'</span></div>';
     $('refstats').innerHTML=cell(i.invited,'пришли по ссылке')+cell(i.payments,'оплат друзей')+cell(rub(i.accrued),'начислено')
-      +cell(rub(i.withdrawable),'можно вывести',1)+cell(rub(i.hold),'ждут '+dney(i.holdDays))+cell(rub(i.pending),'в обработке')+cell(rub(i.paid),'выплачено');
+      +cell(rub(i.withdrawable),'можно вывести',1)+cell(rub(i.hold),'ждут '+dney(i.holdDays))+cell(rub(i.pending),'в обработке')+cell(rub(i.paid),'выплачено')
+      +(i.spent?cell(rub(i.spent),'оплачено бонусами'):'');
+    renderSpend(i);
     $('refout').textContent=i.withdrawable>=i.min?'Запросить выплату '+rub(i.withdrawable):'Запросить выплату';
     $('refout').classList.toggle('off',!(i.withdrawable>=i.min));
     $('reflast').innerHTML=(i.last||[]).length?'<div class="reflast">'+i.last.map(x=>fmtDate(x.at)+' · '+esc(x.from)+' · +'+rub(x.sum)).join('<br>')+'</div>':'';
+  }
+  // оплата своей подписки бонусами (7.11.2026): скидка на следующее автосписание, нажатие дважды за 4 с
+  let spendArmed=0;
+  function renderSpend(i){
+    const t=$('refspendtxt'), b=$('refspend'); b.hidden=true; b.classList.remove('off'); spendArmed=0; err('refspenderr','');
+    const price=i.price||1500, nd=i.nextPay?' '+fmtDate(Date.parse(i.nextPay+'T12:00:00')):'';
+    if(i.openNext){ t.textContent='На следующее списание'+nd+' уже стоит скидка '+rub(i.openNext.amount)+': спишется '+rub(price-i.openNext.amount)+' вместо '+rub(price); return; }
+    if(!i.spendable){ t.textContent='Начисления можно не выводить, а оплатить ими свою подписку: '+rub(i.pay)+' бонусов - и месяц стоит '+rub(price-i.pay)+'. Списать можно то, что уже доступно к выводу'; return; }
+    if(i.renews){
+      t.textContent='Следующее списание'+nd+' - '+rub(price)+'. Спишем '+rub(i.spendable)+' бонусами, и заплатишь '+rub(price-i.spendable);
+      b.hidden=false; b.dataset.amt=i.spendable; b.textContent='Оплатить бонусами '+rub(i.spendable); return;
+    }
+    t.textContent='Доступно '+rub(i.spendable)+' бонусов. При оформлении подписки отметь «Списать бонусы» - первый месяц выйдет '+rub(price-i.spendable);
+  }
+  async function refSpend(){
+    const b=$('refspend'), label='Оплатить бонусами '+rub(+b.dataset.amt);
+    if(b.classList.contains('off')) return;
+    if(Date.now()-spendArmed>4000){
+      spendArmed=Date.now(); b.textContent='Точно? Нажми ещё раз';
+      setTimeout(()=>{ if(spendArmed&&Date.now()-spendArmed>=4000) b.textContent=label; },4100); return;
+    }
+    spendArmed=0; b.classList.add('off'); b.textContent='Оформляю скидку…'; err('refspenderr','');
+    const r=await call('/api/ref/spend',{method:'POST'});
+    b.classList.remove('off');
+    if(r.status!==200){ b.textContent=label; return err('refspenderr',(r.j&&r.j.error)||'Не получилось - попробуй ещё раз'); }
+    await openRef();
   }
   async function refPayout(){
     err('referr','');
@@ -1005,7 +1048,8 @@
   const rb=$('refbtn'); if(rb) rb.onclick=openRef;
   $('refclose').onclick=()=>$('refov').classList.remove('open');
   $('refov').addEventListener('click',e=>{ if(e.target===$('refov')) $('refov').classList.remove('open'); });
-  $('refcopy').onclick=refCopy; $('refshare').onclick=refShare; $('refout').onclick=refPayout;
+  $('refcopy').onclick=refCopy; $('refshare').onclick=refShare; $('refout').onclick=refPayout; $('refspend').onclick=refSpend;
+  $('gbonus').addEventListener('change',syncPayBtn);
   $('moreov').addEventListener('click',e=>{ if(e.target===$('moreov')) $('moreov').classList.remove('open'); });
   // тема устройства действует и на экранах входа
   try{ if(localStorage.getItem('karusel_theme')==='light') document.body.classList.add('light'); }catch(e){}
