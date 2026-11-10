@@ -36,6 +36,13 @@
     color:var(--ink);font-family:inherit;font-size:14px;padding:11px 12px;outline:none}
   .field input[type=text]:focus, .field input[type=password]:focus, .field textarea:focus, .field select:focus{border-color:var(--accent)}
   .field textarea{min-height:190px;resize:vertical;line-height:1.5}
+  /* поле «Текст поста»: стандартной высоты, растягивается полоской под ним (мышь и палец) или кнопкой «Развернуть» */
+  .field textarea#text{resize:none;display:block}
+  .textgrip{height:18px;margin-top:2px;display:flex;align-items:center;justify-content:center;cursor:ns-resize;
+    touch-action:none;user-select:none;-webkit-user-select:none}
+  .textgrip span{width:44px;height:4px;border-radius:2px;background:var(--muted);opacity:.45;transition:opacity .15s,background .15s}
+  .textgrip:hover span,.textgrip.drag span{background:var(--accent);opacity:1}
+  .labelbtns{display:flex;gap:6px}
   .hint{font-size:11.5px;color:#6f6f78;margin-top:6px;line-height:1.4}
   .drop{border:1.5px dashed #3a3a42;border-radius:12px;padding:20px;text-align:center;cursor:pointer;transition:.15s;background:#161619}
   .drop:hover{border-color:var(--accent);background:#191a1d}
@@ -132,6 +139,7 @@
     /* 16px в полях ввода = iOS не автозумит страницу при фокусе */
     .field input[type=text], .field input[type=password], .field textarea, .field select{font-size:16px}
     .field textarea{min-height:150px}
+    .textgrip{height:26px}
     /* главные кнопки всегда под пальцем - фиксированная панель внизу */
     .actions{position:fixed;left:0;right:0;bottom:0;z-index:50;display:flex;gap:8px;flex-wrap:nowrap;
       background:rgba(23,23,26,.97);border-top:1px solid var(--line);
@@ -536,9 +544,13 @@
     <div class="field">
       <div class="labelrow">
         <label>Текст поста</label>
-        <button type="button" class="clearbtn" id="cleartext">Очистить</button>
+        <div class="labelbtns">
+          <button type="button" class="clearbtn" id="textexpand" title="Показать весь текст целиком">Развернуть</button>
+          <button type="button" class="clearbtn" id="cleartext">Очистить</button>
+        </div>
       </div>
       <textarea id="text" spellcheck="false" placeholder="Первая строка = обложка&#10;&#10;1. Первый пункт. Пояснение к нему в пару предложений&#10;&#10;2. Второй пункт. И его пояснение&#10;&#10;3. Третий пункт&#10;&#10;А ты уже так делаешь?"></textarea>
+      <div class="textgrip" id="textgrip" role="separator" aria-orientation="horizontal" title="Потяни вниз, чтобы расширить поле"><span></span></div>
       <div class="hint">Заголовок сверху, дальше блоки через пустую строку - каждый станет слайдом: первое предложение жирным, остальное обычным. Нумерация 1. 2. 3. не обязательна. В конце вопрос. Enter один раз = перенос строки на слайде ровно там, где ты его поставил. В стиле «Текст» слова в *звёздочках* выделятся цветом выделения, звёздочки на слайд не попадут</div>
       <div class="warn" id="warn" style="display:none"></div>
     </div>
@@ -713,7 +725,7 @@
    Код конструктора в репо сайта не лежит - его отдаёт karusel-api (/api/app) только кабинету с подпиской.
    Он исполняется и сразу убирается из страницы: «Сохранить страницу» не даёт рабочей копии */
 (function(){
-  const API='https://karusel-api.aivan-loginov.workers.dev', BUILD='2703bf5092';
+  const API='https://karusel-api.aivan-loginov.workers.dev', BUILD='10235f827b';
   const SITE='https://ivan-loginov.ru';
   // витрина «Гайды и курсы Ивана» (16.10.2026, слово Ивана): курсы - только флагман, программы - скорочтение,
   // гайды - только «Распаковка в Claude». Мини-курс и остальные гайды убраны
