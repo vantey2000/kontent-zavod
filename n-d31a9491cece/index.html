@@ -1,0 +1,313 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="robots" content="noindex, nofollow">
+<meta name="theme-color" content="#faf7f2">
+<title>Аккаунт под рилсы: покупка и прогрев</title>
+<style>
+  :root {
+    --bg: #faf7f2; --card: #ffffff; --ink: #1d1b19; --muted: #6b655d; --line: #ebe4d9;
+    --accent: #c2410c; --accent-soft: #fff1e8; --calm: #0f5c4d; --calm-soft: #e8f4ef;
+    --warn: #9f1239; --warn-soft: #fdecef; --chip: #f3efe8; --shadow: 0 1px 2px rgba(60,40,20,.06), 0 6px 24px rgba(60,40,20,.06);
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #141312; --card: #1d1b19; --ink: #f2eee8; --muted: #a59d92; --line: #2e2a26;
+      --accent: #fb923c; --accent-soft: #2a1c12; --calm: #5fd0b0; --calm-soft: #12241f;
+      --warn: #fb7185; --warn-soft: #2a1418; --chip: #26231f; --shadow: none;
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg: #141312; --card: #1d1b19; --ink: #f2eee8; --muted: #a59d92; --line: #2e2a26;
+    --accent: #fb923c; --accent-soft: #2a1c12; --calm: #5fd0b0; --calm-soft: #12241f;
+    --warn: #fb7185; --warn-soft: #2a1418; --chip: #26231f; --shadow: none;
+  }
+  * { box-sizing: border-box; }
+  html { -webkit-text-size-adjust: 100%; scroll-behavior: smooth; }
+  body { margin: 0; background: var(--bg); color: var(--ink);
+    font: 17px/1.55 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif; }
+  .wrap { max-width: 640px; margin: 0 auto; padding: 20px 16px 56px; }
+  a { color: var(--calm); text-underline-offset: 3px; }
+  b, strong { font-weight: 650; }
+
+  .hero { padding: 18px 0 8px; }
+  .kicker { font-size: 13px; letter-spacing: 1.4px; text-transform: uppercase; color: var(--muted); margin-bottom: 10px; }
+  h1 { font-family: Georgia, "Noto Serif", "Times New Roman", serif; font-weight: 700; font-size: 34px; line-height: 1.12;
+    letter-spacing: -0.4px; margin: 0 0 14px; }
+  h1 em { font-style: normal; color: var(--accent); }
+  .lead { font-size: 18px; margin: 0 0 18px; }
+
+  .stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin: 0 0 22px; }
+  .stat { background: var(--card); border: 1px solid var(--line); border-radius: 14px; padding: 12px 10px; box-shadow: var(--shadow); }
+  .stat .v { font-family: Georgia, "Noto Serif", serif; font-weight: 700; font-size: 22px; line-height: 1.1; color: var(--accent); white-space: nowrap; }
+  .stat .l { font-size: 12.5px; line-height: 1.3; color: var(--muted); margin-top: 4px; }
+
+  .toc { display: flex; gap: 8px; overflow-x: auto; padding: 2px 0 12px; margin: 0 0 8px; scrollbar-width: none; }
+  .toc::-webkit-scrollbar { display: none; }
+  .toc a { flex: 0 0 auto; text-decoration: none; color: var(--ink); background: var(--chip); border-radius: 999px;
+    padding: 7px 13px; font-size: 14px; }
+
+  section { background: var(--card); border: 1px solid var(--line); border-radius: 18px; padding: 20px 18px 8px;
+    margin: 0 0 16px; box-shadow: var(--shadow); scroll-margin-top: 12px; }
+  h2 { font-size: 22px; line-height: 1.2; margin: 0 0 12px; letter-spacing: -0.2px; display: flex; gap: 10px; align-items: baseline; }
+  h2 .n { flex: 0 0 auto; display: inline-flex; align-items: center; justify-content: center; width: 30px; height: 30px;
+    border-radius: 50%; background: var(--accent); color: #fff; font-size: 15px; font-weight: 700; transform: translateY(-2px); }
+  h3 { font-size: 17px; margin: 18px 0 8px; }
+  p { margin: 0 0 12px; }
+  ul, ol { margin: 0 0 12px; padding-left: 22px; }
+  li { margin: 0 0 8px; }
+  li::marker { color: var(--accent); font-weight: 700; }
+
+  .steps { list-style: none; padding: 0; counter-reset: s; }
+  .steps > li { counter-increment: s; position: relative; padding-left: 36px; margin-bottom: 12px; }
+  .steps > li::before { content: counter(s); position: absolute; left: 0; top: 1px; width: 24px; height: 24px; border-radius: 50%;
+    background: var(--accent-soft); color: var(--accent); font-size: 13px; font-weight: 700; text-align: center; line-height: 24px; }
+
+  .check { display: flex; gap: 12px; align-items: flex-start; padding: 12px 0; border-bottom: 1px solid var(--line); cursor: pointer; }
+  .check:last-child { border-bottom: 0; }
+  .check input { appearance: none; -webkit-appearance: none; flex: 0 0 auto; width: 26px; height: 26px; margin: 0;
+    border: 2px solid var(--accent); border-radius: 8px; display: grid; place-content: center; cursor: pointer; background: var(--card); }
+  .check input::after { content: ""; width: 12px; height: 7px; border: solid #fff; border-width: 0 0 3px 3px; transform: rotate(-45deg) translate(1px, -1px); opacity: 0; }
+  .check input:checked { background: var(--accent); }
+  .check input:checked::after { opacity: 1; }
+  .check .tx { flex: 1; }
+  .check .tx b { display: block; }
+  .check .tx span { display: block; font-size: 15px; color: var(--muted); }
+  .check input:checked + .tx b { text-decoration: line-through; text-decoration-color: var(--accent); color: var(--muted); }
+  .progress { font-size: 14px; color: var(--muted); margin: 4px 0 14px; }
+  .bar { height: 6px; background: var(--chip); border-radius: 99px; overflow: hidden; margin-top: 6px; }
+  .bar i { display: block; height: 100%; width: 0; background: var(--accent); border-radius: 99px; transition: width .3s; }
+
+  .box { border-radius: 14px; padding: 14px 15px; margin: 0 0 14px; font-size: 16px; }
+  .box .t { font-weight: 700; margin-bottom: 5px; }
+  .box p:last-child, .box ul:last-child { margin-bottom: 0; }
+  .box.accent { background: var(--accent-soft); } .box.accent .t { color: var(--accent); }
+  .box.calm { background: var(--calm-soft); } .box.calm .t { color: var(--calm); }
+  .box.warn { background: var(--warn-soft); } .box.warn .t { color: var(--warn); }
+
+  .ladder { width: 100%; border-collapse: collapse; margin: 4px 0 14px; font-size: 16px; }
+  .ladder th, .ladder td { padding: 9px 4px; border-bottom: 1px solid var(--line); text-align: center; }
+  .ladder th { font-size: 11px; text-transform: uppercase; letter-spacing: .2px; color: var(--muted); font-weight: 600; }
+  .ladder td:first-child, .ladder th:first-child { text-align: left; }
+  .ladder td.d { white-space: nowrap; }
+  .ladder td.d small { color: var(--muted); font-size: 13px; }
+  .ladder tr.today td { background: var(--accent-soft); font-weight: 700; }
+  .ladder tr.today td.d::after { content: "сегодня"; display: table; margin-top: 3px; font-size: 11px; font-weight: 700;
+    color: #fff; background: var(--accent); border-radius: 99px; padding: 1px 7px; }
+  .ladder tr.past td { color: var(--muted); }
+
+  .btn { display: inline-flex; align-items: center; gap: 8px; text-decoration: none; background: var(--accent); color: #fff;
+    border: 0; border-radius: 12px; padding: 12px 16px; font: inherit; font-weight: 650; font-size: 16px; cursor: pointer; margin: 2px 0 14px; }
+  .btn.ghost { background: var(--chip); color: var(--ink); }
+
+  .copy { position: relative; background: var(--chip); border-radius: 12px; margin: 0 0 14px; }
+  .copy pre { margin: 0; padding: 13px 14px 50px; white-space: pre-wrap; word-break: break-word;
+    font: 14.5px/1.5 ui-monospace, "SF Mono", Menlo, Consolas, monospace; color: var(--ink); max-height: 340px; overflow: auto; }
+  .copy.short pre { padding-bottom: 50px; max-height: none; }
+  .copy button { position: absolute; right: 8px; bottom: 8px; border: 0; border-radius: 9px; padding: 7px 12px;
+    background: var(--accent); color: #fff; font: 600 14px/1.2 -apple-system, Roboto, sans-serif; cursor: pointer; }
+  .copy button.ok { background: var(--calm); }
+
+  details { border: 1px solid var(--line); border-radius: 14px; margin: 0 0 14px; }
+  details > summary { cursor: pointer; padding: 13px 15px; font-weight: 650; list-style: none; display: flex; justify-content: space-between; gap: 10px; }
+  details > summary::-webkit-details-marker { display: none; }
+  details > summary::after { content: "+"; color: var(--accent); font-size: 22px; line-height: 1; }
+  details[open] > summary::after { content: "−"; }
+  details > .in { padding: 0 15px 4px; }
+
+  .vid { display: flex; gap: 12px; align-items: flex-start; padding: 10px 0; border-bottom: 1px solid var(--line); }
+  .vid:last-child { border-bottom: 0; }
+  .vid .ic { flex: 0 0 auto; width: 38px; height: 38px; border-radius: 10px; background: var(--accent-soft); color: var(--accent);
+    display: grid; place-content: center; font-size: 15px; }
+  .vid .m { font-size: 14px; color: var(--muted); }
+
+  .sign { text-align: center; color: var(--muted); font-size: 14px; margin-top: 26px; }
+  .sign b { color: var(--ink); }
+  @media (max-width: 380px) { h1 { font-size: 29px; } .stat .v { font-size: 19px; } .ladder { font-size: 15px; } }
+
+  .tw { overflow-x: auto; margin: 4px 0 14px; }
+  .tbl { width: 100%; border-collapse: collapse; font-size: 15.5px; line-height: 1.4; }
+  .tbl th, .tbl td { padding: 9px 6px; border-bottom: 1px solid var(--line); text-align: left; vertical-align: top; }
+  .tbl th { font-size: 11px; text-transform: uppercase; letter-spacing: .2px; color: var(--muted); font-weight: 600; }
+  .tbl td:first-child { font-weight: 650; padding-right: 10px; width: 36%; }
+  .tbl.num td:first-child { white-space: nowrap; width: auto; }
+  .tbl td { overflow-wrap: break-word; }
+  .tbl.num td:last-child, .tbl.num th:last-child { text-align: center; white-space: nowrap; }
+</style>
+</head>
+<body>
+<div class="wrap">
+<header class="hero">
+  <div class="kicker">Взрывные алгоритмы · 5 поток · гайд</div>
+  <h1>Аккаунт под рилсы: <em>купить, завести, прогреть</em></h1>
+  <p class="lead">Всё про аккаунты в одном месте: какой взять, где и как купить, как настроить телефон и VPN, как греть по дням и когда выкладывать первый ролик. Отмечайте галочками, что сделали</p>
+  <div class="stats"><div class="stat"><div class="v">3</div><div class="l">аккаунта на одном телефоне, не больше</div></div><div class="stat"><div class="v">1 страна</div><div class="l">VPN выбираете один раз и не меняете</div></div><div class="stat"><div class="v">14 дней</div><div class="l">до вердикта: работаем или меняем</div></div></div>
+</header>
+
+<nav class="toc" aria-label="Разделы"><a href="#glavnoe">Главное</a><a href="#kakoy">Какой аккаунт</a><a href="#pokupka">Покупка</a><a href="#telefon">Телефон и VPN</a><a href="#progrev">Как греть</a><a href="#grafik">По дням</a><a href="#profil">Профиль</a><a href="#vykladka">Выкладка</a><a href="#verdikt">Вердикт</a><a href="#sboi">Если сбой</a></nav>
+
+<section id="glavnoe">
+  <h2><span class="n">1</span>Путь аккаунта по шагам</h2>
+  <div class="progress"><span id="pr-t">Отмечайте галочками, что сделали</span><div class="bar"><i id="pr-b"></i></div></div>
+<label class="check"><input type="checkbox" data-k="t1"><span class="tx"><b>Решить, какие 3 аккаунта берёте</b><span>свой старый, аккаунт семьи или купленный. Что лучше, в разделе <a href="#kakoy">Какой аккаунт</a></span></span></label><label class="check"><input type="checkbox" data-k="t2"><span class="tx"><b>Настроить телефон и VPN до первого входа</b><span>не больше 3 аккаунтов на телефон, одна страна VPN навсегда. <a href="#telefon">Телефон и VPN</a></span></span></label><label class="check"><input type="checkbox" data-k="t3"><span class="tx"><b>Купить недостающие аккаунты по чек-листу</b><span>300-600 ₽, не брут, с доступом к почте. <a href="#pokupka">Покупка</a></span></span></label><label class="check"><input type="checkbox" data-k="t4"><span class="tx"><b>Добавлять аккаунты по одному в день</b><span>три аккаунта за один вечер Instagram увяжет в связку</span></span></label><label class="check"><input type="checkbox" data-k="t5"><span class="tx"><b>Греть по графику своего аккаунта</b><span>у старого, купленного и нового графики разные. <a href="#grafik">Прогрев по дням</a></span></span></label><label class="check"><input type="checkbox" data-k="t6"><span class="tx"><b>На 6-й день оформить профиль</b><span>ник, имя, аватар, шапка из распаковки. <a href="#profil">Профиль</a></span></span></label><label class="check"><input type="checkbox" data-k="t7"><span class="tx"><b>Выкладывать по лесенке и чистить слабые ролики</b><span><a href="#vykladka">Выкладка</a></span></span></label><label class="check"><input type="checkbox" data-k="t8"><span class="tx"><b>На 14-й день вынести вердикт каждому аккаунту</b><span>работаем дальше или меняем. <a href="#verdikt">Вердикт</a></span></span></label>
+<div class="box warn"><div class="t">Свежий аккаунт как свежий бетон</div><p>Пройдёшься по нему в первый день, следы останутся надолго. Поэтому первые две недели всё делаем медленно и по графику: без пачки роликов, без смены VPN и без правок профиля каждый вечер</p></div>
+</section>
+
+<section id="kakoy">
+  <h2><span class="n">2</span>Какой аккаунт взять</h2>
+<p>Нужно <b>3 аккаунта</b>. За первые две недели станет видно, какой из них сильнее, на нём и сосредоточимся. Варианты по порядку, от лучшего:</p>
+<ol class="steps"><li><b>Свой старый аккаунт.</b> У старого аккаунта уже есть доверие Instagram. Подойдёт и аккаунт «для слежки», и заброшенный аккаунт мамы, мужа, детей, подруги. Можно спросить в чате жильцов своего дома. Возраст от 3 месяцев, чем старше, тем лучше. Без накруток, гивов и таргета. Пустой или с маленькими просмотрами не страшно</li><li><b>Купленный аккаунт с давней регистрацией.</b> Своих не хватает до трёх, остальные берём в магазине. Как выбрать, в разделе <a href="#pokupka">Покупка</a></li><li><b>Новый, зарегистрированный самому.</b> Рабочий вариант, но греется в 2 раза дольше</li></ol>
+<div class="box calm"><div class="t">Свой старый аккаунт сначала почистите</div><p>Лишних подписчиков удаляем не больше 50 в день, живую аудиторию, которая с вами общается, оставляем. От лишних подписок лучше отписаться и подписаться на авторов в нашем формате</p></div>
+<h3>От аккаунта зависит график</h3>
+<div class="tw"><table class="tbl"><thead><tr><th>Аккаунт</th><th>Первый ролик</th><th>3 ролика в день</th></tr></thead><tbody><tr><td>Свой старый</td><td>на 2-й день</td><td>с 4-го дня</td></tr><tr><td>Купленный</td><td>на 3-й день</td><td>с 5-го дня</td></tr><tr><td>Новый с нуля</td><td>на 7-й день</td><td>с 9-го дня</td></tr></tbody></table></div>
+<p>День 1 = день, когда вы вошли в аккаунт или зарегистрировали его. Подробно по дням в разделе <a href="#grafik">Прогрев по дням</a></p>
+</section>
+
+<section id="pokupka">
+  <h2><span class="n">3</span>Как купить аккаунт</h2>
+<p>Основной магазин <b>lzt.market</b>, раздел Instagram. Запасной <b>DarkStore</b> (раньше назывался dark.shopping). Хороший аккаунт стоит <b>300-600 ₽</b>. За 50 ₽ не берите: аккаунт за 50 ₽ как туфли за 50 ₽, служат до первой лужи</p>
+<a class="btn" href="https://lzt.market/instagram/?pmin=200&amp;pmax=600&amp;order_by=price_to_up">Аккаунты Instagram на lzt.market →</a>
+<a class="btn ghost" href="https://darkstore.bz/category/instagram">Запасной магазин DarkStore →</a>
+<h3>Чек-лист перед покупкой</h3><label class="check"><input type="checkbox" data-k="t9"><span class="tx"><b>Не брут</b><span>только саморег (лучше всего) или авторег. Брут = угнанный аккаунт, хозяин вернёт его себе вместе с вашими роликами</span></span></label><label class="check"><input type="checkbox" data-k="t10"><span class="tx"><b>Давняя регистрация</b><span>идеально 2024 год и раньше. Моложе 3 месяцев не берём</span></span></label><label class="check"><input type="checkbox" data-k="t11"><span class="tx"><b>Есть доступ к родной почте аккаунта</b><span>это пишут зелёной плашкой или в заголовке товара. Без почты не берём</span></span></label><label class="check"><input type="checkbox" data-k="t12"><span class="tx"><b>Лучше без привязанного номера телефона</b><span>висит чужой номер, его придётся удалить после входа</span></span></label><label class="check"><input type="checkbox" data-k="t13"><span class="tx"><b>До 500 подписчиков, идеально до 100</b><span>без таргета и аудитории с гивов. Публикаций мало: их потом всё равно в архив</span></span></label><label class="check"><input type="checkbox" data-k="t14"><span class="tx"><b>Страна там, где живёте вы</b><span>из России берём RU. Таких нет - Европа. Страну часто пишут прямо в названии товара</span></span></label><label class="check"><input type="checkbox" data-k="t15"><span class="tx"><b>Продавец с рейтингом и отзывами</b><span>и данные передаются сразу после оплаты</span></span></label><label class="check"><input type="checkbox" data-k="t16"><span class="tx"><b>Прочитали всё описание товара</b><span>внизу бывает ник: зайдите в Instagram и посмотрите, как аккаунт выглядит и кто на него подписан</span></span></label>
+<h3>Как купить на lzt.market</h3>
+<ol class="steps"><li>Зарегистрируйтесь в магазине и <b>обязательно укажите в профиле свою почту</b>, без неё ваш аккаунт в магазине быстро заблокируют</li><li>Откройте раздел Instagram → «Все фильтры»: страна, цена «до», подписчиков «до», постов «до». Фильтры иногда работают криво, поэтому листайте список и сверяйте глазами по чек-листу</li><li>Пополните кошелёк. На странице товара «Купить» → «Подтвердить покупку»</li><li>Данные появятся на странице товара, обычно строкой логин:пароль:почта:пароль. Что-то не подходит, пишите продавцу</li></ol>
+<h3>Сразу после покупки</h3>
+<ol class="steps"><li>Включите VPN <b>до</b> того, как открыть Instagram. Страна та же, что у остальных ваших аккаунтов, подробно в разделе <a href="#telefon">Телефон и VPN</a></li><li>Instagram → «Добавить аккаунт» → «Войти в существующий аккаунт». Логин и пароль вводите руками</li><li>Код подтверждения придёт на почту аккаунта. Войти в неё можно со страницы покупки, кнопка «Вход в почту»</li><li>Настройки → «Статус аккаунта»: ограничений охвата быть не должно. Если они есть, аккаунт под рилсы не годится, пишите продавцу</li><li>«Центр аккаунтов» → «Личная информация»: висит чужой номер, удалите его, чтобы коды шли на почту</li><li>Почту на свою меняем не раньше чем через 7 дней после входа</li></ol>
+<details><summary>Как поменять почту на свою (через 7 дней)</summary><div class="in"><p>Профиль → «Редактировать профиль» → «Настройки личной информации» → «Личные данные» → «Контактная информация» → удалить старую почту. Instagram попросит код: он придёт на старую почту, вход в неё на странице покупки. Потом добавляете свою почту и вводите код уже с неё</p></div></details>
+<div class="box calm"><div class="t">Регистрируете аккаунт сами</div><p>Только на Gmail и номер телефона. На каждый новый аккаунт новая SIM-карта: у каждого аккаунта свой номер и своя почта. Такой аккаунт греется дольше всех, график в разделе <a href="#grafik">Прогрев по дням</a></p></div>
+</section>
+
+<section id="telefon">
+  <h2><span class="n">4</span>Телефон, VPN и вход</h2>
+<h3>Телефон</h3>
+<ul><li><b>На одном телефоне не больше 3 аккаунтов.</b> 5-6 Instagram почти наверняка свяжет в сетку</li><li><b>Добавляем по одному аккаунту в день</b></li><li><b>Личный аккаунт не держим на одном телефоне с рабочими.</b> Instagram склеивает профили по устройству и тянет бан с купленных на живой. Личный телефон без VPN и без рабочих аккаунтов</li><li><b>В один аккаунт не заходим с разных устройств.</b> Никогда, а в первую неделю особенно</li><li>Между аккаунтами переключаемся через «Добавить аккаунт» → «Войти в существующий», логин и пароль руками, а не выбором из списка</li><li>Из аккаунта не выходим: при новом входе Instagram часто просит повторную проверку</li><li>Facebook к аккаунту не привязываем</li></ul>
+<h3>VPN</h3>
+<ul><li>VPN включаем <b>до</b> того, как открыть Instagram</li><li>Страну выбираем один раз и больше не меняем, сервер тоже держим один и тот же. Я работаю через <b>Нидерланды</b>, подходит и Восточная Европа, например <b>Беларусь</b>. Решает не страна, а то, что она не меняется</li><li>Для Instagram смена страны выглядит так, будто вы за минуту слетали из Амстердама в Минск и обратно. Живые люди так не летают, и охваты падают</li></ul>
+<div class="box warn"><div class="t">Я сам на этом обжёгся</div><p>Забыл переключить VPN с Америки и выложил рилс: хорошая тема набрала всего 15 тыс. Даже на раскачанном аккаунте смена страны режет охваты. Сидите в одной стране, выкладывайте только из неё</p></div>
+<h3>С рабочего аккаунта не делаем</h3>
+<ul><li>не переписываемся с друзьями и активно с ребятами курса</li><li>не заводим много аккаунтов разом</li></ul>
+</section>
+
+<section id="progrev">
+  <h2><span class="n">5</span>Как прогревать</h2>
+<p>Прогрев = вы ведёте себя в Instagram как живой человек, которому интересна ваша тема. Алгоритм смотрит в вашу ленту, как продавец в корзину покупателя: видит там рилсы в нашем формате и показывает вас тем же людям</p>
+<h3>Один заход, 10-15 минут</h3>
+<ol class="steps"><li>Смотрим ролики <b>по своей теме и в нашем формате</b>: текст на ролике и описание внизу. Если тема блога - вы сами, смотрим крупных качественных блогеров</li><li>Каждый ролик <b>досматриваем 2-3 раза на повторе</b>. Глубина просмотра = главный сигнал</li><li><b>«Поделиться»</b> (самолётик) → Telegram. Как только Telegram открылся и предложил выбрать контакт, можно нажать «Отмена»: Instagram уже засчитал отправку</li><li>Три точки на ролике → <b>«Интересует»</b></li><li>Подписываемся на <b>3-5 авторов</b> своей ниши в день</li><li>Залетевшие темы <b>сохраняем</b>: из сохранёнок потом делаете свои ролики</li></ol>
+<div class="box calm"><div class="t">Лайки и комментарии</div><p>Первые 3-4 дня не ставим вообще. Потом можно, но прогреву они почти не помогают. Главное: досмотры, отправки, «Интересует» и сохранения</p></div>
+<div class="box accent"><div class="t">Прогрев перед каждым роликом</div><p>Перед каждой выкладкой 5-10 минут листаем ленту по схеме выше и только потом выкладываем. Так алгоритм понимает, кому показывать ваш ролик</p></div>
+<p>Сторис можно с 6-го дня: для прогрева аккаунта это даже хорошо. Продажи сторис сами не делают, рост дают рилсы</p>
+</section>
+
+<section id="grafik">
+  <h2><span class="n">6</span>Прогрев по дням</h2>
+<p>Найдите свой аккаунт и идите по его графику. День 1 = день входа или регистрации</p>
+<h3>Свой старый аккаунт: первый ролик на 2-й день</h3>
+<div class="tw"><table class="tbl num"><thead><tr><th>День</th><th>Что делаем</th><th>Ролики</th></tr></thead><tbody><tr><td>1</td><td>Вошли и 12 часов ничего не делаем. Потом прогрев 10-15 минут</td><td>0</td></tr><tr><td>2</td><td>Прогрев утром и в обед. Проверили, что аккаунт открыт и есть профпанель. Вечером прогрев и первый ролик</td><td>1</td></tr><tr><td>3</td><td>Утром прогрев. В обед и вечером прогрев и ролик</td><td>2</td></tr><tr><td>4-5</td><td>Утро, обед, вечер: прогрев и ролик</td><td>3</td></tr><tr><td>6</td><td>То же + оформляем профиль</td><td>3</td></tr><tr><td>7-13</td><td>Утро, обед, вечер: прогрев и ролик</td><td>3</td></tr><tr><td>14</td><td>Вердикт по аккаунту</td><td></td></tr></tbody></table></div>
+<h3>Купленный аккаунт: первый ролик на 3-й день</h3>
+<div class="tw"><table class="tbl num"><thead><tr><th>День</th><th>Что делаем</th><th>Ролики</th></tr></thead><tbody><tr><td>1</td><td>Вошли и сутки не трогаем</td><td>0</td></tr><tr><td>2</td><td>Прогрев 2-3 раза по 10-15 минут. Проверили «Статус аккаунта», что аккаунт открыт и есть профпанель</td><td>0</td></tr><tr><td>3</td><td>Прогрев утром и в обед. Вечером прогрев и первый ролик</td><td>1</td></tr><tr><td>4</td><td>Утром прогрев. В обед и вечером прогрев и ролик</td><td>2</td></tr><tr><td>5</td><td>Утро, обед, вечер: прогрев и ролик</td><td>3</td></tr><tr><td>6</td><td>То же + оформляем профиль</td><td>3</td></tr><tr><td>7-13</td><td>Утро, обед, вечер: прогрев и ролик. На 8-й день меняем почту на свою</td><td>3</td></tr><tr><td>14</td><td>Вердикт по аккаунту</td><td></td></tr></tbody></table></div>
+<h3>Новый аккаунт с нуля: первый ролик на 7-й день</h3>
+<div class="tw"><table class="tbl num"><thead><tr><th>День</th><th>Что делаем</th><th>Ролики</th></tr></thead><tbody><tr><td>1</td><td>Зарегистрировали и ничего не делаем</td><td>0</td></tr><tr><td>2-5</td><td>Только прогрев. Каждый день дольше: 10 минут, потом 15, дальше больше</td><td>0</td></tr><tr><td>6</td><td>Прогрев + любая сторис. Проверили, что аккаунт открыт и есть профпанель. Оформляем профиль</td><td>0</td></tr><tr><td>7</td><td>Прогрев и первый ролик</td><td>1</td></tr><tr><td>8</td><td>Прогрев перед каждым роликом</td><td>2</td></tr><tr><td>9-13</td><td>Утро, обед, вечер: прогрев и ролик</td><td>3</td></tr><tr><td>14</td><td>Вердикт по аккаунту</td><td></td></tr></tbody></table></div>
+<div class="box accent"><div class="t">Первый месяц = долина смерти</div><p>Это испытательный срок аккаунта: Instagram присматривается и даёт охваты на полставки. Каждый день выкладка, прогрев и один VPN, без пропусков, иначе шаг вперёд и два назад. У меня за первый месяц было всего 8 подписчиков, прорвало на 33-й день</p></div>
+</section>
+
+<section id="profil">
+  <h2><span class="n">7</span>Оформление профиля</h2>
+<p>Сильно и быстро данные не меняем. В первые дни только открытость и профпанель, всё остальное на 6-й день</p>
+<h3>Сразу</h3>
+<ol class="steps"><li><b>Аккаунт открыт:</b> Настройки → «Конфиденциальность аккаунта» → «Закрытый аккаунт» выключен. Там же проверьте строку «Разрешите общедоступным фото и видео появляться в выдаче поисковых систем»</li><li><b>Профпанель:</b> «Редактировать профиль» → «Переключиться на профессиональный аккаунт» → «Блогер» или «Автор видео Reels»</li></ol>
+<h3>На 6-й день</h3>
+<ol class="steps"><li><b>Ник:</b> имя и фамилия или псевдоним. Занято, добавьте короткую приставку. Без подчёркиваний и наборов букв, которые не прочитать вслух</li><li><b>Имя</b> (строка над шапкой): «Имя / кто вы и чем занимаетесь»</li><li><b>Аватар:</b> лицо крупно или узнаваемая вещь: кепка, очки</li><li><b>Шапка:</b> кто вы уже сейчас, о чём блог и что получит человек (результат в цифрах, если есть) + призыв написать в директ. Без «учусь» и планов на будущее. Текст берёте из распаковки</li></ol>
+<a class="btn" href="https://ivan-loginov.ru/guide-raspakovka-claude/">Промпты распаковки →</a>
+<h3>Настройки</h3>
+<div class="tw"><table class="tbl"><thead><tr><th>Что</th><th>Как</th></tr></thead><tbody><tr><td>Тумблер «Автор ИИ»</td><td>Не включаем</td></tr><tr><td>Привязка Facebook</td><td>Не привязываем</td></tr><tr><td>Категория профиля</td><td>Любая, на продвижение не влияет</td></tr><tr><td>Ссылка в шапке</td><td>Не ставим до вердикта на 14-й день. Стоит, уберите</td></tr><tr><td>Актуальные</td><td>На старте не трогаем</td></tr><tr><td>Своя почта</td><td>Через 7 дней после входа</td></tr><tr><td>Свой телефон</td><td>Через пару недель, когда аккаунт отлежится</td></tr></tbody></table></div>
+<div class="box calm"><div class="t">Профиль не дёргаем</div><p>Имя меняем не чаще раза в 2 недели: частые правки шапки = «Повторите попытку позже». У каждого из трёх аккаунтов свой ник и свои тексты. Один текст на трёх аккаунтах как три близнеца в одинаковых костюмах: алгоритм решит, что это один человек</p></div>
+</section>
+
+<section id="vykladka">
+  <h2><span class="n">8</span>Сколько и как выкладывать</h2>
+<ul><li><b>Только рилсы.</b> Фото и карусели на старте не грузим, карусели подключаем после 1000 подписчиков</li><li><b>Темы не придумываем с нуля:</b> берём то, что недавно залетело в вашей теме, и делаем свою версию. Свои темы с нуля добавляем, когда аккаунт уже разогнался</li><li><b>Видео</b> Full HD, 30 кадров, HDR выключен</li><li><b>Музыка</b> трендовая и по теме. Нет музыки в выборе, переустановите Instagram</li></ul>
+<h3>Темп после первой недели</h3>
+<div class="tw"><table class="tbl num"><thead><tr><th>Сигнал</th><th>Роликов в день</th></tr></thead><tbody><tr><td>Первая неделя</td><td>по графику, до 3</td></tr><tr><td>Один ролик пробил 1000</td><td>до 5</td></tr><tr><td>Один ролик пробил 3000</td><td>до 10, это потолок</td></tr></tbody></table></div>
+<p>Поднимаемся <b>по одному рилсу в день</b>: сегодня 3, завтра 4, послезавтра 5. Порог даёт потолок, а не команду выложить всё сразу. Хватает одного ролика, который пробил порог. Считаем только просмотры из Instagram: в статистике ролика строка Instagram, Facebook не в счёт</p>
+<div class="box warn"><div class="t">Чистка</div><p>Ролик, который за 72 часа набрал меньше 20 просмотров, удаляем. Остальные слабые убираем в архив</p></div>
+<p>Вышел первый ролик, подключайтесь к <b>«ПРО движению»</b> в чате потока: правила в закрепе вкладки</p>
+</section>
+
+<section id="verdikt">
+  <h2><span class="n">9</span>Вердикт на 14-й день</h2>
+<p>Первые выводы видно уже на 4-6-й день, окончательный вердикт на 14-й: либо работаем на этом аккаунте, либо меняем его и начинаем с Дня 1</p>
+<div class="tw"><table class="tbl"><thead><tr><th>Просмотры</th><th>Что это значит и что делаем</th></tr></thead><tbody><tr><td>200-300 и больше</td><td>Аккаунт рабочий, растим контентом. Ролики не залетают, значит дело в ролике: тема, заголовок, формула. Разбираем в чате и на зуме</td></tr><tr><td>30-200</td><td>Аккаунт живой, Instagram присматривается. Не бросаем: каждый день выкладка и прогрев, разбираем ролики</td></tr><tr><td>1-30 на одном ролике</td><td>Теневой бан ролика. Через 72 часа удаляем, аккаунт живёт дальше</td></tr><tr><td>1-30 на всех роликах</td><td>Теневой бан аккаунта. Меняем аккаунт и начинаем с Дня 1</td></tr></tbody></table></div>
+<p>За эти две недели обычно видно, какой из трёх аккаунтов сильнее: на нём и сосредотачиваемся</p>
+<div class="box warn"><div class="t">Телефон после бана</div><p>Прежде чем заводить на нём новый аккаунт: на Android очистите кэш Instagram, на iPhone сделайте сброс до заводских настроек. Перед сбросом сохраните фото и данные</p></div>
+</section>
+
+<section id="sboi">
+  <h2><span class="n">10</span>Если что-то пошло не так</h2>
+<details><summary>«Подтвердите, что это вы»</summary><div class="in"><p>В поддержку не пишем. Перестаём делать то, что вызвало проверку, чаще всего это смена VPN. Блок длится сутки, максимум двое</p></div></details>
+<details><summary>«Повторите попытку позже» при правке профиля</summary><div class="in"><p>Ничего не делаем, ждём. Это лимит на частоту действий, а не блокировка</p></div></details>
+<details><summary>Заблокировали свежий купленный аккаунт</summary><div class="in"><p>Не обжалуем, берём новый. Обжалование упрётся в подтверждение по телефону</p></div></details>
+<details><summary>Не приходит код при входе</summary><div class="in"><p>Код приходит на почту аккаунта, вход в неё на странице покупки. Почта не пускает по паролю: проверьте, не приклеился ли пробел в начале, и попробуйте второй пароль из выдачи продавца. Не помогло, пишите продавцу</p></div></details>
+<details><summary>Instagram видит не всю галерею (Android)</summary><div class="in"><p>Настройки телефона → Приложения → Instagram → Разрешения → Фото и видео → «Разрешить доступ ко всем фото и видео». Потом закройте Instagram полностью и откройте заново</p></div></details>
+<details><summary>«Добавить аккаунт» перекидывает в другой профиль</summary><div class="in"><p>Жмите «Войти в существующий аккаунт» и вводите логин с паролем руками, а не выбирайте из списка</p></div></details>
+<details><summary>Приостановили личный аккаунт «за связь с другим аккаунтом»</summary><div class="in"><p>Это склейка с забаненными рабочими аккаунтами по устройству. Обжалование подаём ОДИН раз: повторная заявка сбрасывает очередь. Документ (паспорт или права) грузим через браузер instagram.com на том же телефоне, номер телефона вводим настоящий. В личный аккаунт заходим без VPN, с домашнего интернета. Проверка идёт до 48 часов, всё это время рабочие аккаунты на этом телефоне не трогаем</p></div></details>
+<p>Не нашли свой случай, пишите во вкладку «Вопрос-ответ» чата потока и прикладывайте скрин</p>
+</section>
+
+<p class="sign">Делайте по шагам и пишите в чат, что получилось<br><b>Иван Логинов</b> · Взрывные алгоритмы</p>
+</div>
+
+<script>
+(function () {
+  var KEY = "akkaunty-progrev-5potok";
+  var state = {};
+  try { state = JSON.parse(localStorage.getItem(KEY) || "{}") || {}; } catch (e) { state = {}; }
+  var boxes = Array.prototype.slice.call(document.querySelectorAll(".check input"));
+  function paint() {
+    var done = boxes.filter(function (b) { return b.checked; }).length;
+    if (!boxes.length) return;
+    document.getElementById("pr-b").style.width = (done / boxes.length * 100) + "%";
+    document.getElementById("pr-t").textContent = done === 0 ? "Отмечайте галочками, что сделали"
+      : done === boxes.length ? "Всё сделано, вы огонь 🔥" : "Сделано " + done + " из " + boxes.length;
+  }
+  boxes.forEach(function (b) {
+    b.checked = !!state[b.dataset.k];
+    b.addEventListener("change", function () {
+      state[b.dataset.k] = b.checked;
+      try { localStorage.setItem(KEY, JSON.stringify(state)); } catch (e) {}
+      paint();
+    });
+  });
+  paint();
+
+  var d = new Date();
+  var today = d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0") + "-" + String(d.getDate()).padStart(2, "0");
+  document.querySelectorAll(".ladder tbody tr").forEach(function (tr) {
+    if (tr.dataset.d === today) tr.classList.add("today");
+    else if (tr.dataset.d < today) tr.classList.add("past");
+  });
+
+  function fallbackCopy(text) {
+    var ta = document.createElement("textarea");
+    ta.value = text; ta.setAttribute("readonly", ""); ta.style.position = "fixed"; ta.style.opacity = "0";
+    document.body.appendChild(ta); ta.select();
+    try { document.execCommand("copy"); } catch (e) {}
+    document.body.removeChild(ta);
+  }
+  document.querySelectorAll("[data-copy]").forEach(function (btn) {
+    btn.addEventListener("click", function () {
+      var text = document.getElementById(btn.dataset.copy).textContent;
+      var ok = function () {
+        btn.textContent = "Скопировано ✓"; btn.classList.add("ok");
+        setTimeout(function () { btn.textContent = "Скопировать"; btn.classList.remove("ok"); }, 1800);
+      };
+      if (navigator.clipboard && window.isSecureContext) {
+        navigator.clipboard.writeText(text).then(ok, function () { fallbackCopy(text); ok(); });
+      } else { fallbackCopy(text); ok(); }
+    });
+  });
+})();
+</script>
+</body>
+</html>
