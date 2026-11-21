@@ -346,3 +346,21 @@
 #v-pult .p-lr em{font-style:normal;font-weight:600;white-space:nowrap}
 #v-pult .p-lr small{font-size:11px;color:var(--muted);white-space:nowrap}
 #v-pult .p-lrow .p-sub{grid-column:1/-1;font-size:12px;line-height:1.35;color:var(--muted)}
+/* ---------- контент плашками по площадкам (22.11.2026, слово Ивана) ---------- */
+#v-pult .p-plats{display:grid;gap:8px;margin-top:10px}
+#v-pult .p-plat{padding:10px 12px;border-radius:12px;background:var(--bg)}
+#v-pult .p-plat.p-st-none{opacity:.75}
+#v-pult .p-ph{display:flex;align-items:baseline;justify-content:space-between;gap:10px;margin-bottom:4px}
+#v-pult .p-ph b{font-family:var(--f-display);font-weight:500;font-size:17px;letter-spacing:.02em}
+#v-pult .p-pm{font-family:var(--f-mono);font-size:11px;color:var(--muted);white-space:nowrap}
+#v-pult .p-pi{display:grid;grid-template-columns:minmax(0,1fr) 72px auto;align-items:center;gap:10px;min-height:30px}
+#v-pult .p-pn{font-size:14px;font-weight:500}
+#v-pult .p-pb{position:relative;height:6px;border-radius:3px;background:color-mix(in srgb,var(--muted) 20%,var(--surface));overflow:hidden}
+#v-pult .p-pb i{position:absolute;left:0;top:0;bottom:0;border-radius:3px;background:var(--accent)}
+#v-pult .p-pi.p-full .p-pb i{background:var(--mint)}
+#v-pult .p-pc{font-size:13px;color:var(--muted);white-space:nowrap;text-align:right}
+#v-pult .p-pc b{font-family:var(--f-display);font-weight:500;font-size:17px;color:var(--ink)}
+#v-pult .p-pc em{font-style:normal;font-family:var(--f-mono);font-size:11px;color:var(--p-mint-t)}
+#v-pult .p-pi.p-hid .p-pn{color:var(--muted)}
+#v-pult .p-pi.p-hid .p-pb{background:transparent;box-shadow:inset 0 0 0 1px var(--rule)}
+#v-pult .p-pw{margin:4px 0 0;font-size:12px;line-height:1.35;color:var(--muted)}

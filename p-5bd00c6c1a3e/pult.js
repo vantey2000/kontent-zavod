@@ -135,7 +135,7 @@
       unc + failed + staleNote +
       scale + need +
       '<div class="p-cells">' +
-        cell('Сегодня', val((m.today || {}).sum), m.day ? esc(day(m.day)) + ', по Москве' : '') +
+        cell('Сегодня', val((m.today || {}).sum), m.day ? esc(day(m.day)) : '') +
         cell('7 дней', val((m.d7 || {}).sum)) +
         cell('Прогноз', val(pc.forecast)) +
       '</div>' +
@@ -576,7 +576,7 @@
         '</div>' +
         '<div class="p-xax"><span>' + esc(day(d30[0].d)) + '</span><span>' + esc(day(d30[Math.floor(n / 2)].d)) + '</span><span>' + esc(day(d30[n - 1].d)) + '</span></div>';
     }
-    h += '<p class="p-line p-foot">Деньги считаются по московской дате: сегодня по Москве ' + esc(day(m.day)) +
+    h += '<p class="p-line p-foot">День считается по твоему времени: сегодня ' + esc(day(m.day)) +
       (mb.status === 'stale' ? ' <span class="p-amb">· цифры с ' + hm(mb.at) + '</span>' : '') + '</p>';
     return h;
   }
@@ -668,64 +668,57 @@
 
 
   /* ---------- контент и вайб-кодинг (22.11.2026): плитки третьего ряда и их ящики ----------
-     Блоки content и vibe снимка (CONTRACT.md). Время слота и поста берётся из строки снимка, как везде,
-     рядом в подробностях время по Москве: сетка задана по Москве */
-  const KIND1 = { carousel: 'Карусель', reel: 'Рилс', tg: 'Пост в канал' };
-  const KIND_N = { carousel: ['карусель', 'карусели', 'каруселей'], reel: ['рилс', 'рилса', 'рилсов'], tg: ['пост', 'поста', 'постов'] };
-  const PL = { ig: 'IG', yt: 'YT', tt: 'TT', vk: 'ВК', tg: 'TG' };
-  const C_WORD = { done: 'вышло', now: 'время выкладывать', late: 'не вышло', wait: 'ещё не проверено', ahead: 'впереди', nocheck: 'не проверяется' };
-  const C_LAMP = { done: 'ok', now: 'amber', late: 'amber', wait: 'none', ahead: 'none', nocheck: 'none' };
-  const mskHm = (iso) => { const t = Date.parse(iso || ''); return isNaN(t) ? '' : new Date(t + 3 * 3600000).toISOString().slice(11, 16); };
-  const kn = (k, n) => { const w = KIND_N[k] || KIND_N.tg; return n + NB + plural(n, w[0], w[1], w[2]); };
-  const slotName = (s) => KIND1[s.kind] + (s.kind === 'tg' ? '' : NB + s.n);
+     Контент (слово Ивана 22.11): без времени слотов, по плашке на площадку «вышло из нормы» за день по времени Ивана.
+     done = null: снаружи не видно (пробные рилсы) или площадка не подключена (ВК до Postmypost), это не ноль */
+  const PL_NAME = { ig: 'Instagram', tg: 'Telegram', vk: 'ВК', yt: 'YouTube', tt: 'ТикТок' };
 
-  /* «не вышло: 2 рилса, 1 карусель» */
-  function lateText(late) {
-    const by = {};
-    late.forEach((s) => { by[s.kind] = (by[s.kind] || 0) + 1; });
-    return 'не вышло: ' + Object.keys(by).map((k) => kn(k, by[k])).join(', ');
+  function cSum(items) {
+    const seen = items.filter((i) => i.done != null);
+    return { done: seen.reduce((s, i) => s + Math.min(i.done, i.count), 0), total: seen.reduce((s, i) => s + i.count, 0), n: seen.length };
   }
 
   function tileContent(S) {
     const cb = (S.blocks || {}).content || {}, c = cb.data || {};
-    if (cb.status === 'empty' || !c.slots) {
-      return tile('cnt', 'Контент', lamp('none', 'нет данных'), 'нет', 'план выкладки не подключён', 'none', 'p-c-mut', 'открыть план дня');
+    if (cb.status === 'empty' || !c.platforms) {
+      return tile('cnt', 'Контент', lamp('none', 'нет данных'), 'нет', 'план выкладки не подключён', 'none', 'p-c-mut', 'открыть площадки');
     }
-    const late = c.slots.filter((s) => s.state === 'late');
-    const old = cb.status === 'stale';
-    const cnt = lamp(late.length || old ? 'amber' : 'ok', old ? 'данные старые' : late.length ? 'есть невышедшее' : 'идёт по плану');
-    let ln;
-    if (c.next) ln = 'дальше <b>' + hm(c.next.at) + '</b> ' + esc(slotName(c.next).toLowerCase());
-    else ln = c.done >= c.total ? 'план дня выполнен' : 'слотов на сегодня больше нет';
-    if (late.length) ln += '<span class="p-amb p-blk">' + esc(lateText(late)) + '</span>';
-    if (old) ln += '<span class="p-amb p-blk">данные с' + NB + hm(cb.at) + '</span>';
-    return tile('cnt', 'Контент', cnt, c.done + '<small>/' + c.total + '</small>', ln, late.length || old ? 'amber' : 'ok', '', 'открыть план дня');
+    const pls = c.platforms, all = [].concat.apply([], pls.map((p) => p.items));
+    const by = (id) => (pls.find((p) => p.id === id) || { items: [] }).items;
+    const ig = cSum(by('ig')), tg = cSum(by('tg'));
+    const video = cSum([].concat(by('vk'), by('yt'), by('tt')));
+    const hidden = all.filter((i) => i.done == null).reduce((n, i) => n + i.count, 0);
+    const warn = cb.status === 'stale' || pls.some((p) => p.state === 'stale');
+    let ln = ig.n ? 'Instagram <b>' + ig.done + '/' + ig.total + '</b>' : '';
+    const rest = [tg.n ? 'пост ' + tg.done + '/' + tg.total : '', video.n ? 'видео ' + video.done + '/' + video.total : ''].filter(Boolean).join(' · ');
+    if (rest) ln += (ln ? '<span class="p-blk">' : '') + rest + (ln ? '</span>' : '');
+    if (hidden) ln += '<span class="p-blk">ещё ' + hidden + NB + 'не видно снаружи</span>';
+    if (cb.status === 'stale') ln += '<span class="p-amb p-blk">данные с' + NB + hm(cb.at) + '</span>';
+    return tile('cnt', 'Контент', lamp(warn ? 'amber' : 'ok', warn ? 'площадка молчит' : 'проверено'),
+      (c.done || 0) + '<small>/' + (c.total || 0) + '</small>', ln, warn ? 'amber' : 'ok', '', 'открыть площадки');
+  }
+
+  function platCard(pl) {
+    const head = pl.state === 'off' ? '<span class="p-pm">не проверяется</span>'
+      : pl.state === 'stale' ? '<span class="p-pm p-amb">молчит' + (pl.at ? ' с' + NB + hm(pl.at) : '') + '</span>'
+        : '<span class="p-pm">' + (pl.at ? 'проверено ' + hm(pl.at) : 'ещё не проверялась') + '</span>';
+    const rows = pl.items.map((i) => {
+      const seen = i.done != null, w = seen && i.count ? Math.min(100, i.done / i.count * 100) : 0;
+      return '<div class="p-pi' + (seen ? (i.done >= i.count ? ' p-full' : '') : ' p-hid') + '"><span class="p-pn">' + esc(i.name) + '</span>' +
+        '<span class="p-pb"><i style="width:' + w.toFixed(1) + '%"></i></span>' +
+        '<span class="p-pc">' + (seen ? '<b>' + i.done + '</b> из ' + i.count + (i.extra ? ' <em>+' + i.extra + '</em>' : '') : 'не видно · план ' + i.count) + '</span></div>';
+    }).join('');
+    const why = [...new Set(pl.items.map((i) => i.why).filter(Boolean))];
+    return '<div class="p-plat p-st-' + (pl.state === 'stale' ? 'amber' : pl.state === 'off' ? 'none' : 'ok') + '">' +
+      '<div class="p-ph"><b>' + esc(PL_NAME[pl.id] || pl.name) + '</b>' + head + '</div>' + rows +
+      (why.length ? '<p class="p-pw">' + esc(why.join('; ')) + '</p>' : '') + (pl.state === 'stale' && pl.error ? '<p class="p-pw p-amb">' + esc(pl.error) + '</p>' : '') + '</div>';
   }
 
   function drawerContent(S) {
     const cb = (S.blocks || {}).content || {}, c = cb.data || {};
-    if (cb.status === 'empty' || !c.slots) return '<p class="p-line">План выкладки ещё не подключён к пульту</p>';
-    let h = '<p class="p-line">Выложено <b>' + c.done + ' из ' + c.total + '</b> · день по Москве ' + esc(day(c.day)) +
+    if (cb.status === 'empty' || !c.platforms) return '<p class="p-line">План выкладки ещё не подключён к пульту</p>';
+    let h = '<p class="p-line">Вышло <b>' + (c.done || 0) + ' из ' + (c.total || 0) + '</b>, что Пульт видит сам · план дня ' + (c.plan || 0) +
       (cb.status === 'stale' ? ' <span class="p-amb">· данные с ' + hm(cb.at) + '</span>' : '') + '</p>';
-    h += '<div class="p-kinds">' + (c.kinds || []).map((k) => '<span class="p-kind' + (k.count && k.done >= k.count ? ' p-full' : '') + '">' +
-      '<b>' + k.done + '<small>/' + k.count + '</small></b>' + esc(k.name) + (k.extra ? ' <em>+' + k.extra + NB + 'сверх</em>' : '') + '</span>').join('') + '</div>';
-    const nx = c.next ? c.slots.findIndex((s) => s.at === c.next.at && s.kind === c.next.kind && s.n === c.next.n) : -1;
-    h += '<ul class="p-slots">' + c.slots.map((s, i) => {
-      const main = s.where[0] || {};
-      const word = main.state === 'done' && main.t ? 'вышло ' + hm(main.t) : C_WORD[s.state] || '';
-      const pls = s.where.length > 1 ? '<span class="p-pls">' + s.where.map((w) => '<span class="p-pl p-pl-' + w.state + '" title="' +
-        esc(PL[w.p] + ': ' + (w.state === 'done' && w.t ? 'вышло ' + hm(w.t) : C_WORD[w.state])) + '">' + esc(PL[w.p] || w.p) + '</span>').join('') + '</span>' : '';
-      return '<li class="p-sl p-sl-' + s.state + (i === nx ? ' p-next' : '') + '">' +
-        '<span class="p-slt"><b>' + hm(s.at) + '</b><small>' + mskHm(s.at) + NB + 'мск</small></span>' +
-        '<span class="p-sln">' + esc(slotName(s)) + pls + '</span>' +
-        '<span class="p-slw">' + lamp(C_LAMP[s.state] || 'none', C_WORD[s.state] || '') + esc(word) + '</span></li>';
-    }).join('') + '</ul>';
-    const src = c.sources || [];
-    const on = src.filter((x) => x.state !== 'off'), off = src.filter((x) => x.state === 'off');
-    h += '<p class="p-line p-foot">Проверено: ' + on.map((x) => esc(x.name) + ' ' + (x.state === 'stale'
-      ? '<span class="p-amb">молчит' + (x.at ? ' с' + NB + hm(x.at) : '') + '</span>' : x.at ? hm(x.at) : 'ещё нет')).join(', ') +
-      (off.length ? '. ' + esc(off.map((x) => x.name).join(' и ')) + ' пока не проверяются: подключатся вместе с Postmypost' : '') +
-      '. Instagram платный, его смотрим раз в 2 часа, когда подошло время слота</p>';
+    h += '<div class="p-plats">' + c.platforms.map(platCard).join('') + '</div>';
     const wk = c.week || [];
     if (wk.length) {
       h += '<p class="p-line p-sec">Последние 7 дней</p><div class="p-cweek">' + wk.map((d) => {
@@ -733,9 +726,10 @@
         return '<div class="p-cw' + (d.d === c.day ? ' p-cur' : '') + (d.done == null ? ' p-nod' : '') + '"><b>' + (d.done == null ? '·' : d.done) + '</b>' +
           '<span class="p-cbar"><i style="height:' + p + '%"></i></span><span class="p-sub">' + WD[(dateOf(d.d).getDay() + 6) % 7] + '</span></div>';
       }).join('') + '</div>';
-      if (wk.some((d) => d.done == null)) h += '<p class="p-line p-foot">Счёт идёт с ' + esc(day(c.since)) + ': Instagram отдаёт только последние 12 постов, раньше этого дня полного счёта нет</p>';
+      if (wk.some((d) => d.done == null)) h += '<p class="p-line p-foot">Счёт идёт с ' + esc(day(c.since)) + ': раньше этого дня полного счёта нет</p>';
     }
-    return h + '<p class="p-line p-foot">Норма и время слотов задаются в настройке Пульта. Поменять: скажи Claude, например «карусели с 14:00 каждые 30 минут»</p>';
+    return h + '<p class="p-line p-foot">Отмечается само по мере выхода: канал и YouTube каждые 15 минут, ТикТок раз в час по числу видео в профиле, ' +
+      'Instagram платный, раз в 2 часа с 16:00 до 04:00, ночью раз в 6 часов. Норму на день меняешь словом Claude</p>';
   }
 
   /* ---------- вайб-кодинг ---------- */
@@ -797,7 +791,7 @@
     }
     if ((v.done || []).length) h += '<p class="p-line p-sec">Готово за 2 недели</p><p class="p-line">' + esc(v.done.map((p) => p.title).join(' · ')) + '</p>';
     return h + '<p class="p-line p-foot">Проект = файл плана в IvanOS/plans, процент = закрытые пункты. Время считается по сессиям Claude рядом с правками файлов, ' +
-      'два окна сразу идут один раз, день по Москве</p>';
+      'два окна сразу идут один раз</p>';
   }
 
   TITLES.cnt = 'Контент на сегодня';
@@ -858,8 +852,8 @@
     const lb = (S.blocks || {}).leads || {}, l = lb.data || {};
     if (lb.status === 'empty' || !l.tg) return '<p class="p-line">Журналы ответчиков ещё не подключены к пульту</p>';
     const c = l.counts || {}, today = l.day, sc = l.scan || {};
-    const ref = String(S.updated || '').slice(0, 10) || today;       /* «с 00:44» считаем от даты снимка по времени Мака, не от московской */
-    let h = '<p class="p-line">Сегодня по Москве написали <b>' + ((l.tg.today || 0) + (l.ig.today || 0)) + '</b>: Telegram ' + (l.tg.today || 0) + ', директ ' + (l.ig.today || 0) +
+    const ref = String(S.updated || '').slice(0, 10) || today;       /* «с 00:44» считаем от даты снимка по времени Ивана */
+    let h = '<p class="p-line">Сегодня написали <b>' + ((l.tg.today || 0) + (l.ig.today || 0)) + '</b>: Telegram ' + (l.tg.today || 0) + ', директ ' + (l.ig.today || 0) +
       (lb.status === 'stale' ? ' <span class="p-amb">· данные с ' + hm(lb.at) + '</span>' : '') + '</p>';
     h += '<ul class="p-src p-lch">' + chLine('Telegram', l.tg) + chLine('Директ', l.ig) + '</ul>';
     const dd = (l.tg.days || []).map((d, i) => ({ d: d.d, tg: d.n, ig: ((l.ig.days || [])[i] || {}).n || 0 }));
@@ -970,22 +964,22 @@
   }
 
   /* ---------- запись дохода: шторка самого планера, команда уходит боту тем же путём, что новое дело ---------- */
-  /* день денег московский и считается от часов телефона: день из снимка бывает вчерашним (снимок из памяти, ночь),
-     и тогда в шторке стоял бы один день, а бот записал бы другой */
-  function mskToday() {
-    const m = new Date(Date.now() + (new Date().getTimezoneOffset() + 180) * 60000);
+  /* день по часам телефона (время Ивана, с 22.11 не по Москве): день из снимка бывает вчерашним (снимок из памяти,
+     ночь), и тогда в шторке стоял бы один день, а бот записал бы другой */
+  function localToday() {
+    const m = new Date();
     return m.getFullYear() + '-' + String(m.getMonth() + 1).padStart(2, '0') + '-' + String(m.getDate()).padStart(2, '0');
   }
   /* Бот узнаёт команду «/доход СУММА ₽ что это ГГГГ-ММ-ДД» (planer/income_cmd.py), пишет строку в тетрадь доходов,
      отвечает в чате и запускает сборщик вне очереди. Здесь только сбор полей и отправка: сумма на вкладке меняется
      не сразу, а с новым снимком, поэтому «записано» говорит бот, а не эта шторка */
   function openIncome() {
-    const today = mskToday();
+    const today = localToday();
     openSheet('<h3>Записать доход</h3>' +
       '<label class="fl" for="pIncSum">Сумма, ₽</label><input class="inp" id="pIncSum" inputmode="numeric" autocomplete="off" placeholder="20 000">' +
       '<label class="p-ret"><input type="checkbox" id="pIncRet"><span>это возврат, вычесть из дохода</span></label>' +
       '<label class="fl" for="pIncWhat">Что это</label><input class="inp" id="pIncWhat" autocomplete="off" maxlength="80" placeholder="флагман, перевод СБП">' +
-      '<label class="fl" for="pIncDay">День по Москве</label><input class="inp" id="pIncDay" type="date" value="' + esc(today) + '" max="' + esc(today) + '">' +
+      '<label class="fl" for="pIncDay">День</label><input class="inp" id="pIncDay" type="date" value="' + esc(today) + '" max="' + esc(today) + '">' +
       '<div class="acts"><button class="btn pri" type="button" data-p-inc="go">Записать</button></div>' +
       '<div class="hint">Запись ляжет в тетрадь доходов, бот подтвердит её в чате. Имена учеников не указывай</div>');
     const box = document.getElementById('sheetIn');
@@ -995,7 +989,7 @@
       const raw = box.querySelector('#pIncSum').value.replace(/[\s₽]/g, '');
       if (!/^\d{1,8}$/.test(raw) || +raw === 0) return toast('Сумма цифрами, например 20000');
       const day = box.querySelector('#pIncDay').value || today;
-      if (day > mskToday()) return toast('День не позже сегодняшнего по Москве');
+      if (day > localToday()) return toast('День не позже сегодняшнего');
       const what = box.querySelector('#pIncWhat').value.replace(/\s+/g, ' ').trim();
       const sign = box.querySelector('#pIncRet').checked ? '-' : '';
       sent = true;
