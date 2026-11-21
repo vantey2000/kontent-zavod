@@ -334,7 +334,8 @@
     /* порядок на экране: главное, подписчики, затем дела дня и зал. Подписчики в первом ряду, чтобы прирост
        за сутки был виден без прокрутки на высоте настоящего телефона (вырез сверху, полоска снизу) */
     /* третий ряд (22.11): контент дня и вайб-кодинг, файл pult.work.js */
-    return '<div class="p-grid">' + [out[0], out[2], out[1], out[3], tileContent(S), tileVibe(S)].join('') + '</div>';
+    /* заявки (22.11) широкой плиткой выше контента: это деньги; файл pult.leads.js */
+    return '<div class="p-grid">' + [out[0], out[2], out[1], out[3], tileLeads(S), tileContent(S), tileVibe(S)].join('') + '</div>';
   }
 
   /* полоса «срочно»: первая красная строка поднимается над всем */
@@ -803,6 +804,93 @@
   TITLES.vibe = 'Вайб-кодинг';
   DRAW.cnt = drawerContent;
   DRAW.vibe = drawerVibe;
+
+  /* ---------- заявки (22.11.2026): широкая плитка третьим рядом и её ящик ----------
+     Блок leads снимка (CONTRACT.md): пришло, обработано, ждут ответа, молчат, дожать. Пульт никому не пишет,
+     ссылка в строке открывает диалог в Telegram или директе */
+  const L_CH = { tg: 'Telegram', ig: 'директ' };
+  const L_CAT = { lead: 'лид', student: 'ученик', personal: 'личное', customer: 'клиент', other: 'другое', closure: 'закрыто', new: 'новый', spam: 'спам' };
+  const daysW = (n) => n + NB + plural(n, 'день', 'дня', 'дней');
+  /* «сегодня 14:05», «вчера 22:10», «20 ноя» */
+  function whenS(iso, today) {
+    if (!iso) return 'давно в очереди';
+    const d = iso.slice(0, 10);
+    if (d === today) return 'с ' + hm(iso);
+    return daysBetween(d, today) === 1 ? 'со вчера ' + hm(iso) : 'с ' + day(d);
+  }
+
+  function tileLeads(S) {
+    const lb = (S.blocks || {}).leads || {}, l = lb.data || {};
+    const key = 'leads', act = 'открыть заявки';
+    if (lb.status === 'empty' || !l.tg) return tile(key, 'Заявки', lamp('none', 'нет данных'), 'нет', 'журналы ответчиков не подключены', 'none', 'p-c-mut', act);
+    const c = l.counts || {}, tg = l.tg || {}, ig = l.ig || {};
+    const came = (tg.today || 0) + (ig.today || 0);
+    const old = lb.status === 'stale';
+    const warn = (c.waiting || 0) > 0 || old;
+    const cell = (n, lbl, sub, cls) => '<span class="p-lc' + (cls ? ' ' + cls : '') + '"><b>' + n + '</b><span class="p-ll">' + lbl + '</span><span class="p-ls">' + sub + '</span></span>';
+    return '<button class="p-tile p-wide p-st-' + (warn ? 'amber' : 'ok') + '" type="button" data-p-tile="' + key + '" aria-expanded="false" aria-controls="p-drawer">' +
+      '<span class="p-th"><span class="p-lbl">Заявки</span>' + lamp(warn ? 'amber' : 'ok', warn ? 'есть ждущие ответа' : 'все отвечены') + '</span>' +
+      '<span class="p-lcells">' +
+        cell(came, 'написали', 'TG ' + (tg.today || 0) + ' · директ ' + (ig.today || 0)) +
+        cell(c.waiting || 0, 'ждут ответа', c.waiting ? 'от тебя' : 'никто', c.waiting ? 'p-c-amb' : '') +
+        cell(c.push || 0, 'дожать', 'молчат ' + (c.silent || 0)) +
+      '</span>' + (old ? '<span class="p-tl p-amb">данные с' + NB + hm(lb.at) + '</span>' : '') +
+      '<span class="p-ta" data-p-ta="' + act + '" data-p-tc="свернуть">' + act + '</span></button>';
+  }
+
+  function personRow(p, today, right) {
+    const tagCh = '<span class="p-lt">' + esc(L_CH[p.ch] || p.ch) + '</span>';
+    const inner = '<span class="p-lp"><b>' + esc(p.name) + '</b>' + tagCh + (p.user ? '<small>@' + esc(p.user) + '</small>' : '') + '</span>' +
+      '<span class="p-lr">' + right + '</span>' + (p.what ? '<span class="p-sub">' + esc(p.what) + '</span>' : '');
+    return p.link ? '<li><a class="p-lrow" href="' + esc(p.link) + '" target="_blank" rel="noopener">' + inner + '</a></li>'
+      : '<li><span class="p-lrow">' + inner + '</span></li>';
+  }
+
+  function chLine(name, s) {
+    const a = s.acts || {}, cats = s.cats || {};
+    const ca = Object.keys(cats).sort((x, y) => cats[y] - cats[x]).map((k) => (L_CAT[k] || k) + ' ' + cats[k]).join(', ');
+    return '<li><span class="p-sr"><span class="p-sn">' + name + '</span><b>' + (s.today || 0) + '<small>' + NB + plural(s.today || 0, 'человек', 'человека', 'человек') + '</small></b></span>' +
+      '<span class="p-sub">обращений ' + (s.msgs || 0) + ': ответчик ответил ' + (a.reply || 0) + ', передано тебе ' + (a.escalate || 0) + ', ответ не нужен ' + (a.skip || 0) + '</span>' +
+      (ca ? '<span class="p-sub">кто: ' + esc(ca) + '</span>' : '') + '<span class="p-sub">за 7 дней ' + (s.d7 || 0) + NB + plural(s.d7 || 0, 'человек', 'человека', 'человек') + '</span></li>';
+  }
+
+  function drawerLeads(S) {
+    const lb = (S.blocks || {}).leads || {}, l = lb.data || {};
+    if (lb.status === 'empty' || !l.tg) return '<p class="p-line">Журналы ответчиков ещё не подключены к пульту</p>';
+    const c = l.counts || {}, today = l.day, sc = l.scan || {};
+    const ref = String(S.updated || '').slice(0, 10) || today;       /* «с 00:44» считаем от даты снимка по времени Мака, не от московской */
+    let h = '<p class="p-line">Сегодня по Москве написали <b>' + ((l.tg.today || 0) + (l.ig.today || 0)) + '</b>: Telegram ' + (l.tg.today || 0) + ', директ ' + (l.ig.today || 0) +
+      (lb.status === 'stale' ? ' <span class="p-amb">· данные с ' + hm(lb.at) + '</span>' : '') + '</p>';
+    h += '<ul class="p-src p-lch">' + chLine('Telegram', l.tg) + chLine('Директ', l.ig) + '</ul>';
+    const dd = (l.tg.days || []).map((d, i) => ({ d: d.d, tg: d.n, ig: ((l.ig.days || [])[i] || {}).n || 0 }));
+    if (dd.length) {
+      const mx = Math.max.apply(null, dd.map((d) => d.tg + d.ig).concat([1]));
+      h += '<div class="p-cweek p-lweek">' + dd.map((d) => '<div class="p-cw' + (d.d === today ? ' p-cur' : '') + '"><b>' + (d.tg + d.ig) + '</b>' +
+        '<span class="p-cbar"><i class="p-ig" style="height:' + Math.round((d.tg + d.ig) / mx * 100) + '%"></i><i style="height:' + Math.round(d.tg / mx * 100) + '%"></i></span>' +
+        '<span class="p-sub">' + WD[(dateOf(d.d).getDay() + 6) % 7] + '</span></div>').join('') + '</div>' +
+        '<p class="p-line p-foot"><i class="p-key"></i>Telegram <i class="p-key p-ig"></i>директ, людей за день</p>';
+    }
+    const w = l.waiting || [];
+    h += '<p class="p-line p-sec">Ждут ответа · ' + (c.waiting || 0) + '</p>';
+    h += w.length ? '<ul class="p-lpl">' + w.map((p) => personRow(p, ref, '<em class="p-amb">' + esc(p.why) + '</em><small>' + esc(whenS(p.since, ref)) + '</small>')).join('') + '</ul>'
+      : '<p class="p-line">Никто не ждёт</p>';
+    if (c.personal_wait) h += '<p class="p-line p-foot">Ещё ' + c.personal_wait + ' в личных переписках, в список не включены</p>';
+    const pu = l.push || [];
+    h += '<p class="p-line p-sec">Дожать · ' + (c.push || 0) + '</p><p class="p-line p-foot">Получили цены и молчат от 2 до 21 дня. Пульт никому не пишет: пишешь сам или говоришь Claude, кого дожать</p>';
+    if (pu.length) h += '<ul class="p-lpl">' + pu.map((p) => personRow(p, ref, '<em>молчит ' + daysW(p.days) + '</em>')).join('') + '</ul>';
+    if ((c.push || 0) > pu.length) h += '<p class="p-line p-foot">Показаны ' + pu.length + ' самых свежих из ' + c.push + '</p>';
+    const si = (l.silent || []).filter((p) => !pu.some((q) => q.link === p.link)).slice(0, 15);
+    if (si.length) {
+      h += '<p class="p-line p-sec">Молчат после ответа · ' + (c.silent || 0) + '</p><ul class="p-wait">' + si.map((p) =>
+        '<li><span>' + esc(p.name) + '<small>' + (p.priced ? 'цены получил' : 'цены не получал') + (p.user ? ' · @' + esc(p.user) : '') + '</small></span><b>' + daysW(p.days) + '</b></li>').join('') + '</ul>';
+    }
+    return h + '<p class="p-line p-foot">' + (sc.fresh ? 'Переписка Telegram сверена в ' + hm(sc.at) : '<span class="p-amb">Переписка Telegram не сверена' +
+      (sc.at ? ' с ' + hm(sc.at) : '') + ': «ждут» и «молчат» по журналу ответчика</span>') +
+      '. Директ по журналу ответчика: твой ответ руками в директе Пульт не видит</p>';
+  }
+
+  TITLES.leads = 'Заявки';
+  DRAW.leads = drawerLeads;
   /* ---------- отрисовка вида: состояние ящика переживает перерисовку ---------- */
   const UI = { touched: false, sel: null, groups: null, sig: '' };
 
