@@ -1070,7 +1070,34 @@
   window.loadPult = loadPult;
   window.pultSync = pultSync;
 
+  /* новая выкладка (22.11): страница сама не перезагружается, iPhone держит приложение в памяти, и после выкладки
+     Иван видел старый код. При возврате на экран и раз в 10 минут сверяем версии файлов (?v=) в свежем index.html
+     с загруженными; вышла новая - тихо перезагружаемся. Не трогаем открытую шторку, на одну версию перезагрузка
+     одна (если кэш браузера опять отдал старое, второй раз не крутимся). Очередь правок живёт в хранилище и переживёт */
+  const VER_RE = /(?:app|pult)\.(?:js|css)\?v=[\w.-]+/g;
+  const loadedVer = () => [...document.querySelectorAll('script[src],link[rel="stylesheet"][href]')]
+    .map((el) => ((el.getAttribute('src') || el.getAttribute('href') || '').match(VER_RE) || [])[0]).filter(Boolean).sort().join(' ');
+  let verAt = 0;
+  async function checkVersion() {
+    if (document.hidden || Date.now() - verAt < 60000) return;
+    verAt = Date.now();
+    try {
+      const r = await fetch('index.html?_=' + Date.now(), { cache: 'no-store' });
+      if (!r.ok) return;
+      const fresh = ((await r.text()).match(VER_RE) || []).sort().join(' ');
+      if (!fresh || fresh === loadedVer()) return;
+      let done = '';
+      try { done = localStorage.getItem('pultReloadFor') || ''; } catch (e) { /* хранилище закрыто */ }
+      if (done === fresh || document.querySelector('#sheet.on')) return;
+      try { localStorage.setItem('pultReloadFor', fresh); } catch (e) { /* без отметки тоже можно */ }
+      location.reload();
+    } catch (e) { /* нет связи: проверим при следующем возврате */ }
+  }
+  window.pultCheckVersion = (force) => { if (force) verAt = 0; return checkVersion(); };   /* force - для проверок */
+
   loadPult();
+  document.addEventListener('visibilitychange', () => { if (!document.hidden) checkVersion(); });
+  setInterval(() => { verAt = 0; checkVersion(); }, 600000);
   document.addEventListener('visibilitychange', () => { if (!document.hidden && onPult()) loadPult(); });
   setInterval(() => { if (!document.hidden && onPult()) loadPult(); }, 60000);
 })();
