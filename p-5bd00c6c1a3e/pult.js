@@ -181,6 +181,21 @@
     return need > left || lastAgo > 7 ? 'amber' : 'ok';
   }
 
+  /* последние шаги и последний сон из блока здоровья. null = телефон ещё ничего не присылал */
+  function healthNow(B, ctx) {
+    const hb = B.health || {}, hd = hb.data || {};
+    const days = (hd.days || []).filter((d) => d && d.d && d.d <= ctx.today);
+    if (hb.status === 'empty' || !days.length) return null;
+    const back = days.slice().reverse();
+    const st = back.find((d) => d.steps != null), sl = back.find((d) => d.sleep_min != null);
+    if (!st && !sl) return null;
+    const push = hd.last_push || '';
+    /* stepsPart: шаги прошлого дня так и остались неполными (на следующий день телефон их не пересчитал) */
+    return { steps: st ? st.steps : null, stepsDay: st ? st.d : null, stepsPart: !!(st && st.steps_part && st.d !== ctx.today),
+      sleep: sl ? sl.sleep_min : null, sleepDay: sl ? sl.d : null,
+      inBed: !!(sl && sl.sleep_in_bed), push, old: hb.status === 'stale' || !((Date.now() - Date.parse(push)) / 3600000 < 36) };
+  }
+
   /* плитка = кнопка: внизу строка-действие со словом («открыть площадки»), у открытой - «свернуть» */
   const ACT = { main: 'открыть список', today: 'открыть все дела', aud: 'открыть площадки', gym: 'открыть недели' };
   function tile(key, label, ind, num, line, state, numCls, act) {
@@ -273,9 +288,29 @@
         (approx ? '<small>≈' + NB + '</small>' : '') + f().num(ad.total), ln, warn ? 'amber' : 'ok', ad.total >= 1e6 ? 'p-long' : ''));
     }
 
-    /* зал и здоровье */
+    /* здоровье и зал: Иван просил видеть шаги за день и сон. Когда телефон их прислал, плитка про них,
+       а зал остаётся точками вверху плитки и в подробностях; пока телефон молчит, плитка про зал */
     const gb = B.gym || {}, g = gb.data || {};
-    if (gb.status === 'empty' || !g.week) {
+    const hs = healthNow(B, ctx);
+    if (hs) {
+      const gw = g.week && gb.status !== 'empty' && gymWeek(g, ctx.today).known ? gymWeek(g, ctx.today) : null;
+      let pips = lamp(hs.old ? 'amber' : 'ok', hs.old ? 'данные давние' : 'данные свежие');
+      if (gw) {
+        pips = '<span class="p-pips" role="img" aria-label="' + esc('зал на этой неделе ' + gw.done + ' из ' + gw.plan) + '">';
+        for (let i = 0; i < (gw.plan || 0); i++) pips += '<i' + (i < gw.done ? ' class="p-on"' : '') + '></i>';
+        pips += '</span>';
+      }
+      const when = (d) => (d === ctx.today ? 'сегодня' : daysBetween(d, ctx.today) === 1 ? 'вчера' : day(d));
+      let ln = hs.steps != null
+        ? plural(hs.steps, 'шаг', 'шага', 'шагов') + ' ' + (hs.stepsDay === ctx.today ? 'за' + NB + 'сегодня' : esc(when(hs.stepsDay)) + (hs.stepsPart ? ', день неполный' : ''))
+        : 'шагов в данных нет';
+      ln += '<span class="p-blk">' + (hs.sleep != null
+        ? (hs.inBed ? 'в постели ' : 'сон ') + (hs.sleepDay === ctx.today ? '' : esc(when(hs.sleepDay)) + ' ') + '<b>' + durS(hs.sleep) + '</b>'
+        : 'сна в данных нет') + '</span>';
+      if (hs.old) ln += '<span class="p-amb p-blk">телефон молчит' + (hs.push ? ' с' + NB + esc(day(hs.push)) : '') + '</span>';
+      out.push(tile('gym', 'Здоровье и зал', pips, hs.steps != null ? f().num(hs.steps) : 'нет', ln, hs.old ? 'amber' : 'ok',
+        hs.steps == null ? 'p-c-mut' : (hs.steps >= 100000 ? 'p-long' : ''), 'открыть подробности'));
+    } else if (gb.status === 'empty' || !g.week) {
       out.push(tile('gym', 'Зал и здоровье', lamp('none', 'нет данных'), 'нет', 'трекер зала не подключён', 'none', 'p-c-mut'));
     } else if (!gymWeek(g, ctx.today).known) {
       out.push(tile('gym', 'Зал и здоровье', lamp('none', 'нет данных'), 'нет', 'трекер зала не прислал счёт недели', 'none', 'p-c-mut'));
@@ -462,28 +497,35 @@
           '<span class="p-sub">' + (w.cur ? 'эта' : esc(day(w.start))) + '</span></div>';
       }).join('') + '</div>';
     }
-    /* здоровье */
+    /* здоровье: шаги за день и сон (то, что Иван просил видеть), вес только если телефон его прислал */
     const hb = B.health || {}, hd = hb.data || {};
-    const hdays = hd.days || [];
+    const hdays = (hd.days || []).filter((d) => d && d.d && d.d <= ctx.today).slice(-7);
+    let hh = '';
     if (hb.status === 'empty' || !hdays.length) {
-      h += '<p class="p-calm p-health">' + lamp('none', 'не подключено') + 'Шаги, сон и вес: iPhone ещё не подключён</p>';
+      hh += '<p class="p-calm p-health">' + lamp('none', 'не подключено') + 'Шаги и сон: iPhone ещё не прислал данные</p>';
     } else {
-      const last = hdays[hdays.length - 1];
-      const wDay = hdays.slice().reverse().find((d) => d.weight != null);
+      const back = hdays.slice().reverse();
+      const stD = back.find((d) => d.steps != null), slD = back.find((d) => d.sleep_min != null), wDay = back.find((d) => d.weight != null);
+      const when = (d) => (d === ctx.today ? 'сегодня' : daysBetween(d, ctx.today) === 1 ? 'вчера' : day(d));
       const steps = hdays.map((d) => d.steps).filter((v) => v != null);
       const mx = Math.max.apply(null, steps.concat([1]));
       const bars = '<svg class="p-mini" viewBox="0 0 70 24" preserveAspectRatio="none" aria-hidden="true">' + hdays.map((d, i) =>
         d.steps == null ? '' : '<rect x="' + (i * 10 + 1) + '" y="' + (24 - d.steps / mx * 22).toFixed(1) + '" width="8" height="' + (d.steps / mx * 22).toFixed(1) + '"' +
-          (i === hdays.length - 1 ? ' class="p-on"' : '') + '/>').join('') + '</svg>';
-      h += '<div class="p-hgrid">' +
-        '<div class="p-mt"><span class="p-lbl">Шаги</span><b>' + (last.steps != null ? f().num(last.steps) : 'нет') + '</b>' + bars + '</div>' +
-        '<div class="p-mt"><span class="p-lbl">Сон</span><b>' + (last.sleep_min != null ? durH(last.sleep_min) : 'нет') + '</b><span class="p-sub">ночь на ' + esc(day(last.d)) + '</span></div>' +
-        '<div class="p-mt"><span class="p-lbl">Вес</span><b>' + (wDay ? String(wDay.weight).replace('.', ',') + '<small>' + NB + 'кг</small>' : 'нет') + '</b>' +
-          '<span class="p-sub">' + (wDay ? esc(day(wDay.d)) : 'замеров нет') + '</span></div>' +
-      '</div><p class="p-line p-foot">' + (hb.status === 'stale' ? '<span class="p-amb">данные с ' + hm(hb.at) + '</span> · ' : '') +
-        'прислано с iPhone ' + hm(hd.last_push) + '</p>';
+          (stD && d.d === stD.d ? ' class="p-on"' : '') + '/>').join('') + '</svg>';
+      const push = hd.last_push || '';
+      const old = hb.status === 'stale' || !((Date.now() - Date.parse(push)) / 3600000 < 36);
+      hh += '<div class="p-hgrid' + (wDay ? '' : ' p-two') + '">' +
+        '<div class="p-mt"><span class="p-lbl">Шаги</span><b>' + (stD ? f().num(stD.steps) : 'нет') + '</b>' + bars +
+          '<span class="p-sub">' + (stD ? esc(when(stD.d)) + (stD.d === ctx.today ? ', день ещё идёт' : stD.steps_part ? ', день неполный' : '') : 'в данных нет') + '</span></div>' +
+        '<div class="p-mt"><span class="p-lbl">' + (slD && slD.sleep_in_bed ? 'В постели' : 'Сон') + '</span><b>' + (slD ? durH(slD.sleep_min) : 'нет') + '</b>' +
+          '<span class="p-sub">' + (slD ? 'ночь на ' + esc(day(slD.d)) + (slD.sleep_in_bed ? ', сна в данных нет' : '') : 'в данных нет') + '</span></div>' +
+        (wDay ? '<div class="p-mt"><span class="p-lbl">Вес</span><b>' + String(wDay.weight).replace('.', ',') + '<small>' + NB + 'кг</small></b>' +
+          '<span class="p-sub">' + esc(day(wDay.d)) + '</span></div>' : '') +
+      '</div><p class="p-line p-foot">' + (old ? '<span class="p-amb">телефон давно не присылал данные</span> · ' : '') +
+        'прислано с iPhone ' + (push ? (push.slice(0, 10) === ctx.today ? hm(push) : esc(day(push)) + ' ' + hm(push)) : 'неизвестно когда') + '</p>';
     }
-    return h;
+    /* телефон прислал шаги или сон: они идут первыми (плитка теперь про них), зал ниже под своим заголовком */
+    return hb.status !== 'empty' && hdays.length ? hh + '<p class="p-line p-sec">Зал</p>' + h : h + hh;
   }
 
   function drawerMoney(S, P, ctx) {
@@ -537,7 +579,7 @@
     return h;
   }
 
-  const TITLES = { main: 'Главное и автоматизации', today: 'Дела на сегодня', aud: 'Подписчики по площадкам', gym: 'Зал и здоровье', money: 'Деньги: состав и 30 дней' };
+  const TITLES = { main: 'Главное и автоматизации', today: 'Дела на сегодня', aud: 'Подписчики по площадкам', gym: 'Здоровье и зал', money: 'Деньги: состав и 30 дней' };
   const DRAW = { main: drawerMain, today: drawerToday, aud: drawerAud, gym: drawerGym, money: drawerMoney };
 
   /* ---------- сборка и поведение ---------- */
