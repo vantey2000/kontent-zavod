@@ -333,7 +333,8 @@
     }
     /* порядок на экране: главное, подписчики, затем дела дня и зал. Подписчики в первом ряду, чтобы прирост
        за сутки был виден без прокрутки на высоте настоящего телефона (вырез сверху, полоска снизу) */
-    return '<div class="p-grid">' + [out[0], out[2], out[1], out[3]].join('') + '</div>';
+    /* третий ряд (22.11): контент дня и вайб-кодинг, файл pult.work.js */
+    return '<div class="p-grid">' + [out[0], out[2], out[1], out[3], tileContent(S), tileVibe(S)].join('') + '</div>';
   }
 
   /* полоса «срочно»: первая красная строка поднимается над всем */
@@ -664,6 +665,144 @@
     });
   }
 
+
+  /* ---------- контент и вайб-кодинг (22.11.2026): плитки третьего ряда и их ящики ----------
+     Блоки content и vibe снимка (CONTRACT.md). Время слота и поста берётся из строки снимка, как везде,
+     рядом в подробностях время по Москве: сетка задана по Москве */
+  const KIND1 = { carousel: 'Карусель', reel: 'Рилс', tg: 'Пост в канал' };
+  const KIND_N = { carousel: ['карусель', 'карусели', 'каруселей'], reel: ['рилс', 'рилса', 'рилсов'], tg: ['пост', 'поста', 'постов'] };
+  const PL = { ig: 'IG', yt: 'YT', tt: 'TT', vk: 'ВК', tg: 'TG' };
+  const C_WORD = { done: 'вышло', now: 'время выкладывать', late: 'не вышло', wait: 'ещё не проверено', ahead: 'впереди', nocheck: 'не проверяется' };
+  const C_LAMP = { done: 'ok', now: 'amber', late: 'amber', wait: 'none', ahead: 'none', nocheck: 'none' };
+  const mskHm = (iso) => { const t = Date.parse(iso || ''); return isNaN(t) ? '' : new Date(t + 3 * 3600000).toISOString().slice(11, 16); };
+  const kn = (k, n) => { const w = KIND_N[k] || KIND_N.tg; return n + NB + plural(n, w[0], w[1], w[2]); };
+  const slotName = (s) => KIND1[s.kind] + (s.kind === 'tg' ? '' : NB + s.n);
+
+  /* «не вышло: 2 рилса, 1 карусель» */
+  function lateText(late) {
+    const by = {};
+    late.forEach((s) => { by[s.kind] = (by[s.kind] || 0) + 1; });
+    return 'не вышло: ' + Object.keys(by).map((k) => kn(k, by[k])).join(', ');
+  }
+
+  function tileContent(S) {
+    const cb = (S.blocks || {}).content || {}, c = cb.data || {};
+    if (cb.status === 'empty' || !c.slots) {
+      return tile('cnt', 'Контент', lamp('none', 'нет данных'), 'нет', 'план выкладки не подключён', 'none', 'p-c-mut', 'открыть план дня');
+    }
+    const late = c.slots.filter((s) => s.state === 'late');
+    const old = cb.status === 'stale';
+    const cnt = lamp(late.length || old ? 'amber' : 'ok', old ? 'данные старые' : late.length ? 'есть невышедшее' : 'идёт по плану');
+    let ln;
+    if (c.next) ln = 'дальше <b>' + hm(c.next.at) + '</b> ' + esc(slotName(c.next).toLowerCase());
+    else ln = c.done >= c.total ? 'план дня выполнен' : 'слотов на сегодня больше нет';
+    if (late.length) ln += '<span class="p-amb p-blk">' + esc(lateText(late)) + '</span>';
+    if (old) ln += '<span class="p-amb p-blk">данные с' + NB + hm(cb.at) + '</span>';
+    return tile('cnt', 'Контент', cnt, c.done + '<small>/' + c.total + '</small>', ln, late.length || old ? 'amber' : 'ok', '', 'открыть план дня');
+  }
+
+  function drawerContent(S) {
+    const cb = (S.blocks || {}).content || {}, c = cb.data || {};
+    if (cb.status === 'empty' || !c.slots) return '<p class="p-line">План выкладки ещё не подключён к пульту</p>';
+    let h = '<p class="p-line">Выложено <b>' + c.done + ' из ' + c.total + '</b> · день по Москве ' + esc(day(c.day)) +
+      (cb.status === 'stale' ? ' <span class="p-amb">· данные с ' + hm(cb.at) + '</span>' : '') + '</p>';
+    h += '<div class="p-kinds">' + (c.kinds || []).map((k) => '<span class="p-kind' + (k.count && k.done >= k.count ? ' p-full' : '') + '">' +
+      '<b>' + k.done + '<small>/' + k.count + '</small></b>' + esc(k.name) + (k.extra ? ' <em>+' + k.extra + NB + 'сверх</em>' : '') + '</span>').join('') + '</div>';
+    const nx = c.next ? c.slots.findIndex((s) => s.at === c.next.at && s.kind === c.next.kind && s.n === c.next.n) : -1;
+    h += '<ul class="p-slots">' + c.slots.map((s, i) => {
+      const main = s.where[0] || {};
+      const word = main.state === 'done' && main.t ? 'вышло ' + hm(main.t) : C_WORD[s.state] || '';
+      const pls = s.where.length > 1 ? '<span class="p-pls">' + s.where.map((w) => '<span class="p-pl p-pl-' + w.state + '" title="' +
+        esc(PL[w.p] + ': ' + (w.state === 'done' && w.t ? 'вышло ' + hm(w.t) : C_WORD[w.state])) + '">' + esc(PL[w.p] || w.p) + '</span>').join('') + '</span>' : '';
+      return '<li class="p-sl p-sl-' + s.state + (i === nx ? ' p-next' : '') + '">' +
+        '<span class="p-slt"><b>' + hm(s.at) + '</b><small>' + mskHm(s.at) + NB + 'мск</small></span>' +
+        '<span class="p-sln">' + esc(slotName(s)) + pls + '</span>' +
+        '<span class="p-slw">' + lamp(C_LAMP[s.state] || 'none', C_WORD[s.state] || '') + esc(word) + '</span></li>';
+    }).join('') + '</ul>';
+    const src = c.sources || [];
+    const on = src.filter((x) => x.state !== 'off'), off = src.filter((x) => x.state === 'off');
+    h += '<p class="p-line p-foot">Проверено: ' + on.map((x) => esc(x.name) + ' ' + (x.state === 'stale'
+      ? '<span class="p-amb">молчит' + (x.at ? ' с' + NB + hm(x.at) : '') + '</span>' : x.at ? hm(x.at) : 'ещё нет')).join(', ') +
+      (off.length ? '. ' + esc(off.map((x) => x.name).join(' и ')) + ' пока не проверяются: подключатся вместе с Postmypost' : '') +
+      '. Instagram платный, его смотрим раз в 2 часа, когда подошло время слота</p>';
+    const wk = c.week || [];
+    if (wk.length) {
+      h += '<p class="p-line p-sec">Последние 7 дней</p><div class="p-cweek">' + wk.map((d) => {
+        const p = d.done == null || !d.total ? 0 : Math.round(d.done / d.total * 100);
+        return '<div class="p-cw' + (d.d === c.day ? ' p-cur' : '') + (d.done == null ? ' p-nod' : '') + '"><b>' + (d.done == null ? '·' : d.done) + '</b>' +
+          '<span class="p-cbar"><i style="height:' + p + '%"></i></span><span class="p-sub">' + WD[(dateOf(d.d).getDay() + 6) % 7] + '</span></div>';
+      }).join('') + '</div>';
+      if (wk.some((d) => d.done == null)) h += '<p class="p-line p-foot">Счёт идёт с ' + esc(day(c.since)) + ': Instagram отдаёт только последние 12 постов, раньше этого дня полного счёта нет</p>';
+    }
+    return h + '<p class="p-line p-foot">Норма и время слотов задаются в настройке Пульта. Поменять: скажи Claude, например «карусели с 14:00 каждые 30 минут»</p>';
+  }
+
+  /* ---------- вайб-кодинг ---------- */
+  const pctTxt = (p) => (p.pct == null ? 'без пунктов' : p.done + ' из ' + p.total);
+
+  function tileVibe(S) {
+    const vb = (S.blocks || {}).vibe || {}, v = vb.data || {};
+    if (vb.status === 'empty' || !v.today) {
+      return tile('vibe', 'Вайб-кодинг', lamp('none', 'нет данных'), 'нет', 'планы не подключены', 'none', 'p-c-mut', 'открыть проекты');
+    }
+    const t = v.today, top = (t.items || [])[0], n = (v.counts || {}).active || 0;
+    const ind = vb.status === 'stale' ? lamp('amber', 'данные старые') : '';
+    let ln = top ? '<span class="p-clamp">' + esc(top.title) + (top.pct != null ? ' · <b>' + top.pct + '%</b>' : '') + '</span>' : 'сегодня правок не было';
+    ln += '<span class="p-blk">в работе ' + n + NB + plural(n, 'проект', 'проекта', 'проектов') + '</span>';
+    if (vb.status === 'stale') ln += '<span class="p-amb p-blk">данные с' + NB + hm(vb.at) + '</span>';
+    return tile('vibe', 'Вайб-кодинг', ind, t.min ? durH(t.min) : '0<small>' + NB + 'мин</small>', ln,
+      vb.status === 'stale' ? 'amber' : 'info', t.min >= 600 ? 'p-long p-dur' : 'p-dur', 'открыть проекты');
+  }
+
+  function projRow(p, meta) {
+    const w = p.pct == null ? 0 : Math.max(p.pct, p.pct ? 1.5 : 0);
+    return '<li><span class="p-sr"><span class="p-sn">' + esc(p.title) + '</span><b>' + (p.pct == null ? '<span class="p-nd">без пунктов</span>' : p.pct + '%') + '</b></span>' +
+      '<span class="p-sbar"><i style="width:' + w + '%"></i><em>' + esc(pctTxt(p)) + '</em></span>' +
+      '<span class="p-sub">' + meta + '</span>' + (p.next ? '<span class="p-sub p-nxt">дальше: ' + esc(p.next) + '</span>' : '') + '</li>';
+  }
+
+  function drawerVibe(S) {
+    const vb = (S.blocks || {}).vibe || {}, v = vb.data || {};
+    if (vb.status === 'empty' || !v.today) return '<p class="p-line">Планы и время ещё не подключены к пульту</p>';
+    const t = v.today, cn = v.counts || {};
+    let h = '<p class="p-line">Сегодня <b>' + durS(t.min || 0) + '</b>, из них по планам ' + durS(t.plan_min || 0) +
+      ' · всего в Claude ' + durS(t.all_min || 0) + (vb.status === 'stale' ? ' <span class="p-amb">· данные с ' + hm(vb.at) + '</span>' : '') + '</p>';
+    if ((t.items || []).length) {
+      h += '<p class="p-line p-sec">Сегодня по проектам</p><ul class="p-src p-proj">' + t.items.map((p) => projRow(p,
+        (p.min_today ? durS(p.min_today) + ' сегодня' : 'сегодня без времени') + (p.closed_today ? ' · закрыто пунктов: ' + p.closed_today : ''))).join('') + '</ul>';
+    }
+    if ((t.free || []).length) {
+      h += '<p class="p-line p-sec">Правки без плана</p><ul class="p-wait">' + t.free.map((x) =>
+        '<li><span>' + esc(x.title) + '</span><b>' + durS(x.min) + '</b></li>').join('') + '</ul>';
+    }
+    const d14 = v.days14 || [];
+    if (d14.length) {
+      const mx = Math.max.apply(null, d14.map((d) => d.min).concat([60]));
+      const bw = 100 / d14.length;
+      const sum7 = d14.slice(-7).reduce((s, d) => s + d.min, 0);
+      h += '<p class="p-line p-sec">14 дней · за неделю ' + durS(sum7) + '</p><div class="p-chart p-vchart" role="img" aria-label="' +
+        esc('Вайб-кодинг по дням за 14 дней, за неделю ' + durS(sum7).split(NB).join(' ')) + '"><svg viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true">' +
+        d14.map((d, i) => d.min ? '<rect x="' + (i * bw + 0.8).toFixed(2) + '" y="' + (100 - d.min / mx * 100).toFixed(2) + '" width="' + (bw - 1.6).toFixed(2) +
+          '" height="' + (d.min / mx * 100).toFixed(2) + '"' + (i === d14.length - 1 ? ' class="p-now"' : '') + '/>' : '').join('') + '</svg></div>' +
+        '<div class="p-xax"><span>' + esc(day(d14[0].d)) + '</span><span>' + esc(day(d14[7].d)) + '</span><span>' + esc(day(d14[d14.length - 1].d)) + '</span></div>';
+    }
+    if ((v.active || []).length) {
+      h += '<p class="p-line p-sec">В работе · ' + (cn.active || v.active.length) + '</p><ul class="p-src p-proj">' + v.active.map((p) => projRow(p,
+        (p.min7 ? 'за 7 дней ' + durS(p.min7) : 'за 7 дней без времени') + ' · движение ' + esc(day(p.last)))).join('') + '</ul>';
+    }
+    if ((v.waiting || []).length) {
+      h += '<p class="p-line p-sec">Ждут в планах · ' + (cn.waiting || v.waiting.length) + '</p><ul class="p-wait">' + v.waiting.map((p) =>
+        '<li><span>' + esc(p.title) + '<small>не трогали с ' + esc(day(p.last)) + '</small></span><b>' + (p.pct == null ? '-' : p.pct + '%') + '</b></li>').join('') + '</ul>';
+    }
+    if ((v.done || []).length) h += '<p class="p-line p-sec">Готово за 2 недели</p><p class="p-line">' + esc(v.done.map((p) => p.title).join(' · ')) + '</p>';
+    return h + '<p class="p-line p-foot">Проект = файл плана в IvanOS/plans, процент = закрытые пункты. Время считается по сессиям Claude рядом с правками файлов, ' +
+      'два окна сразу идут один раз, день по Москве</p>';
+  }
+
+  TITLES.cnt = 'Контент на сегодня';
+  TITLES.vibe = 'Вайб-кодинг';
+  DRAW.cnt = drawerContent;
+  DRAW.vibe = drawerVibe;
   /* ---------- отрисовка вида: состояние ящика переживает перерисовку ---------- */
   const UI = { touched: false, sel: null, groups: null, sig: '' };
 
