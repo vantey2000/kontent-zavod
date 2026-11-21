@@ -1,0 +1,282 @@
+/* Вариант A «Приборы»: главная карточка денег со шкалой, сетка плиток 2х2, ящик подробностей.
+   Только токены планера, свои классы с префиксом p-, всё внутри #v-pult */
+#v-pult{--p-r:18px}
+/* анимация появления вида (shell: .view.on, fill both) держит transform и ломает position:fixed у шторки;
+   после окончания анимации её след не нужен, конечный вид тот же */
+#v-pult{animation-fill-mode:backwards}
+/* цвет МЕЛКОГО янтарного, красного и мятного текста: в светлой теме чистый токен на белом и на мягких
+   заливках даёт 3,4-4:1, смесь с чернилами поднимает до 4,6-5,6:1. Заливки, лампы, шкала и крупные цифры
+   остаются на чистых токенах; в тёмной теме токены и так контрастны (7-9:1) */
+#v-pult{--p-amb-t:color-mix(in srgb,var(--amber) 80%,var(--ink));--p-red-t:color-mix(in srgb,var(--signal) 80%,var(--ink));--p-mint-t:color-mix(in srgb,var(--mint) 80%,var(--ink))}
+:root[data-theme="dark"] #v-pult{--p-amb-t:var(--amber);--p-red-t:var(--signal);--p-mint-t:var(--mint)}
+#v-pult .p-lbl{font-family:var(--f-mono);font-size:11px;font-weight:500;letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
+#v-pult .p-sub{font-family:var(--f-mono);font-size:11px;color:var(--muted);line-height:1.4}
+#v-pult .p-amb{color:var(--p-amb-t)}
+#v-pult .p-red-t{color:var(--p-red-t)}
+#v-pult .p-up{color:var(--p-mint-t)}
+#v-pult .p-blk{display:block}
+#v-pult .p-card{background:var(--surface);border-radius:var(--p-r);box-shadow:var(--shadow)}
+#v-pult .p-test{margin:-4px 0 6px;font-family:var(--f-mono);font-size:11px;color:var(--muted)}
+#v-pult .p-test b{color:var(--p-amb-t);text-transform:uppercase;letter-spacing:.06em}
+
+/* лампы состояния: мята = в порядке, янтарь = проверить, красный = срочно, полый круг = нет данных */
+#v-pult .p-lamp{display:inline-block;width:9px;height:9px;border-radius:50%;flex:none;background:var(--mint)}
+#v-pult .p-lamp.p-amber{background:var(--amber)}
+#v-pult .p-lamp.p-red{background:var(--signal);box-shadow:0 0 0 3px color-mix(in srgb,var(--signal) 25%,transparent);animation:p-pulse 1.6s ease-in-out infinite}
+#v-pult .p-lamp.p-none{background:transparent;box-shadow:inset 0 0 0 1.5px var(--muted)}
+@keyframes p-pulse{50%{box-shadow:0 0 0 6px color-mix(in srgb,var(--signal) 0%,transparent)}}
+
+/* ---------- полоса «срочно» ---------- */
+#v-pult .p-alarm{width:100%;display:grid;grid-template-columns:1fr auto;align-items:center;column-gap:12px;row-gap:2px;
+  margin-bottom:8px;padding:8px 10px 8px 14px;min-height:56px;border-radius:14px;text-align:left;
+  background:color-mix(in srgb,var(--signal) 11%,var(--surface));box-shadow:inset 3px 0 0 var(--signal)}
+#v-pult .p-alarm .p-lbl{color:var(--p-red-t);font-weight:700}
+#v-pult .p-alarm .p-lbl em{font-style:normal;font-weight:500;color:var(--muted)}
+#v-pult .p-alarm .p-at{grid-column:1;font-weight:600;font-size:15px;line-height:1.3}
+#v-pult .p-alarm .p-go{grid-column:2;grid-row:1/span 2;font-size:14px;font-weight:600;color:var(--surface);background:var(--signal);border-radius:10px;padding:9px 12px}
+
+/* ---------- деньги ---------- */
+#v-pult .p-money{padding:12px 16px 12px}
+#v-pult .p-head{display:flex;align-items:center;justify-content:space-between;gap:8px;min-height:24px}
+#v-pult .p-pace{font-family:var(--f-mono);font-size:11px;font-weight:500;letter-spacing:.04em;text-transform:uppercase;white-space:nowrap;padding:4px 9px;border-radius:999px}
+#v-pult .p-pace.p-behind{background:var(--amber-soft);color:var(--p-amb-t)}
+#v-pult .p-pace.p-on{background:var(--accent-soft);color:var(--accent)}
+#v-pult .p-pace.p-ahead{background:color-mix(in srgb,var(--mint) 15%,var(--surface));color:var(--p-mint-t)}
+#v-pult .p-big{display:flex;align-items:baseline;flex-wrap:wrap;column-gap:10px;margin-top:6px}
+#v-pult .p-big .p-num{font-family:var(--f-display);font-weight:600;font-size:56px;line-height:.9;letter-spacing:-.01em}
+#v-pult .p-big .p-rub{font-family:var(--f-display);font-weight:500;font-size:30px;line-height:.9;color:var(--muted);margin-left:-6px}
+#v-pult .p-of{font-family:var(--f-mono);font-size:13px;color:var(--muted);white-space:nowrap}
+#v-pult .p-unc{margin:5px 0 0;font-size:13px;line-height:1.35;color:var(--muted)}
+#v-pult .p-nodata{margin:10px 0 0;color:var(--muted);line-height:1.45}
+
+/* шкала-линейка до цели: факт, штриховка недобора, риска «где должны быть сегодня» */
+#v-pult .p-scale{position:relative;margin-top:6px;padding:20px 0 20px}
+#v-pult .p-track{position:relative;height:14px;border-radius:7px;background:var(--accent-soft);overflow:hidden}
+#v-pult .p-fill{position:absolute;left:0;top:0;bottom:0;background:var(--accent);border-radius:7px 2px 2px 7px}
+#v-pult .p-gap{position:absolute;top:0;bottom:0;
+  background:repeating-linear-gradient(135deg,color-mix(in srgb,var(--amber) 70%,transparent) 0 2px,transparent 2px 6px)}
+#v-pult .p-minor i{position:absolute;top:4px;bottom:4px;width:1px;background:color-mix(in srgb,var(--surface) 75%,transparent)}
+#v-pult .p-pin{position:absolute;top:1px;height:38px;width:2px;margin-left:-1px;background:var(--ink);border-radius:1px}
+#v-pult .p-mark{position:absolute;top:0;line-height:14px;padding-left:6px;white-space:nowrap}
+#v-pult .p-mark.p-r{transform:translateX(-100%);padding:0 6px 0 0}
+#v-pult .p-mark span{font-family:var(--f-mono);font-size:11px;font-weight:500;color:var(--ink)}
+#v-pult .p-ticks{position:absolute;left:0;right:0;top:38px;height:16px}
+#v-pult .p-tick{position:absolute;top:0}
+#v-pult .p-tick::before{content:"";position:absolute;left:0;top:-4px;width:1px;height:4px;background:var(--muted)}
+#v-pult .p-tick b{position:absolute;top:2px;transform:translateX(-50%);font-family:var(--f-mono);font-size:11px;font-weight:500;color:var(--muted);white-space:nowrap}
+#v-pult .p-tick:first-child b{transform:none}
+#v-pult .p-tick.p-end b{transform:translateX(-100%)}
+#v-pult .p-tick:first-child::before,#v-pult .p-tick.p-end::before{display:none}
+#v-pult .p-unc.p-warn{color:var(--p-amb-t)}
+
+#v-pult .p-need{display:flex;align-items:baseline;flex-wrap:wrap;column-gap:6px;margin:6px 0 0;font-size:15px;line-height:1.3}
+#v-pult .p-need b{font-family:var(--f-display);font-weight:600;font-size:24px;letter-spacing:.005em}
+#v-pult .p-need.p-warn b{color:var(--amber)}
+#v-pult .p-need.p-done{color:var(--p-mint-t);font-weight:600}
+#v-pult .p-need span{margin-left:auto;font-family:var(--f-mono);font-size:11px;color:var(--muted)}
+
+#v-pult .p-cells{display:grid;grid-template-columns:1.3fr 1fr 1fr;margin-top:8px;border-top:1px solid var(--rule)}
+#v-pult .p-cell{display:flex;flex-direction:column;gap:2px;min-width:0;padding:9px 6px 0 0}
+#v-pult .p-cell+.p-cell{padding-left:10px;border-left:1px solid var(--rule)}
+#v-pult .p-cell b{font-family:var(--f-display);font-weight:500;font-size:19px;line-height:1.15;white-space:nowrap}
+#v-pult .p-acts{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:10px}
+#v-pult .p-btn{min-height:44px;padding:10px 12px;border-radius:12px;font-size:15px}
+#v-pult .p-btn.p-pri{background:var(--ink);color:var(--bg)}
+#v-pult .p-btn.p-sel{background:var(--accent-soft);color:var(--accent)}
+
+/* ---------- сетка плиток ---------- */
+#v-pult .p-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:10px}
+#v-pult .p-tile{position:relative;display:flex;flex-direction:column;gap:2px;min-width:0;min-height:112px;padding:11px 12px 12px;
+  border-radius:16px;background:var(--surface);text-align:left;transition:background-color .18s,color .18s,transform .12s}
+#v-pult .p-tile:active{transform:scale(.98)}
+#v-pult .p-th{display:flex;align-items:center;justify-content:space-between;gap:6px;min-height:16px}
+#v-pult .p-tn{font-family:var(--f-display);font-weight:600;font-size:36px;line-height:1;margin-top:6px;white-space:nowrap}
+#v-pult .p-tn small{font-size:22px;font-weight:500;color:var(--muted)}
+#v-pult .p-tn.p-c-red small,#v-pult .p-tn.p-c-amb small{font-size:20px}
+#v-pult .p-tn.p-c-red{color:var(--signal)}
+#v-pult .p-tn.p-c-amb{color:var(--amber)}
+#v-pult .p-tn.p-c-mut{color:var(--muted);font-size:28px;font-weight:500}
+/* рубеж миллиона подписчиков: «≈ 1 000 000» в 36 px не влезает в 151 px плитки */
+#v-pult .p-tn.p-long{font-size:31px}
+#v-pult .p-tl{margin-top:4px;font-size:13px;line-height:1.3;color:var(--muted)}
+#v-pult .p-tl b{font-weight:600}
+#v-pult .p-tile[data-p-tile="today"] .p-tl{color:var(--ink);font-weight:500}
+#v-pult .p-clamp{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+#v-pult .p-cnt{display:inline-flex;align-items:center;gap:6px;font-family:var(--f-mono);font-size:11px;font-weight:500;color:var(--muted);white-space:nowrap}
+#v-pult .p-pips{display:flex;gap:2px;flex:none}
+#v-pult .p-pips i{width:7px;height:7px;border-radius:2px;background:color-mix(in srgb,var(--muted) 38%,var(--surface))}
+:root[data-theme="dark"] #v-pult .p-pips i:not(.p-on){background:color-mix(in srgb,var(--muted) 55%,var(--surface))}
+#v-pult .p-pips i.p-on{background:var(--mint)}
+#v-pult .p-tile.p-st-red{background:color-mix(in srgb,var(--signal) 9%,var(--surface))}
+/* строка-действие плитки: слово и стрелка вниз (ящик раскроется под сеткой), у открытой - «свернуть» и стрелка вверх */
+#v-pult .p-tile .p-ta{display:flex;align-items:center;gap:7px;margin-top:auto;padding-top:7px;font-family:var(--f-mono);font-size:11px;font-weight:500;line-height:14px;color:var(--accent)}
+#v-pult .p-tile .p-ta::after{content:"";width:5px;height:5px;margin-top:-3px;border-right:1.5px solid currentColor;border-bottom:1.5px solid currentColor;transform:rotate(45deg)}
+#v-pult .p-tile .p-ta.p-shut::after{margin-top:3px;transform:rotate(-135deg)}
+/* выбранная плитка: кольцо цвета чернил, подробности в ящике под сеткой */
+#v-pult .p-tile.p-sel{box-shadow:inset 0 0 0 2px var(--ink)}
+#v-pult .p-tile.p-sel .p-lbl{color:var(--ink)}
+/* CODE-SPLIT: ящик и шторка ниже */
+
+/* ---------- ящик подробностей ---------- */
+#v-pult .p-drawer{margin-top:12px;padding:6px 16px 16px;border-radius:var(--p-r);background:var(--surface);box-shadow:var(--shadow);animation:p-in .22s ease-out both}
+@keyframes p-in{from{opacity:0;transform:translateY(-4px)}to{opacity:1;transform:none}}
+#v-pult .p-dh{display:flex;align-items:center;justify-content:space-between;gap:10px}
+#v-pult .p-dt{margin:0;font-family:var(--f-display);font-weight:500;font-size:16px;letter-spacing:.06em;text-transform:uppercase}
+#v-pult .p-close{min-height:44px;padding:0 2px 0 14px;font-size:14px;font-weight:500;color:var(--accent);white-space:nowrap}
+#v-pult .p-line{margin:4px 0 0;font-size:14px;line-height:1.45;color:var(--muted)}
+#v-pult .p-line b{color:var(--ink);font-weight:600}
+#v-pult .p-line b.p-amb{color:var(--p-amb-t)}
+#v-pult .p-sec{margin-top:18px}
+#v-pult .p-foot{margin-top:12px;font-size:12px}
+#v-pult .p-zero{margin-top:10px;font-size:13px}
+
+/* дела дня */
+#v-pult .p-agenda{margin-top:10px}
+#v-pult .p-agenda .row{background:var(--bg);min-height:48px;padding:10px 12px}
+#v-pult .p-agenda .ttl{font-size:15px}
+#v-pult .p-agenda .sub{display:block;font-family:var(--f-mono);font-size:11px;margin-top:2px}
+#v-pult .p-agenda .p-nx{background:var(--accent-soft);box-shadow:inset 3px 0 0 var(--accent)}
+#v-pult .p-agenda .p-nx .ttl{font-weight:600;font-size:16px}
+#v-pult .p-agenda .p-nx .tm{color:var(--accent);font-weight:700}
+#v-pult .p-acc{display:block;color:var(--accent);margin-bottom:1px}
+
+/* главное и автоматизации */
+#v-pult .p-att{list-style:none;margin:6px 0 0;padding:0;display:flex;flex-direction:column;gap:6px}
+#v-pult .p-att li{display:grid;grid-template-columns:auto 1fr auto;align-items:center;gap:10px;padding:11px 12px;border-radius:12px;font-size:14px;line-height:1.35;font-weight:500}
+#v-pult .p-att li.p-red{background:color-mix(in srgb,var(--signal) 10%,var(--surface))}
+#v-pult .p-att li.p-amber{background:var(--amber-soft)}
+#v-pult .p-att em{font-style:normal;font-family:var(--f-mono);font-size:11px;font-weight:500;text-transform:uppercase;letter-spacing:.04em}
+#v-pult .p-att .p-red em{color:var(--p-red-t)}
+#v-pult .p-att .p-amber em{color:var(--p-amb-t)}
+#v-pult .p-calm{display:flex;align-items:center;gap:10px;margin:6px 0 0;padding:12px;border-radius:12px;font-size:14px;line-height:1.4;
+  background:color-mix(in srgb,var(--mint) 11%,var(--surface))}
+#v-pult .p-calm.p-health{background:var(--bg);color:var(--muted);margin-top:16px}
+#v-pult .p-meters,#v-pult .p-hgrid{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-top:10px}
+#v-pult .p-hgrid{grid-template-columns:repeat(3,1fr);margin-top:16px}
+#v-pult .p-mt{display:flex;flex-direction:column;gap:2px;min-width:0;padding:9px 10px 10px;border-radius:12px;background:var(--bg)}
+#v-pult .p-mt b{font-family:var(--f-display);font-weight:500;font-size:22px;line-height:1.15;white-space:nowrap}
+#v-pult .p-mt b small{font-size:14px;color:var(--muted)}
+/* три окошка здоровья по 85 px: цифра чуть мельче, единицы мелко, «10 ч 45 мин» влезает */
+#v-pult .p-hgrid .p-mt b{font-size:20px}
+#v-pult .p-mt.p-st-amber{background:var(--amber-soft)}
+#v-pult .p-mt.p-st-red{background:color-mix(in srgb,var(--signal) 10%,var(--surface))}
+#v-pult .p-meter{display:block;height:4px;margin:3px 0 2px;border-radius:2px;background:var(--accent-soft);overflow:hidden}
+#v-pult .p-meter i{display:block;height:100%;background:var(--accent);border-radius:2px}
+#v-pult .p-mini{display:block;width:100%;height:24px;margin-top:4px}
+#v-pult .p-mini rect{fill:color-mix(in srgb,var(--accent) 40%,var(--surface))}
+#v-pult .p-mini rect.p-on{fill:var(--accent)}
+#v-pult .p-groups{display:flex;flex-direction:column;gap:6px;margin-top:8px}
+#v-pult .p-grp{border-radius:12px;background:var(--bg);overflow:hidden}
+#v-pult .p-gh{width:100%;min-height:48px;display:grid;grid-template-columns:auto 1fr auto auto;align-items:center;gap:10px;padding:8px 12px;text-align:left}
+#v-pult .p-gn{min-width:0;font-weight:600;font-size:14px;line-height:1.3}
+#v-pult .p-gc{font-family:var(--f-mono);font-size:11px;color:var(--muted);white-space:nowrap}
+#v-pult .p-chev{width:8px;height:8px;margin:0 2px 3px;border-right:2px solid var(--muted);border-bottom:2px solid var(--muted);transform:rotate(45deg);transition:transform .18s}
+#v-pult .p-open .p-chev{transform:rotate(-135deg);margin:3px 2px 0}
+#v-pult .p-items{list-style:none;margin:0;padding:0 12px 6px}
+#v-pult .p-items li{display:grid;grid-template-columns:auto 1fr auto;align-items:center;gap:10px;padding:9px 0;border-top:1px solid var(--rule);font-size:14px;line-height:1.3}
+#v-pult .p-it{min-width:0}
+#v-pult .p-items em{display:block;font-style:normal;font-size:12px;font-weight:500;color:var(--p-amb-t)}
+#v-pult .p-items .p-st-red em{color:var(--p-red-t)}
+#v-pult .p-age{font-family:var(--f-mono);font-size:11px;color:var(--muted);white-space:nowrap}
+
+/* подписчики */
+#v-pult .p-aud{list-style:none;margin:8px 0 0;padding:0}
+#v-pult .p-aud li{display:grid;grid-template-columns:1fr auto auto;align-items:center;gap:10px;padding:10px 0;border-top:1px solid var(--rule)}
+#v-pult .p-an{display:flex;flex-direction:column;gap:1px;min-width:0}
+#v-pult .p-an b{font-weight:600;font-size:15px}
+#v-pult .p-av{font-family:var(--f-display);font-weight:500;font-size:22px;white-space:nowrap;text-align:right}
+#v-pult .p-off{font-family:var(--f-mono);font-size:12px;font-weight:500;color:var(--muted)}
+#v-pult .p-spark{color:var(--accent)}
+#v-pult .p-spark circle{fill:currentColor}
+#v-pult .p-aud .p-st-amber .p-spark{color:var(--amber)}
+#v-pult .p-aud .p-st-none .p-an b{color:var(--muted)}
+
+/* зал и здоровье */
+#v-pult .p-week{display:grid;grid-template-columns:repeat(7,1fr);gap:4px;margin-top:10px}
+#v-pult .p-wd{display:flex;flex-direction:column;align-items:center;gap:1px;padding:6px 0 7px;border-radius:10px;background:var(--bg)}
+#v-pult .p-wd small{font-family:var(--f-mono);font-size:11px;color:var(--muted);text-transform:uppercase}
+#v-pult .p-wd b{font-family:var(--f-display);font-weight:500;font-size:18px;line-height:1.1}
+#v-pult .p-wd.p-on{background:var(--mint);color:var(--surface)}
+#v-pult .p-wd.p-on small{color:inherit;opacity:.85}
+#v-pult .p-wd.p-today{box-shadow:inset 0 0 0 2px var(--ink)}
+#v-pult .p-wd.p-fut{background:transparent;box-shadow:inset 0 0 0 1px var(--rule)}
+#v-pult .p-wd.p-fut b{color:var(--muted)}
+#v-pult .p-weeks{display:grid;grid-template-columns:repeat(5,1fr);gap:6px;margin-top:10px;align-items:end}
+#v-pult .p-wk{display:flex;flex-direction:column;align-items:center;gap:4px;padding:8px 0 6px;border-radius:10px}
+#v-pult .p-wk.p-cur{background:var(--bg)}
+#v-pult .p-wk b{font-family:var(--f-display);font-weight:500;font-size:16px;line-height:1}
+#v-pult .p-stack{display:flex;flex-direction:column;gap:3px;width:24px}
+#v-pult .p-stack i{height:7px;border-radius:2px;background:color-mix(in srgb,var(--muted) 28%,var(--surface))}
+#v-pult .p-stack i.p-on{background:var(--mint)}
+
+/* деньги подробно */
+#v-pult .p-src{list-style:none;margin:6px 0 0;padding:0}
+#v-pult .p-src li{display:flex;flex-direction:column;gap:5px;padding:10px 0;border-top:1px solid var(--rule)}
+#v-pult .p-src li:first-child{border-top:0;padding-top:4px}
+#v-pult .p-sr{display:flex;align-items:baseline;justify-content:space-between;gap:10px}
+#v-pult .p-sn{font-weight:600;font-size:15px}
+#v-pult .p-sr b{font-family:var(--f-display);font-weight:500;font-size:20px;white-space:nowrap}
+#v-pult .p-sbar{position:relative;display:block;height:6px;margin-right:42px;border-radius:3px;background:var(--accent-soft)}
+#v-pult .p-sbar i{position:absolute;left:0;top:0;bottom:0;border-radius:3px;background:var(--accent)}
+#v-pult .p-sbar em{position:absolute;right:-42px;top:-5px;width:36px;text-align:right;font-style:normal;font-family:var(--f-mono);font-size:11px;color:var(--muted)}
+#v-pult .p-src .p-st-amber .p-sbar i{background:var(--amber)}
+#v-pult .p-rd{margin:4px 0 0;min-height:24px;font-size:13px;color:var(--muted)}
+#v-pult .p-rd b{font-family:var(--f-display);font-weight:500;font-size:17px;color:var(--ink)}
+#v-pult .p-chart{position:relative;height:124px;margin-top:6px;border-bottom:1px solid var(--muted);touch-action:pan-y;cursor:crosshair}
+#v-pult .p-chart svg{position:absolute;inset:0;width:100%;height:100%;display:block;overflow:visible}
+#v-pult .p-chart rect{fill:color-mix(in srgb,var(--accent) 45%,var(--surface))}
+#v-pult .p-chart rect.p-now{fill:var(--accent)}
+#v-pult .p-chart rect.p-hov{fill:var(--ink)}
+#v-pult .p-chart.p-scrub::after{content:"";position:absolute;top:0;bottom:0;left:var(--p-x);width:1px;background:var(--muted);pointer-events:none}
+#v-pult .p-ref{position:absolute;left:0;right:0;height:0;border-top:1.5px dashed var(--amber);pointer-events:none}
+#v-pult .p-ref em{position:absolute;right:0;bottom:3px;padding:1px 5px;border-radius:5px;font-style:normal;font-family:var(--f-mono);font-size:11px;font-weight:500;color:var(--p-amb-t);
+  background:color-mix(in srgb,var(--surface) 88%,transparent)}
+#v-pult .p-xax{display:flex;justify-content:space-between;margin-top:4px;font-family:var(--f-mono);font-size:11px;color:var(--muted)}
+
+/* ---------- шторка «Записать доход» ---------- */
+#v-pult .p-scrim{position:fixed;inset:0;z-index:30;background:color-mix(in srgb,var(--ink) 42%,transparent);opacity:0;pointer-events:none;transition:opacity .2s}
+:root[data-theme="dark"] #v-pult .p-scrim{background:color-mix(in srgb,var(--bg) 72%,transparent)}
+#v-pult .p-scrim.p-on{opacity:1;pointer-events:auto}
+#v-pult .p-sheet{position:fixed;left:0;right:0;bottom:0;z-index:31;max-width:560px;margin:0 auto;
+  padding:10px max(18px,env(safe-area-inset-right,0px)) calc(18px + env(safe-area-inset-bottom,0px)) max(18px,env(safe-area-inset-left,0px));
+  border-radius:22px 22px 0 0;background:var(--surface);box-shadow:var(--shadow);
+  transform:translateY(105%);visibility:hidden;transition:transform .26s cubic-bezier(.2,.8,.2,1),visibility 0s linear .26s}
+#v-pult .p-sheet.p-on{transform:none;visibility:visible;transition:transform .26s cubic-bezier(.2,.8,.2,1),visibility 0s}
+#v-pult .p-grab{width:40px;height:5px;margin:0 auto 14px;border-radius:3px;background:var(--rule)}
+#v-pult .p-sheet h3{margin:0;font-size:21px;line-height:1.25;font-weight:600}
+#v-pult .p-hint{margin:6px 0 0;font-size:13px;line-height:1.4;color:var(--muted)}
+#v-pult .p-sacts{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:18px}
+#v-pult .p-sacts .btn{min-height:48px}
+#v-pult .p-sacts .p-pri{background:var(--ink);color:var(--bg)}
+
+@media (prefers-reduced-motion:reduce){
+  #v-pult .p-lamp.p-red,#v-pult .p-drawer{animation:none}
+  #v-pult .p-tile,#v-pult .p-sheet,#v-pult .p-scrim,#v-pult .p-chev{transition:none}
+}
+
+/* ---------- в приложении планера ---------- */
+/* на Пульте кнопка «+» (новое дело) не нужна: она закрывала бы плитки */
+:root[data-view="pult"] .fab{display:none}
+/* одна кнопка в ряду действий занимает всю ширину (пока «Записать доход» выключена) */
+#v-pult .p-acts > :only-child{grid-column:1/-1}
+/* невысокий экран (планер открыт внутри Telegram, iPhone SE): меньше воздуха, чтобы первый ряд плиток
+   с подписчиками остался на первом экране */
+@media (max-height:760px){
+  #v-pult.view{padding-top:10px}
+  #v-pult .p-money{padding:10px 16px}
+  #v-pult .p-scale{margin-top:2px}
+  #v-pult .p-cells{margin-top:6px}
+  #v-pult .p-acts,#v-pult .p-grid{margin-top:8px}
+  #v-pult .p-tile{min-height:104px;padding:9px 12px 10px}
+}
+/* совсем низкий экран (iPhone SE): полоса «Срочно» уступает место плиткам, сама тревога остаётся
+   на плитке «Главное сейчас» с красной лампой */
+@media (max-height:700px) and (orientation:portrait){
+  #v-pult .p-alarm{display:none}
+}
+/* «нет данных» вместо числа: обычным шрифтом и тише цифры, чтобы не читалось как показание */
+#v-pult .p-nd{font-family:var(--f-body);font-size:13px;font-weight:500;letter-spacing:0;color:var(--muted);white-space:nowrap}
+/* полоса «Срочно» держит две строки текста: длинная тревога не выталкивает плитки с первого экрана,
+   целиком она читается в ящике «Главное и автоматизации» */
+#v-pult .p-alarm .p-at{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+#v-pult .empty .p-why{margin-top:12px;overflow-wrap:anywhere}

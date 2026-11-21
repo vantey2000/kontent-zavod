@@ -14,7 +14,12 @@ const store = {
 
 let TG = null;
 let DATA = null;
-let VIEW = store.get('view') || 'today';
+// Новый заход встречает Пульт. Вернулся в течение 10 минут - открывается вкладка, на которой был
+// Список вкладок берётся из самой страницы: телефон до 10 минут держит в кэше прежний index.html без секции Пульта,
+// с ним этот файл обязан работать как раньше (старт с «Сегодня»), а не показывать пустой экран
+const VIEWS = ['pult', 'today', 'lists', 'week', 'ideas'].filter((v) => document.getElementById('v-' + v));
+const justHere = () => Date.now() - (store.get('seen') || 0) < 600000;
+let VIEW = (justHere() && VIEWS.includes(store.get('view')) && store.get('view')) || VIEWS[0] || 'today';
 let SEL = null;              // выбранный день недели
 let scrollNow = true;        // прокрутить «Сегодня» к текущему часу при открытии
 
@@ -219,7 +224,8 @@ function closeSheet() {
   if (TG) { try { TG.BackButton.hide(); } catch (e) { /* нет */ } }
 }
 function setView(v) {
-  VIEW = v; store.set('view', v);
+  VIEW = v; store.set('view', v); store.set('seen', Date.now());
+  document.documentElement.dataset.view = v;                 // по нему pult.css прячет кнопку «+» на Пульте
   if (v === 'week') stripAnchor = true;
   if (v === 'today') scrollNow = true;
   document.querySelectorAll('.tab').forEach((b) => b.classList.toggle('on', b.dataset.v === v));
@@ -280,10 +286,12 @@ function renderHead() {
   const p = pending().length;
   const ob = outbox().length;
   const off = ob && failSince && Date.now() - failSince > 15000;
-  $('#syncTxt').textContent = off ? 'нет связи, отправлю сам, как появится сеть'
+  // на Пульте строка говорит про снимок сборщика; отметки в пути важнее и показываются как на остальных вкладках
+  const pu = VIEW === 'pult' && !ob && !p && typeof pultSync === 'function' ? pultSync() : null;
+  $('#syncTxt').textContent = pu ? pu.text : off ? 'нет связи, отправлю сам, как появится сеть'
     : ob ? 'отправляю…' : p ? 'бот выполняет…'
       : 'обновлено ' + hm(up.getHours() * 60 + up.getMinutes()) + (dayLabel(DATA.today) !== 'сегодня' ? ', ' + dayLabel(DATA.today) : '');
-  $('#sync').classList.toggle('stale', !!p || !!ob);
+  $('#sync').classList.toggle('stale', pu ? !!pu.stale : !!p || !!ob);
   $('#syncTg').hidden = !off;
 }
 
@@ -443,9 +451,19 @@ function renderLists() {
   $('#v-lists').innerHTML = html;
 }
 
+function drawPult() {                      // вкладка живёт в pult.js: не догрузился или упал - остальные вкладки работают
+  try {
+    if (typeof renderPult !== 'function') throw new Error('pult.js не загрузился');
+    renderPult();
+  } catch (e) {
+    const el = $('#v-pult');
+    if (el) el.innerHTML = '<div class="empty"><b>Пульт не открылся</b>Закрой планер и открой заново. Остальные вкладки работают</div>';
+  }
+}
 function render() {
   $('#lock').classList.remove('on');
   renderHead();
+  if (VIEW === 'pult') drawPult();
   if (VIEW === 'today') renderToday();
   if (VIEW === 'week') renderWeek();
   if (VIEW === 'lists') renderLists();
@@ -668,9 +686,16 @@ function viaTelegram() {                   // нет связи с ящиком:
   legacy(actOf(a));
 }
 $('#scrim').addEventListener('click', closeSheet);
-document.addEventListener('visibilitychange', () => { if (!document.hidden) { flush(); load(true); } });
+let awayAt = 0;                            // когда приложение ушло с экрана
+document.addEventListener('visibilitychange', () => {
+  if (document.hidden) { awayAt = Date.now(); return store.set('seen', awayAt); }
+  // вернулся после долгого перерыва, а приложение не перезагружалось: встречает Пульт, открытую шторку не трогаем
+  if (awayAt && Date.now() - awayAt > 600000 && VIEW !== 'pult' && VIEWS.includes('pult') && !$('#sheet').classList.contains('on')) setView('pult');
+  awayAt = 0;
+  flush(); load(true);
+});
 setInterval(() => { if (!document.hidden) load(true); }, 60000);
-setInterval(() => { if (outbox().length) flush(); if (DATA) renderHead(); }, 10000);
+setInterval(() => { if (!document.hidden) store.set('seen', Date.now()); if (outbox().length) flush(); if (DATA) renderHead(); }, 10000);
 
 (async () => {
   TG = await waitTG();
