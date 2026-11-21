@@ -6,8 +6,8 @@
    Наружу отдаёт три имени: renderPult, loadPult, pultSync. Всё остальное живёт внутри обёртки */
 (function () {
   'use strict';
-  const NB = ' ';                 /* неразрывный пробел: записан кодом, чтобы редактор не превратил его в обычный */
-  const INCOME_ON = false;             /* кнопка «Записать доход»: включится вместе с путём записи с телефона (фаза 4б) */
+  const NB = '\u00a0';                 /* неразрывный пробел: записан кодом, чтобы редактор не превратил его в обычный */
+  const INCOME_ON = true;              /* кнопка «Записать доход»: шторка планера шлёт боту команду «/доход …» (см. openIncome) */
   const STALE_MIN = 45;                /* снимок старше трёх прогонов сборщика считаем давним */
 
   /* числа и подписи: общие помощники вида */
@@ -540,19 +540,6 @@
   const TITLES = { main: 'Главное и автоматизации', today: 'Дела на сегодня', aud: 'Подписчики по площадкам', gym: 'Зал и здоровье', money: 'Деньги: состав и 30 дней' };
   const DRAW = { main: drawerMain, today: drawerToday, aud: drawerAud, gym: drawerGym, money: drawerMoney };
 
-  function sheet(S) {
-    const m = (((S.blocks || {}).money || {}).data) || {};
-    const man = (m.by || []).find((r) => r.id === 'manual');
-    return '<div class="p-scrim" data-p-shut="1"></div>' +
-      '<div class="p-sheet" id="p-sheet" role="dialog" aria-modal="true" aria-labelledby="p-sh-t" aria-hidden="true">' +
-        '<div class="p-grab"></div><h3 id="p-sh-t">Записать доход</h3>' +
-        '<p class="p-hint">Запись ляжет в тетрадь доходов' + (man ? ', в строку «' + esc(man.name) + '»' : '') + ', дата по Москве</p>' +
-        '<label class="fl" for="p-sum">Сумма, ₽</label><input class="inp" id="p-sum" inputmode="numeric" autocomplete="off" placeholder="20 000">' +
-        '<label class="fl" for="p-what">Что это</label><input class="inp" id="p-what" autocomplete="off" placeholder="флагман, перевод СБП">' +
-        '<div class="p-sacts"><button class="btn" type="button" data-p-shut="1">Отмена</button><button class="btn p-pri" type="button" data-p-save="1">Сохранить</button></div>' +
-      '</div>';
-  }
-
   /* ---------- сборка и поведение ---------- */
   function paintDrawer(root) {
     const st = root.__pA;
@@ -610,21 +597,11 @@
     if (r.top > want) window.scrollTo({ top: scrollY + r.top - want, behavior: 'smooth' });
   }
 
-  function sheetOpen(root, on) {
-    const sh = root.querySelector('#p-sheet'), sc = root.querySelector('.p-scrim');
-    if (!sh) return;
-    sh.classList.toggle('p-on', on); sc.classList.toggle('p-on', on);
-    sh.setAttribute('aria-hidden', String(!on));
-    root.classList.toggle('p-locked', on);
-    if (on) setTimeout(() => { const i = root.querySelector('#p-sum'); if (i) i.focus({ preventScroll: true }); }, 280);
-    else { const i = root.querySelector('#p-sum'), w = root.querySelector('#p-what'); if (i) i.value = ''; if (w) w.value = ''; }
-  }
-
   function bind(root) {
     if (root.__pBound) return;
     root.__pBound = true;
     root.addEventListener('click', (ev) => {
-      const t = ev.target.closest('[data-p-tile],[data-p-close],[data-p-grp],[data-p-income],[data-p-shut],[data-p-save]');
+      const t = ev.target.closest('[data-p-tile],[data-p-close],[data-p-grp],[data-p-income]');
       if (!t || !root.contains(t)) return;
       const st = root.__pA;
       if (t.hasAttribute('data-p-tile')) {
@@ -641,10 +618,8 @@
         if (st.ctx.openGroups.has(gi)) st.ctx.openGroups.delete(gi); else st.ctx.openGroups.add(gi);
         paintDrawer(root);
         const b = root.querySelector('[data-p-grp="' + gi + '"]'); if (b) b.focus({ preventScroll: true });
-      } else if (t.hasAttribute('data-p-income')) sheetOpen(root, true);
-      else if (t.hasAttribute('data-p-shut') || t.hasAttribute('data-p-save')) sheetOpen(root, false);
+      } else if (t.hasAttribute('data-p-income')) openIncome();
     });
-    document.addEventListener('keydown', (ev) => { if (ev.key === 'Escape') sheetOpen(root, false); });
   }
 
   /* ---------- отрисовка вида: состояние ящика переживает перерисовку ---------- */
@@ -664,8 +639,7 @@
     root.innerHTML =
       (S._test ? '<p class="p-test"><b>Пример</b> · ' + esc(S._test) + '</p>' : '') +
       alarm(S) + moneyCard(S.blocks || {}) + tiles(S, P, ctx) +
-      '<section class="p-drawer" id="p-drawer" hidden></section>' +
-      (INCOME_ON ? sheet(S) : '');
+      '<section class="p-drawer" id="p-drawer" hidden></section>';
     paintDrawer(root);
     bind(root);
     if (!root.__pTouch) {
@@ -724,6 +698,50 @@
         '<span class="p-sub p-blk p-why">' + esc(e && e.message ? e.message : String(e)) + '</span>');
       if (window.console) console.error(e);
     }
+  }
+
+  /* ---------- запись дохода: шторка самого планера, команда уходит боту тем же путём, что новое дело ---------- */
+  /* день денег московский и считается от часов телефона: день из снимка бывает вчерашним (снимок из памяти, ночь),
+     и тогда в шторке стоял бы один день, а бот записал бы другой */
+  function mskToday() {
+    const m = new Date(Date.now() + (new Date().getTimezoneOffset() + 180) * 60000);
+    return m.getFullYear() + '-' + String(m.getMonth() + 1).padStart(2, '0') + '-' + String(m.getDate()).padStart(2, '0');
+  }
+  /* Бот узнаёт команду «/доход СУММА ₽ что это ГГГГ-ММ-ДД» (planer/income_cmd.py), пишет строку в тетрадь доходов,
+     отвечает в чате и запускает сборщик вне очереди. Здесь только сбор полей и отправка: сумма на вкладке меняется
+     не сразу, а с новым снимком, поэтому «записано» говорит бот, а не эта шторка */
+  function openIncome() {
+    const today = mskToday();
+    openSheet('<h3>Записать доход</h3>' +
+      '<label class="fl" for="pIncSum">Сумма, ₽</label><input class="inp" id="pIncSum" inputmode="numeric" autocomplete="off" placeholder="20 000">' +
+      '<label class="p-ret"><input type="checkbox" id="pIncRet"><span>это возврат, вычесть из дохода</span></label>' +
+      '<label class="fl" for="pIncWhat">Что это</label><input class="inp" id="pIncWhat" autocomplete="off" maxlength="80" placeholder="флагман, перевод СБП">' +
+      '<label class="fl" for="pIncDay">День по Москве</label><input class="inp" id="pIncDay" type="date" value="' + esc(today) + '" max="' + esc(today) + '">' +
+      '<div class="acts"><button class="btn pri" type="button" data-p-inc="go">Записать</button></div>' +
+      '<div class="hint">Запись ляжет в тетрадь доходов, бот подтвердит её в чате. Имена учеников не указывай</div>');
+    const box = document.getElementById('sheetIn');
+    let sent = false;                 /* одна шторка = одна запись: второй Enter и двойное нажатие повтор не шлют */
+    const go = () => {
+      if (sent) return;
+      const raw = box.querySelector('#pIncSum').value.replace(/[\s₽]/g, '');
+      if (!/^\d{1,8}$/.test(raw) || +raw === 0) return toast('Сумма цифрами, например 20000');
+      const day = box.querySelector('#pIncDay').value || today;
+      if (day > mskToday()) return toast('День не позже сегодняшнего по Москве');
+      const what = box.querySelector('#pIncWhat').value.replace(/\s+/g, ' ').trim();
+      const sign = box.querySelector('#pIncRet').checked ? '-' : '';
+      sent = true;
+      if (document.activeElement && document.activeElement.blur) document.activeElement.blur();
+      closeSheet();
+      /* знак ₽ после суммы и день в конце стоят всегда: бот не спутает сумму с числом в описании,
+         а дату в описании с днём записи */
+      send({ op: 'say', text: '/доход ' + sign + String(+raw) + ' ₽' + (what ? ' ' + what : '') + ' ' + day });
+      toast(sign ? 'Передаю боту возврат, он подтвердит в чате' : 'Передаю боту, он подтвердит запись в чате');
+      /* бот запишет строку и запустит сборщик: забираем новый снимок, не дожидаясь обычной минуты */
+      [15000, 35000, 70000].forEach((ms) => setTimeout(loadPult, ms));
+    };
+    box.querySelector('[data-p-inc="go"]').addEventListener('click', go);
+    box.querySelectorAll('input:not([type="checkbox"])').forEach((el) => el.addEventListener('keydown', (ev) => { if (ev.key === 'Enter') go(); }));
+    setTimeout(() => { const el = document.getElementById('pIncSum'); if (el) el.focus(); }, 250);
   }
 
   /* ---------- снимок: ящик planer-relay, запасной вариант - память телефона ---------- */
