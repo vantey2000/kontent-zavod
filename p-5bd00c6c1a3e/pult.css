@@ -188,7 +188,7 @@
 #v-pult .p-off{font-family:var(--f-mono);font-size:12px;font-weight:500;color:var(--muted)}
 #v-pult .p-tr{display:inline-block;vertical-align:-1px;margin-right:6px}
 #v-pult .p-tr-up{color:var(--p-mint-t)}
-#v-pult .p-tr-dn{color:var(--p-amb-t);opacity:.85}
+#v-pult .p-tr-dn{color:var(--p-red-t)}
 #v-pult .p-aud .p-st-none .p-an b{color:var(--muted)}
 
 /* зал и здоровье */
