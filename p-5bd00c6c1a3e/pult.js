@@ -417,15 +417,14 @@
     return h;
   }
 
-  function spark(series) {
-    if (!series || series.length < 3) return '';
-    const vs = series.map((p) => p.v), lo = Math.min.apply(null, vs), hi = Math.max.apply(null, vs);
-    const W = 64, H = 22, span = hi - lo || 1;
-    const pts = vs.map((v, i) => (i / (vs.length - 1) * (W - 4) + 2).toFixed(1) + ',' + (H - 3 - (v - lo) / span * (H - 6)).toFixed(1)).join(' ');
-    const last = pts.split(' ').pop().split(',');
-    return '<svg class="p-spark" viewBox="0 0 ' + W + ' ' + H + '" width="' + W + '" height="' + H + '" aria-hidden="true">' +
-      '<polyline points="' + pts + '" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/>' +
-      '<circle cx="' + last[0] + '" cy="' + last[1] + '" r="3"/></svg>';
+  /* стрелка прироста за сутки вплотную к числу: рост вверх зелёная, отписки вниз приглушённая.
+     Ноль, нет прироста или площадка молчит (прирост старый) = без стрелки */
+  function trend(i) {
+    if (i.status !== 'ok' || !i.d1) return '';
+    const up = i.d1 > 0;
+    return '<svg class="p-tr ' + (up ? 'p-tr-up' : 'p-tr-dn') + '" viewBox="0 0 12 14" width="12" height="14" role="img" aria-label="' +
+      (up ? 'рост за сутки' : 'отписки за сутки') + '"><path d="' + (up ? 'M6 12.5V2M2 5.8L6 1.8l4 4' : 'M6 1.5V12M2 8.2l4 4 4-4') +
+      '" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>';
   }
 
   function drawerAud(S, P, ctx) {
@@ -457,8 +456,8 @@
         meta = '<span class="p-sub">' + gr + '</span><span class="p-sub">' + when + '</span>';
       }
       return '<li class="p-st-' + (i.status === 'stale' ? 'amber' : i.status === 'off' ? 'none' : 'ok') + '">' +
-        '<span class="p-an"><b>' + esc(i.name) + '</b>' + meta + '</span>' + spark(i.series) +
-        '<span class="p-av">' + val + '</span></li>';
+        '<span class="p-an"><b>' + esc(i.name) + '</b>' + meta + '</span>' +
+        '<span class="p-av">' + (i.value != null ? trend(i) : '') + val + '</span></li>';
     }).join('') + '</ul>';
     return h;
   }
