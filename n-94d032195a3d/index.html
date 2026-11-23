@@ -1,0 +1,274 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="robots" content="noindex, nofollow">
+<meta name="theme-color" content="#faf7f2">
+<title>План Натальи</title>
+<style>
+  :root {
+    --bg: #faf7f2; --card: #ffffff; --ink: #1d1b19; --muted: #6b655d; --line: #ebe4d9;
+    --accent: #c2410c; --accent-soft: #fff1e8; --calm: #0f5c4d; --calm-soft: #e8f4ef;
+    --warn: #9f1239; --warn-soft: #fdecef; --chip: #f3efe8; --shadow: 0 1px 2px rgba(60,40,20,.06), 0 6px 24px rgba(60,40,20,.06);
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #141312; --card: #1d1b19; --ink: #f2eee8; --muted: #a59d92; --line: #2e2a26;
+      --accent: #fb923c; --accent-soft: #2a1c12; --calm: #5fd0b0; --calm-soft: #12241f;
+      --warn: #fb7185; --warn-soft: #2a1418; --chip: #26231f; --shadow: none;
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg: #141312; --card: #1d1b19; --ink: #f2eee8; --muted: #a59d92; --line: #2e2a26;
+    --accent: #fb923c; --accent-soft: #2a1c12; --calm: #5fd0b0; --calm-soft: #12241f;
+    --warn: #fb7185; --warn-soft: #2a1418; --chip: #26231f; --shadow: none;
+  }
+  * { box-sizing: border-box; }
+  html { -webkit-text-size-adjust: 100%; scroll-behavior: smooth; }
+  body { margin: 0; background: var(--bg); color: var(--ink);
+    font: 17px/1.55 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif; }
+  .wrap { max-width: 640px; margin: 0 auto; padding: 20px 16px 56px; }
+  a { color: var(--calm); text-underline-offset: 3px; }
+  b, strong { font-weight: 650; }
+
+  .hero { padding: 18px 0 8px; }
+  .kicker { font-size: 13px; letter-spacing: 1.4px; text-transform: uppercase; color: var(--muted); margin-bottom: 10px; }
+  h1 { font-family: Georgia, "Noto Serif", "Times New Roman", serif; font-weight: 700; font-size: 34px; line-height: 1.12;
+    letter-spacing: -0.4px; margin: 0 0 14px; }
+  h1 em { font-style: normal; color: var(--accent); }
+  .lead { font-size: 18px; margin: 0 0 18px; }
+
+  .stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin: 0 0 22px; }
+  .stat { background: var(--card); border: 1px solid var(--line); border-radius: 14px; padding: 12px 10px; box-shadow: var(--shadow); }
+  .stat .v { font-family: Georgia, "Noto Serif", serif; font-weight: 700; font-size: 22px; line-height: 1.1; color: var(--accent); white-space: nowrap; }
+  .stat .l { font-size: 12.5px; line-height: 1.3; color: var(--muted); margin-top: 4px; }
+
+  .toc { display: flex; gap: 8px; overflow-x: auto; padding: 2px 0 12px; margin: 0 0 8px; scrollbar-width: none; }
+  .toc::-webkit-scrollbar { display: none; }
+  .toc a { flex: 0 0 auto; text-decoration: none; color: var(--ink); background: var(--chip); border-radius: 999px;
+    padding: 7px 13px; font-size: 14px; }
+
+  section { background: var(--card); border: 1px solid var(--line); border-radius: 18px; padding: 20px 18px 8px;
+    margin: 0 0 16px; box-shadow: var(--shadow); scroll-margin-top: 12px; }
+  h2 { font-size: 22px; line-height: 1.2; margin: 0 0 12px; letter-spacing: -0.2px; display: flex; gap: 10px; align-items: baseline; }
+  h2 .n { flex: 0 0 auto; display: inline-flex; align-items: center; justify-content: center; width: 30px; height: 30px;
+    border-radius: 50%; background: var(--accent); color: #fff; font-size: 15px; font-weight: 700; transform: translateY(-2px); }
+  h3 { font-size: 17px; margin: 18px 0 8px; }
+  p { margin: 0 0 12px; }
+  ul, ol { margin: 0 0 12px; padding-left: 22px; }
+  li { margin: 0 0 8px; }
+  li::marker { color: var(--accent); font-weight: 700; }
+
+  .steps { list-style: none; padding: 0; counter-reset: s; }
+  .steps > li { counter-increment: s; position: relative; padding-left: 36px; margin-bottom: 12px; }
+  .steps > li::before { content: counter(s); position: absolute; left: 0; top: 1px; width: 24px; height: 24px; border-radius: 50%;
+    background: var(--accent-soft); color: var(--accent); font-size: 13px; font-weight: 700; text-align: center; line-height: 24px; }
+
+  .check { display: flex; gap: 12px; align-items: flex-start; padding: 12px 0; border-bottom: 1px solid var(--line); cursor: pointer; }
+  .check:last-child { border-bottom: 0; }
+  .check input { appearance: none; -webkit-appearance: none; flex: 0 0 auto; width: 26px; height: 26px; margin: 0;
+    border: 2px solid var(--accent); border-radius: 8px; display: grid; place-content: center; cursor: pointer; background: var(--card); }
+  .check input::after { content: ""; width: 12px; height: 7px; border: solid #fff; border-width: 0 0 3px 3px; transform: rotate(-45deg) translate(1px, -1px); opacity: 0; }
+  .check input:checked { background: var(--accent); }
+  .check input:checked::after { opacity: 1; }
+  .check .tx { flex: 1; }
+  .check .tx b { display: block; }
+  .check .tx span { display: block; font-size: 15px; color: var(--muted); }
+  .check input:checked + .tx b { text-decoration: line-through; text-decoration-color: var(--accent); color: var(--muted); }
+  .progress { font-size: 14px; color: var(--muted); margin: 4px 0 14px; }
+  .bar { height: 6px; background: var(--chip); border-radius: 99px; overflow: hidden; margin-top: 6px; }
+  .bar i { display: block; height: 100%; width: 0; background: var(--accent); border-radius: 99px; transition: width .3s; }
+
+  .box { border-radius: 14px; padding: 14px 15px; margin: 0 0 14px; font-size: 16px; }
+  .box .t { font-weight: 700; margin-bottom: 5px; }
+  .box p:last-child, .box ul:last-child { margin-bottom: 0; }
+  .box.accent { background: var(--accent-soft); } .box.accent .t { color: var(--accent); }
+  .box.calm { background: var(--calm-soft); } .box.calm .t { color: var(--calm); }
+  .box.warn { background: var(--warn-soft); } .box.warn .t { color: var(--warn); }
+
+  .ladder { width: 100%; border-collapse: collapse; margin: 4px 0 14px; font-size: 16px; }
+  .ladder th, .ladder td { padding: 9px 4px; border-bottom: 1px solid var(--line); text-align: center; }
+  .ladder th { font-size: 11px; text-transform: uppercase; letter-spacing: .2px; color: var(--muted); font-weight: 600; }
+  .ladder td:first-child, .ladder th:first-child { text-align: left; }
+  .ladder td.d { white-space: nowrap; }
+  .ladder td.d small { color: var(--muted); font-size: 13px; }
+  .ladder tr.today td { background: var(--accent-soft); font-weight: 700; }
+  .ladder tr.today td.d::after { content: "сегодня"; display: table; margin-top: 3px; font-size: 11px; font-weight: 700;
+    color: #fff; background: var(--accent); border-radius: 99px; padding: 1px 7px; }
+  .ladder tr.past td { color: var(--muted); }
+
+  .btn { display: inline-flex; align-items: center; gap: 8px; text-decoration: none; background: var(--accent); color: #fff;
+    border: 0; border-radius: 12px; padding: 12px 16px; font: inherit; font-weight: 650; font-size: 16px; cursor: pointer; margin: 2px 0 14px; }
+  .btn.ghost { background: var(--chip); color: var(--ink); }
+
+  .copy { position: relative; background: var(--chip); border-radius: 12px; margin: 0 0 14px; }
+  .copy pre { margin: 0; padding: 13px 14px 50px; white-space: pre-wrap; word-break: break-word;
+    font: 14.5px/1.5 ui-monospace, "SF Mono", Menlo, Consolas, monospace; color: var(--ink); max-height: 340px; overflow: auto; }
+  .copy.short pre { padding-bottom: 50px; max-height: none; }
+  .copy button { position: absolute; right: 8px; bottom: 8px; border: 0; border-radius: 9px; padding: 7px 12px;
+    background: var(--accent); color: #fff; font: 600 14px/1.2 -apple-system, Roboto, sans-serif; cursor: pointer; }
+  .copy button.ok { background: var(--calm); }
+
+  details { border: 1px solid var(--line); border-radius: 14px; margin: 0 0 14px; }
+  details > summary { cursor: pointer; padding: 13px 15px; font-weight: 650; list-style: none; display: flex; justify-content: space-between; gap: 10px; }
+  details > summary::-webkit-details-marker { display: none; }
+  details > summary::after { content: "+"; color: var(--accent); font-size: 22px; line-height: 1; }
+  details[open] > summary::after { content: "−"; }
+  details > .in { padding: 0 15px 4px; }
+
+  .vid { display: flex; gap: 12px; align-items: flex-start; padding: 10px 0; border-bottom: 1px solid var(--line); }
+  .vid:last-child { border-bottom: 0; }
+  .vid .ic { flex: 0 0 auto; width: 38px; height: 38px; border-radius: 10px; background: var(--accent-soft); color: var(--accent);
+    display: grid; place-content: center; font-size: 15px; }
+  .vid .m { font-size: 14px; color: var(--muted); }
+
+  .sign { text-align: center; color: var(--muted); font-size: 14px; margin-top: 26px; }
+  .sign b { color: var(--ink); }
+  @media (max-width: 380px) { h1 { font-size: 29px; } .stat .v { font-size: 19px; } .ladder { font-size: 15px; } }
+</style>
+</head>
+<body>
+<div class="wrap">
+<header class="hero">
+  <div class="kicker">Взрывные алгоритмы · созвон 23.11</div>
+  <h1>Наталья, твой план <em>после созвона</em></h1>
+  <p class="lead">Ты набрала больше 10 000 подписчиков чуть больше чем за месяц. Сейчас главное - карусели: за три дня выходим на 10 в день и ниже не опускаемся. Параллельно подключаем ВК, YouTube и TikTok, проходишь распаковку заново в Claude и готовим Telegram-канал. К концу недели дам ссылку на партнёрку</p>
+  <div class="stats"><div class="stat"><div class="v">10 000+</div><div class="l">подписчиков чуть больше чем за месяц</div></div><div class="stat"><div class="v">в 5 раз</div><div class="l">больше подписок с каруселей, чем с рилсов</div></div><div class="stat"><div class="v">15 000</div><div class="l">цель через неделю</div></div></div>
+</header>
+
+<nav class="toc" aria-label="Разделы"><a href="#pervym">Первым делом</a><a href="#lesenka">Лесенка</a><a href="#karuseli">Карусели</a><a href="#otkat">Когда тихо</a><a href="#ploshchadki">ВК, YouTube, TikTok</a><a href="#raspakovka">Распаковка</a><a href="#telegram">Telegram-канал</a><a href="#partnerka">Партнёрка</a><a href="#zumy">Записи зумов</a></nav>
+
+<section id="pervym">
+  <h2><span class="n">1</span>Первым делом</h2>
+  <div class="progress"><span id="pr-t">Отмечайте галочками, что сделали</span><div class="bar"><i id="pr-b"></i></div></div>
+<label class="check"><input type="checkbox" data-k="t1"><span class="tx"><b>Сегодня 5 каруселей</b><span>завтра 7, послезавтра 10, <a href="#lesenka">лесенка в разделе 2</a></span></span></label><label class="check"><input type="checkbox" data-k="t2"><span class="tx"><b>Завести сообщество в ВК, канал на YouTube и TikTok</b><span>и выложить туда по первому рилсу, <a href="#ploshchadki">в разделе 5</a></span></span></label><label class="check"><input type="checkbox" data-k="t3"><span class="tx"><b>Пройти распаковку заново в Claude</b><span>со своими новыми знаниями и видением, <a href="#raspakovka">в разделе 6</a></span></span></label><label class="check"><input type="checkbox" data-k="t4"><span class="tx"><b>Посмотреть запись субботнего зума 21.11</b><span>обязательно, много чего для себя возьмёшь, <a href="#zumy">в разделе 9</a></span></span></label>
+<h3>Следом</h3><label class="check"><input type="checkbox" data-k="t5"><span class="tx"><b>Определиться с темой Telegram-канала и создать его</b><span>по итогам распаковки, <a href="#telegram">в разделе 7</a></span></span></label><label class="check"><input type="checkbox" data-k="t6"><span class="tx"><b>Написать в канал пост-знакомство</b><span>через неделю начнём его вести</span></span></label><label class="check"><input type="checkbox" data-k="t7"><span class="tx"><b>Ждать от меня ссылку на партнёрку</b><span>к концу недели, <a href="#partnerka">в разделе 8</a></span></span></label>
+</section>
+
+<section id="lesenka">
+  <h2><span class="n">2</span>Лесенка на три дня</h2>
+<p>Три карусели в день мало. За три дня поднимаемся до <b>10</b> и ниже уже не опускаемся. Рилсы и пробные не бросаем, выкладываешь их как сейчас: это не значит, что ты полностью переключаешься на карусели</p>
+<table class="ladder"><thead><tr><th>День</th><th>Карусели</th><th>ВК, YouTube, TikTok</th></tr></thead><tbody><tr data-d="2026-11-23"><td class="d">23.11 <small>пн</small></td><td>5</td><td>по 1 рилсу</td></tr><tr data-d="2026-11-24"><td class="d">24.11 <small>вт</small></td><td>7</td><td>по 2</td></tr><tr data-d="2026-11-25"><td class="d">25.11 <small>ср</small></td><td>10</td><td>по 3</td></tr><tr data-d="2026-11-26"><td class="d">26.11 <small>чт</small></td><td>10</td><td>по 3</td></tr></tbody></table>
+<div class="box accent"><div class="t">Дальше каждый день</div><p>Не меньше 10 каруселей и по 3 видео на каждой площадке. Больше 3 там не надо</p></div>
+</section>
+
+<section id="karuseli">
+  <h2><span class="n">3</span>Карусели - главное сейчас</h2>
+<p>Карусели - это не «моё или не моё». Это инструмент, который приносит подписки и просмотры, причём в подписку карусели приводят в среднем <b>в 5 раз больше</b>, чем рилсы. Просто у тебя они ещё не начали залетать, а когда начнут, рост пойдёт в разы быстрее</p>
+<div class="box calm"><div class="t">Аккаунт уже прогретый</div><p>Ты набрала 10 000 подписчиков чуть больше чем за месяц, значит, ты интересная и на тебя подписываются. Аккаунт хороший, поэтому сразу выйти на 10 каруселей в день для него нормально</p></div>
+<h3>Сколько слайдов</h3>
+<ul><li>Делай до <b>10 слайдов</b>. Когда слайдов больше 8-9, Инстаграм на телефоне не всегда даёт выложить сразу</li><li>Если текста много, пусть будет 12-13 слайдов, но не 20. Растянуло на 20 - сократи текст</li></ul>
+<h3>Как выкладывать быстро</h3>
+<ol class="steps"><li>В конструкторе жми «Скачать все», а не по одному слайду</li><li>В Инстаграме: «Добавить пост» и сразу отмечаешь все слайды</li><li>Перед публикацией пролистай слайды. Инстаграм иногда меняет их порядок, особенно когда слайдов 12-15. Это 5 секунд, зато всё точно будет по порядку</li></ol>
+<div class="box warn"><div class="t">Пробные с нулём просмотров</div><p>В 95% случаев это потому, что такая тема у тебя уже была. Инстаграм иногда прямо пишет, что не будет продвигать похожее, а иногда молча не продвигает. Тебе долго везло: ты выкладывала одни и те же темы без изменений, теперь он это вычислил. Уникализируй текст и перевыкладывай. Если всё равно не идёт, бери темы, которых у тебя ещё не было</p></div>
+</section>
+
+<section id="otkat">
+  <h2><span class="n">4</span>Когда тихо и непонятно</h2>
+<p>Нет такого: делаю вот так - и сто процентов залетит. Как будут делиться и на какую аудиторию попадёт, заранее не знает никто. Поэтому мы и делаем много контента: из всего количества какая-то часть залетает, и с неё к нам идут люди. Я сам так живу</p>
+<div class="box calm"><div class="t">Охваты падают у всех</div><p>В среднем раз в месяц, а летом бывало и два, Инстаграм меняет настройки алгоритмов, и охваты с просмотрами падают у всех сразу. На моём веку такое было уже раз восемь. Это нормально, не только у тебя</p></div>
+<div class="box accent"><div class="t">Не вкладывай важность</div><p>Что выкладываешь «на отвяжись», то часто и залетает, а пост, в который вложила душу, нет. Это избыточная важность, как в «Трансерфинге реальности» Зеланда. У меня ролик с кривым текстом, кучей ошибок и даже без музыки набрал 2 миллиона просмотров</p></div>
+<p>Время публикации - мелочь, капля в море. На нём не фокусируемся, фокус на количестве каруселей</p>
+</section>
+
+<section id="ploshchadki">
+  <h2><span class="n">5</span>ВК, YouTube, TikTok</h2>
+<p>Если время есть, подключаем другие площадки. Рилсы для Инстаграма у тебя уже готовые, ты их просто перевыкладываешь туда</p>
+<ol class="steps"><li><b>ВК</b> - не личная страница, а сообщество</li><li><b>YouTube</b> - канал на твоём аккаунте</li><li><b>TikTok</b> - заводишь аккаунт</li><li>Название везде - имя и фамилия, без выдумок. Я сам ничего не выдумываю: Логинов Иван, и всё</li><li>Не сразу по 3: сегодня 1, завтра 2, послезавтра 3. Дальше по 3 в день на каждой площадке</li></ol>
+<div class="box calm"><div class="t">Зачем</div><p>Алгоритмы там раскачиваются дольше, чем в Инстаграме, но тоже приводят людей. Со всех площадок потом будем переводить их в твой Telegram-канал</p></div>
+</section>
+
+<section id="raspakovka">
+  <h2><span class="n">6</span>Распаковка заново</h2>
+<p>Проходишь распаковку заново, обязательно в Claude: уже со своими новыми знаниями и видением, что тебе откликается. Бери первый промпт «Распаковка себя». Отвечай голосом, а не печатай: так в пять раз быстрее</p>
+<a class="btn" href="https://ivan-loginov.ru/guide-raspakovka-claude/">Промпты распаковки для Claude →</a>
+<h3>Что мы уже знаем</h3>
+<ul><li>Психолог и нутрициолог - точно не твоё</li><li>У тебя залетают разоблачения, скандалы, расследования: про квартиры, про коронавирус, про Колумба. Вопрос, как это монетизировать</li><li>Мне кажется, тебе больше подходит мотивировать и вдохновлять людей. У тебя позитивная энергетика, и люди к ней тянутся</li><li>Это видно и по сообщениям: тебе пишут, что глядя на тебя хочется идти за тобой и что жизнь намного проще, чем мы её себе рисуем</li></ul>
+<div class="box accent"><div class="t">Идея, которую держим в голове</div><p>Бесплатная книжка или гайд о позитивном мышлении: как оставаться оптимистом даже в трудной ситуации, с твоей историей внутри. Или недельный марафон: сначала бесплатно собираешь людей в сообщество, и неделю вы идёте по режиму (подъём в 7, отбой в 10, без алкоголя и сигарет), чтобы человек почувствовал себя гораздо лучше. Задача - получить отзывы, и уже с ними сделать платный марафон на три недели, условно за 990 ₽</p></div>
+<p>Цену поднимаем ступеньками: сначала база, отзывы и опыт, потом небольшой платный продукт. Сразу продавать за 10 000 не работает. С первого раза может и не получиться, и это нормально: у каждого свой путь, и он идёт через действие</p>
+<h3>Когда распаковка готова</h3>
+<p>В том же чате, где делала распаковку, отправь:</p>
+<div class="copy"><pre id="c1">Это моя распаковка выше. Мне ближе всего мотивировать людей и заряжать позитивом: подписчики пишут, что глядя на меня, жизнь кажется проще. Помоги придумать, с чего начать: бесплатную книжку или гайд о том, как оставаться оптимистом даже в трудной ситуации, с моей историей внутри, или бесплатный недельный марафон, после которого люди почувствуют себя гораздо лучше и напишут отзывы. Предложи 3 варианта и задавай мне вопросы по одному</pre><button type="button" data-copy="c1">Скопировать</button></div>
+</section>
+
+<section id="telegram">
+  <h2><span class="n">7</span>Telegram-канал</h2>
+<p>Это второй этап, он начинается на этой неделе. Канал нужен, чтобы уже начинать переливать туда аудиторию со всех площадок</p>
+<ol class="steps"><li>Сначала тема: о чём ты будешь вещать. Берёшь её из новой распаковки</li><li>Новый канал или старый - как тебе удобнее, главное сначала тема</li><li>Создаёшь канал и пишешь приветственный пост-знакомство: кто ты, откуда, о чём будет канал</li><li>Через неделю начнём вести его по-настоящему, переводить туда людей со всех площадок и закрепим на него ссылку</li></ol>
+<p>Пост-знакомство попроси написать в том же чате с распаковкой:</p>
+<div class="copy short"><pre id="c2">По моей распаковке выше напиши первый пост для моего нового Telegram-канала: пост-знакомство. Кто я, где живу, чем живу и о чём будет канал. Простым живым языком, как я говорю, без пафоса</pre><button type="button" data-copy="c2">Скопировать</button></div>
+</section>
+
+<section id="partnerka">
+  <h2><span class="n">8</span>Партнёрка - первые живые деньги</h2>
+<p>Самый простой и быстрый способ получить первые деньги, пока ищем твоё направление. Велосипед изобретать не надо: там всё уже продумано и сделано</p>
+<ol class="steps"><li>Я сейчас оформляю мини-курс из видеоуроков потока, делаю лендинг и воронку и всё автоматизирую</li><li>К концу недели дам тебе готовую ссылку и личный партнёрский кабинет. Там в реальном времени видно, кто перешёл и кто оплатил</li><li>Твоя задача - в конце каждого поста мостик с призывом: написать кодовое слово или перейти по ссылке в шапке профиля. Промт для мостика тоже дам</li><li>Каждый, кто перешёл по твоей ссылке, закрепляется за тобой. С каждой его оплаты тебе <b>50%</b></li><li>Для вывода денег понадобится номер телефона</li></ol>
+<div class="box calm"><div class="t">А своё?</div><p>Своё направление параллельно ищешь через распаковку. Партнёрка этому не мешает: это первый шаг, а своё подключим, когда оно появится</p></div>
+<p>Пока здесь ничего делать не надо, жди ссылку</p>
+</section>
+
+<section id="zumy">
+  <h2><span class="n">9</span>Записи зумов</h2>
+<p>В Telegram-группе потока особо ничего нет, а зум-разборы лежат в записи на платформе, я выкладываю туда каждый. У людей разные ситуации, и в чужом разборе можно взять идею для себя</p>
+<div class="box accent"><div class="t">Субботний зум 21.11</div><p>Посмотри обязательно, он прям полезный, много чего для себя возьмёшь</p></div>
+<a class="btn" href="https://ivanloginov.getcourse.ru/teach/control/lesson/view/id/350946330">Запись зума 21.11 →</a>
+<p>И приходи на общие эфиры: там я много полезного рассказываю, в том числе про то, почему падают охваты</p>
+</section>
+
+<p class="sign">Новая распаковка, новое направление и карусели - самое главное. Через неделю ждём 15 000 🚀<br><b>Иван Логинов</b> · Взрывные алгоритмы</p>
+</div>
+
+<script>
+(function () {
+  var KEY = "plan-shamannat-2311";
+  var state = {};
+  try { state = JSON.parse(localStorage.getItem(KEY) || "{}") || {}; } catch (e) { state = {}; }
+  var boxes = Array.prototype.slice.call(document.querySelectorAll(".check input"));
+  function paint() {
+    var done = boxes.filter(function (b) { return b.checked; }).length;
+    if (!boxes.length) return;
+    document.getElementById("pr-b").style.width = (done / boxes.length * 100) + "%";
+    document.getElementById("pr-t").textContent = done === 0 ? "Отмечайте галочками, что сделали"
+      : done === boxes.length ? "Всё сделано, вы огонь 🔥" : "Сделано " + done + " из " + boxes.length;
+  }
+  boxes.forEach(function (b) {
+    b.checked = !!state[b.dataset.k];
+    b.addEventListener("change", function () {
+      state[b.dataset.k] = b.checked;
+      try { localStorage.setItem(KEY, JSON.stringify(state)); } catch (e) {}
+      paint();
+    });
+  });
+  paint();
+
+  var d = new Date();
+  var today = d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0") + "-" + String(d.getDate()).padStart(2, "0");
+  document.querySelectorAll(".ladder tbody tr").forEach(function (tr) {
+    if (tr.dataset.d === today) tr.classList.add("today");
+    else if (tr.dataset.d < today) tr.classList.add("past");
+  });
+
+  function fallbackCopy(text) {
+    var ta = document.createElement("textarea");
+    ta.value = text; ta.setAttribute("readonly", ""); ta.style.position = "fixed"; ta.style.opacity = "0";
+    document.body.appendChild(ta); ta.select();
+    try { document.execCommand("copy"); } catch (e) {}
+    document.body.removeChild(ta);
+  }
+  document.querySelectorAll("[data-copy]").forEach(function (btn) {
+    btn.addEventListener("click", function () {
+      var text = document.getElementById(btn.dataset.copy).textContent;
+      var ok = function () {
+        btn.textContent = "Скопировано ✓"; btn.classList.add("ok");
+        setTimeout(function () { btn.textContent = "Скопировать"; btn.classList.remove("ok"); }, 1800);
+      };
+      if (navigator.clipboard && window.isSecureContext) {
+        navigator.clipboard.writeText(text).then(ok, function () { fallbackCopy(text); ok(); });
+      } else { fallbackCopy(text); ok(); }
+    });
+  });
+})();
+</script>
+</body>
+</html>
